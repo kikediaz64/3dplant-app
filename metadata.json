@@ -1,0 +1,7 @@
+{
+  "name": "3dPlant - AI Plant Diagnosis",
+  "description": "An advanced plant care assistant that uses AI to diagnose diseases, identify species, and provide personalized care plans for your indoor and outdoor garden.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}

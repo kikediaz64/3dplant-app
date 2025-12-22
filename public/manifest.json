@@ -1,0 +1,52 @@
+{
+    "name": "3DPlant - Diagnóstico de Plantas con IA",
+    "short_name": "3DPlant",
+    "description": "Diagnostica enfermedades y problemas de tus plantas usando inteligencia artificial",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#102210",
+    "theme_color": "#13ec13",
+    "orientation": "portrait",
+    "scope": "/",
+    "icons": [
+        {
+            "src": "/icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "/icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ],
+    "screenshots": [
+        {
+            "src": "/screenshot-1.png",
+            "sizes": "1170x2532",
+            "type": "image/png",
+            "form_factor": "narrow"
+        }
+    ],
+    "categories": [
+        "utilities",
+        "lifestyle",
+        "productivity"
+    ],
+    "shortcuts": [
+        {
+            "name": "Escanear Planta",
+            "short_name": "Escanear",
+            "description": "Tomar foto y diagnosticar planta",
+            "url": "/#/scan",
+            "icons": [
+                {
+                    "src": "/icon-192.png",
+                    "sizes": "192x192"
+                }
+            ]
+        }
+    ]
+}
