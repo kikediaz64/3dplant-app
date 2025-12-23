@@ -19,7 +19,7 @@ export const diagnosePlant = async (base64Image: string): Promise<DiagnosisResul
   console.log('API Key exists:', !!import.meta.env.VITE_GEMINI_API_KEY);
   console.log('Image data length:', base64Image.length);
 
-  const model = 'gemini-1.5-flash';
+  const model = 'gemini-2.0-flash-exp';
   console.log('Using model:', model);
 
   try {
