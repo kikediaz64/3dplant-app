@@ -78,20 +78,39 @@ const CameraView: React.FC = () => {
 
   // Fallback: Handle file input from native camera
   const handleFileInput = (event: React.ChangeEvent<HTMLInputElement>) => {
+    console.log('handleFileInput called');
     const file = event.target.files?.[0];
-    if (!file) return;
+    if (!file) {
+      console.log('No file selected');
+      return;
+    }
 
+    console.log('File selected:', file.name, file.size, file.type);
     const reader = new FileReader();
     reader.onload = (e) => {
       const dataUrl = e.target?.result as string;
+      console.log('Image read, data URL length:', dataUrl.length);
       localStorage.setItem('capturedPlantImage', dataUrl);
+      console.log('Image saved to localStorage');
 
       // Clean up to prevent memory leaks
       reader.onload = null;
       event.target.value = ''; // Reset input for next use
 
-      navigate('/result');
+      // Small delay before navigation to ensure localStorage is written
+      console.log('Navigating to /result in 100ms...');
+      setTimeout(() => {
+        console.log('Navigating now...');
+        navigate('/result');
+      }, 100);
     };
+
+    reader.onerror = (error) => {
+      console.error('FileReader error:', error);
+      alert('Error al leer la imagen. Por favor, intenta de nuevo.');
+    };
+
+    console.log('Starting to read file...');
     reader.readAsDataURL(file);
   };
 
