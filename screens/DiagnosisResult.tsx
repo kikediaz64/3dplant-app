@@ -61,14 +61,14 @@ const DiagnosisResult: React.FC = () => {
     if (!result) return;
 
     try {
-      plantStorage.savePlant({
-        name: result.speciesName,
-        scientificName: result.scientificName,
+      const plantData = {
+        name: result.speciesName || 'Planta desconocida',
+        scientificName: result.scientificName || '',
         image: image,
-        status: result.severity === 'low' ? 'healthy' : 'sick',
+        status: (result.severity === 'low' ? 'healthy' : result.severity === 'moderate' ? 'warning' : 'sick') as 'healthy' | 'warning' | 'sick',
         location: 'Mi Jardín',
         isToxic: false,
-        needsWater: result.actionPlan.some(a => a.title.toLowerCase().includes('agua')),
+        needsWater: result.actionPlan?.some(a => a.title?.toLowerCase().includes('agua')) || false,
         nextWatering: 'En 3 días',
         careDetails: {
           light: 'Media',
@@ -77,18 +77,22 @@ const DiagnosisResult: React.FC = () => {
           humidity: 'Media'
         },
         diagnosis: {
-          health: result.problemName,
-          problems: result.rootCauses.map(c => c.title),
-          recommendations: result.actionPlan.map(a => a.description)
+          health: result.problemName || 'Diagnóstico completado',
+          problems: result.rootCauses?.map(c => c.title) || [],
+          recommendations: result.actionPlan?.map(a => a.description) || []
         }
-      });
+      };
+
+      console.log('Saving plant:', plantData);
+      plantStorage.savePlant(plantData);
       setSaved(true);
       setTimeout(() => {
         navigate('/');
       }, 1500);
     } catch (error) {
       console.error('Error saving plant:', error);
-      alert('Error al guardar la planta');
+      console.error('Result data:', result);
+      alert(`Error al guardar la planta: ${error instanceof Error ? error.message : 'Error desconocido'}`);
     }
   };
 
