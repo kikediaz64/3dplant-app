@@ -120,7 +120,6 @@ const CameraView: React.FC = () => {
               ref={fileInputRef}
               type="file"
               accept="image/*"
-              capture="environment"
               onChange={handleFileInput}
               className="hidden"
             />
