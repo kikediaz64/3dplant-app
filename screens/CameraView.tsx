@@ -85,6 +85,11 @@ const CameraView: React.FC = () => {
     reader.onload = (e) => {
       const dataUrl = e.target?.result as string;
       localStorage.setItem('capturedPlantImage', dataUrl);
+
+      // Clean up to prevent memory leaks
+      reader.onload = null;
+      event.target.value = ''; // Reset input for next use
+
       navigate('/result');
     };
     reader.readAsDataURL(file);

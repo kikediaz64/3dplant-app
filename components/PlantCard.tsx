@@ -30,8 +30,8 @@ const PlantCard: React.FC<PlantCardProps> = ({ plant }) => {
   return (
     <article className="flex flex-col rounded-2xl bg-card-light dark:bg-card-dark shadow-sm ring-1 ring-black/5 dark:ring-white/10 overflow-hidden transition-all hover:shadow-md">
       <div className="relative h-48 w-full bg-gray-100 dark:bg-gray-800">
-        <div 
-          className="absolute inset-0 bg-cover bg-center transition-transform hover:scale-105 duration-700" 
+        <div
+          className="absolute inset-0 bg-cover bg-center transition-transform hover:scale-105 duration-700"
           style={{ backgroundImage: `url('${plant.image}')` }}
         ></div>
         {getStatusBadge()}
@@ -49,13 +49,13 @@ const PlantCard: React.FC<PlantCardProps> = ({ plant }) => {
             </div>
           )}
           {!plant.isToxic && (
-             <div className="flex items-center gap-1 px-2 py-1 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-100 dark:border-green-900/30">
+            <div className="flex items-center gap-1 px-2 py-1 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-100 dark:border-green-900/30">
               <span className="material-symbols-outlined text-green-600 dark:text-green-400 text-[16px]">spa</span>
               <span className="text-[10px] font-bold text-green-700 dark:text-green-300 uppercase tracking-wide">Segura</span>
             </div>
           )}
         </div>
-        
+
         <div className="grid grid-cols-4 gap-2 py-2 border-y border-gray-100 dark:border-white/5">
           <div className="flex flex-col items-center justify-center gap-1 text-center">
             <span className="material-symbols-outlined text-text-sec-light dark:text-text-sec-dark text-[20px]">wb_sunny</span>
@@ -83,7 +83,10 @@ const PlantCard: React.FC<PlantCardProps> = ({ plant }) => {
               {plant.nextWatering}
             </span>
           </div>
-          <button className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${plant.needsWater ? 'bg-primary text-black shadow-lg shadow-primary/20 hover:bg-[#0fd60f]' : 'bg-primary/10 text-green-800 dark:text-green-300 hover:bg-primary/20'}`}>
+          <button
+            onClick={() => alert(`${plant.name}\n\nDetalles próximamente...`)}
+            className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${plant.needsWater ? 'bg-primary text-black shadow-lg shadow-primary/20 hover:bg-[#0fd60f]' : 'bg-primary/10 text-green-800 dark:text-green-300 hover:bg-primary/20'}`}
+          >
             {plant.needsWater ? 'Regar Ahora' : 'Detalles'}
           </button>
         </div>

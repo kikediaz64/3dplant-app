@@ -10,7 +10,7 @@ const GardenGallery: React.FC = () => {
   const [filter, setFilter] = useState<FilterType>('Todo');
 
   const filters: FilterType[] = ['Todo', 'Necesita Agua', 'Habitación', 'Especie'];
-  
+
   const filteredPlants = MOCK_PLANTS.filter(p => {
     if (filter === 'Todo') return true;
     if (filter === 'Necesita Agua') return p.needsWater;
@@ -37,7 +37,7 @@ const GardenGallery: React.FC = () => {
       {/* Headline */}
       <div className="px-5 pt-6 pb-2">
         <h1 className="text-3xl font-bold leading-tight tracking-tight text-text-main-light dark:text-text-main-dark">
-          Buenos días.<br/>
+          Buenos días.<br />
           <span className="text-text-sec-light dark:text-text-sec-dark text-2xl font-normal">Tu jardín se ve genial hoy.</span>
         </h1>
       </div>
@@ -45,12 +45,12 @@ const GardenGallery: React.FC = () => {
       {/* Filters */}
       <div className="flex gap-3 px-5 py-4 overflow-x-auto no-scrollbar snap-x">
         {filters.map(f => (
-          <button 
+          <button
             key={f}
             onClick={() => setFilter(f)}
             className={`snap-start shrink-0 flex h-9 items-center justify-center px-5 rounded-full text-sm font-bold transition-transform active:scale-95 
-              ${filter === f 
-                ? 'bg-primary text-black shadow-sm shadow-primary/30' 
+              ${filter === f
+                ? 'bg-primary text-black shadow-sm shadow-primary/30'
                 : 'bg-white dark:bg-card-dark border border-black/5 dark:border-white/10 text-text-main-light dark:text-text-main-dark font-medium'}`}
           >
             {f}
@@ -68,13 +68,16 @@ const GardenGallery: React.FC = () => {
       {/* Bottom Navigation */}
       <nav className="fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-[#0c1a0c]/90 backdrop-blur-lg border-t border-black/5 dark:border-white/5 pb-5 pt-3 px-6 z-50">
         <ul className="flex justify-between items-end">
-          <li className="flex-1 flex flex-col items-center justify-center gap-1 cursor-pointer group">
+          <li
+            onClick={() => navigate('/')}
+            className="flex-1 flex flex-col items-center justify-center gap-1 cursor-pointer group"
+          >
             <div className="w-12 h-8 rounded-full flex items-center justify-center bg-primary/20 text-green-900 dark:text-green-300 transition-colors">
               <span className="material-symbols-outlined text-[24px]">potted_plant</span>
             </div>
             <span className="text-[10px] font-bold text-green-900 dark:text-green-300">Mi Jardín</span>
           </li>
-          <li 
+          <li
             onClick={() => navigate('/scan')}
             className="flex-1 flex flex-col items-center justify-center gap-1 cursor-pointer group relative"
           >
@@ -84,7 +87,10 @@ const GardenGallery: React.FC = () => {
             <div className="h-6"></div>
             <span className="text-[10px] font-medium text-gray-400 dark:text-gray-500 mt-2">Escanear</span>
           </li>
-          <li className="flex-1 flex flex-col items-center justify-center gap-1 cursor-pointer group">
+          <li
+            onClick={() => alert('Ajustes - Próximamente')}
+            className="flex-1 flex flex-col items-center justify-center gap-1 cursor-pointer group"
+          >
             <div className="w-12 h-8 rounded-full flex items-center justify-center text-gray-400 dark:text-gray-500 hover:text-green-800 dark:hover:text-green-300 transition-colors">
               <span className="material-symbols-outlined text-[24px]">settings</span>
             </div>
