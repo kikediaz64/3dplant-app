@@ -220,23 +220,24 @@ const DiagnosisResult: React.FC = () => {
 
       {/* Sticky Bottom Bar */}
       <div className="fixed bottom-0 w-full bg-background-light dark:bg-background-dark border-t border-gray-200 dark:border-white/10 p-4 pb-6 z-50">
-        <div className="flex gap-3 max-w-lg mx-auto">
-          <button
-            onClick={() => navigate('/')}
-            className="flex-1 rounded-xl bg-primary hover:bg-green-400 text-black font-bold h-12 flex items-center justify-center gap-2 transition-colors active:scale-95 shadow-lg shadow-primary/20"
-          >
-            <span className="material-symbols-outlined">medical_services</span>
-            Iniciar Tratamiento
-          </button>
+        <div className="flex flex-col gap-3 max-w-lg mx-auto">
           <button
             onClick={handleSavePlant}
             disabled={saved}
-            className={`size-12 rounded-xl flex items-center justify-center border transition-colors ${saved
-                ? 'bg-primary text-black border-primary'
-                : 'bg-gray-200 dark:bg-surface-dark text-gray-900 dark:text-white border-gray-300 dark:border-white/10 hover:bg-gray-300 dark:hover:bg-white/10'
+            className={`w-full rounded-xl font-bold h-12 flex items-center justify-center gap-2 transition-colors active:scale-95 shadow-lg ${saved
+              ? 'bg-green-600 text-white'
+              : 'bg-primary hover:bg-green-400 text-black shadow-primary/20'
               }`}
           >
-            <span className="material-symbols-outlined">{saved ? 'check' : 'add'}</span>
+            <span className="material-symbols-outlined">{saved ? 'check_circle' : 'add_circle'}</span>
+            {saved ? 'Guardada en Mi Jardín' : 'Guardar en Mi Jardín'}
+          </button>
+          <button
+            onClick={() => navigate('/')}
+            className="w-full rounded-xl bg-gray-200 dark:bg-surface-dark hover:bg-gray-300 dark:hover:bg-white/10 text-gray-900 dark:text-white font-bold h-12 flex items-center justify-center gap-2 transition-colors active:scale-95 border border-gray-300 dark:border-white/10"
+          >
+            <span className="material-symbols-outlined">home</span>
+            Volver al Jardín
           </button>
         </div>
       </div>
