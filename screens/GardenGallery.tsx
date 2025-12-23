@@ -1,23 +1,31 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PlantCard from '../components/PlantCard';
 import { MOCK_PLANTS } from '../constants';
 import { FilterType } from '../types';
+import { plantStorage } from '../services/plantStorage';
 
 const GardenGallery: React.FC = () => {
   const navigate = useNavigate();
   const [filter, setFilter] = useState<FilterType>('Todo');
+  const [plants, setPlants] = useState(MOCK_PLANTS);
+
+  useEffect(() => {
+    // Load saved plants and combine with mock plants
+    const savedPlants = plantStorage.getSavedPlants();
+    setPlants([...savedPlants, ...MOCK_PLANTS]);
+  }, []);
 
   const filters: FilterType[] = ['Todo', 'Necesita Agua', 'Habitación', 'Especie'];
 
-  const filteredPlants = MOCK_PLANTS.filter(p => {
+  const filteredPlants = plants.filter(p => {
     if (filter === 'Todo') return true;
     if (filter === 'Necesita Agua') return p.needsWater;
     return true;
   });
 
-  const waterNeededCount = MOCK_PLANTS.filter(p => p.needsWater).length;
+  const waterNeededCount = plants.filter(p => p.needsWater).length;
 
   return (
     <div className="relative flex h-full min-h-screen w-full flex-col overflow-x-hidden pb-24 bg-background-light dark:bg-background-dark">
