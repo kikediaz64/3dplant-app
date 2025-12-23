@@ -84,7 +84,7 @@ export const diagnosePlant = async (base64Image: string): Promise<DiagnosisResul
     });
 
     console.log('Waiting for API response...');
-    const response = await withTimeout(apiCall, 30000); // 30 second timeout
+    const response = await withTimeout(apiCall, 15000); // 15 second timeout
     console.log('API response received');
 
     const result = JSON.parse(response.text || '{}');
