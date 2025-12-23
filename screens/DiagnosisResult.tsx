@@ -12,6 +12,7 @@ const DiagnosisResult: React.FC = () => {
   const [completedActions, setCompletedActions] = useState<boolean[]>([]);
   const [image, setImage] = useState<string>('');
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const loadingMessages = [
     "Identificando la especie...",
@@ -24,11 +25,15 @@ const DiagnosisResult: React.FC = () => {
 
   useEffect(() => {
     const savedImage = localStorage.getItem('capturedPlantImage');
+    console.log('Saved image exists:', !!savedImage);
+
     if (savedImage) {
       setImage(savedImage);
       handleDiagnosis(savedImage);
     } else {
-      navigate('/');
+      console.error('No image found in localStorage');
+      setError('No se encontró ninguna imagen. Por favor, toma una foto nuevamente.');
+      setLoading(false);
     }
 
     const interval = setInterval(() => {
@@ -41,12 +46,15 @@ const DiagnosisResult: React.FC = () => {
 
   const handleDiagnosis = async (img: string) => {
     try {
+      console.log('Starting diagnosis...');
       const diagnosis = await diagnosePlant(img);
+      console.log('Diagnosis complete:', diagnosis);
       setResult(diagnosis);
       setCompletedActions(new Array(diagnosis.actionPlan.length).fill(false));
       setLoading(false);
     } catch (error) {
-      console.error(error);
+      console.error('Diagnosis error:', error);
+      setError(`Error al analizar la planta: ${error instanceof Error ? error.message : 'Error desconocido'}. Por favor, intenta de nuevo.`);
       setLoading(false);
     }
   };
@@ -108,6 +116,32 @@ const DiagnosisResult: React.FC = () => {
         </div>
         <h2 className="text-2xl font-bold mb-2">Analizando Planta</h2>
         <p className="text-text-sec-dark font-medium transition-opacity duration-500">{loadingMessages[loadingMsgIdx]}</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex h-screen w-full flex-col items-center justify-center bg-background-dark p-6 text-center">
+        <div className="mb-8">
+          <span className="material-symbols-outlined text-red-500 text-[80px]">error</span>
+        </div>
+        <h2 className="text-2xl font-bold mb-4 text-white">¡Oops!</h2>
+        <p className="text-text-sec-dark font-medium mb-8 max-w-md">{error}</p>
+        <div className="flex gap-3">
+          <button
+            onClick={() => navigate('/scan')}
+            className="px-6 py-3 rounded-xl bg-primary hover:bg-green-400 text-black font-bold transition-colors active:scale-95"
+          >
+            Tomar otra foto
+          </button>
+          <button
+            onClick={() => navigate('/')}
+            className="px-6 py-3 rounded-xl bg-gray-700 hover:bg-gray-600 text-white font-bold transition-colors active:scale-95"
+          >
+            Volver al inicio
+          </button>
+        </div>
       </div>
     );
   }
