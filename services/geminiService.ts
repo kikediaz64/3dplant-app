@@ -2,7 +2,7 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { DiagnosisResult } from "../types";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY || '' });
 
 // Timeout wrapper for API calls
 const withTimeout = <T,>(promise: Promise<T>, timeoutMs: number): Promise<T> => {
@@ -16,7 +16,7 @@ const withTimeout = <T,>(promise: Promise<T>, timeoutMs: number): Promise<T> => 
 
 export const diagnosePlant = async (base64Image: string): Promise<DiagnosisResult> => {
   console.log('diagnosePlant called');
-  console.log('API Key exists:', !!process.env.API_KEY);
+  console.log('API Key exists:', !!import.meta.env.VITE_GEMINI_API_KEY);
   console.log('Image data length:', base64Image.length);
 
   const model = 'gemini-1.5-flash';
