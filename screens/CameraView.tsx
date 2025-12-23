@@ -76,6 +76,20 @@ const CameraView: React.FC = () => {
     }
   };
 
+  // Fallback: Handle file input from native camera
+  const handleFileInput = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const dataUrl = e.target?.result as string;
+      localStorage.setItem('capturedPlantImage', dataUrl);
+      navigate('/result');
+    };
+    reader.readAsDataURL(file);
+  };
+
   return (
     <div className="bg-background-dark font-display text-white overflow-hidden h-screen w-full relative">
       {/* Camera Feed */}
@@ -173,13 +187,23 @@ const CameraView: React.FC = () => {
               />
             </button>
 
-            <button
-              onClick={handleCapture}
-              className="group relative flex shrink-0 items-center justify-center rounded-full size-20 bg-transparent border-[5px] border-white shadow-lg active:scale-95 transition-all duration-150"
+            {/* Hidden file input for iOS camera fallback */}
+            <input
+              type="file"
+              accept="image/*"
+              capture="environment"
+              onChange={handleFileInput}
+              className="hidden"
+              id="camera-input"
+            />
+
+            <label
+              htmlFor="camera-input"
+              className="group relative flex shrink-0 items-center justify-center rounded-full size-20 bg-transparent border-[5px] border-white shadow-lg active:scale-95 transition-all duration-150 cursor-pointer"
             >
               <div className="w-[66px] h-[66px] bg-primary rounded-full group-active:scale-90 transition-transform duration-150 shadow-[0_0_15px_rgba(19,236,19,0.4)]"></div>
               <span className="material-symbols-outlined absolute text-background-dark text-[32px] font-bold z-10 pointer-events-none">camera_alt</span>
-            </button>
+            </label>
 
             <button className="flex shrink-0 items-center justify-center rounded-full size-14 bg-white/10 backdrop-blur-md text-white border border-white/10 hover:bg-white/20 active:scale-95 transition-all">
               <span className="material-symbols-outlined text-[24px]" style={{ fontVariationSettings: "'FILL' 1" }}>lightbulb</span>
