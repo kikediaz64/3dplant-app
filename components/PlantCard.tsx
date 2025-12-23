@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Plant } from '../types';
 
 interface PlantCardProps {
@@ -7,6 +8,8 @@ interface PlantCardProps {
 }
 
 const PlantCard: React.FC<PlantCardProps> = ({ plant }) => {
+  const navigate = useNavigate();
+
   const getStatusBadge = () => {
     if (plant.needsWater) {
       return (
@@ -84,7 +87,7 @@ const PlantCard: React.FC<PlantCardProps> = ({ plant }) => {
             </span>
           </div>
           <button
-            onClick={() => alert(`${plant.name}\n\nDetalles próximamente...`)}
+            onClick={() => navigate(`/plant/${plant.id}`)}
             className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${plant.needsWater ? 'bg-primary text-black shadow-lg shadow-primary/20 hover:bg-[#0fd60f]' : 'bg-primary/10 text-green-800 dark:text-green-300 hover:bg-primary/20'}`}
           >
             {plant.needsWater ? 'Regar Ahora' : 'Detalles'}

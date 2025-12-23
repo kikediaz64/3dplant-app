@@ -4,6 +4,7 @@ import { HashRouter, Routes, Route } from 'react-router-dom';
 import GardenGallery from './screens/GardenGallery';
 import CameraView from './screens/CameraView';
 import DiagnosisResult from './screens/DiagnosisResult';
+import PlantDetail from './screens/PlantDetail';
 
 const App: React.FC = () => {
   return (
@@ -13,6 +14,7 @@ const App: React.FC = () => {
           <Route path="/" element={<GardenGallery />} />
           <Route path="/scan" element={<CameraView />} />
           <Route path="/result" element={<DiagnosisResult />} />
+          <Route path="/plant/:id" element={<PlantDetail />} />
         </Routes>
       </div>
     </HashRouter>

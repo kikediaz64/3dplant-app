@@ -5,6 +5,7 @@ import PlantCard from '../components/PlantCard';
 import { MOCK_PLANTS } from '../constants';
 import { FilterType } from '../types';
 import { plantStorage } from '../services/plantStorage';
+import { getDailyTip } from '../constants/dailyTips';
 
 const GardenGallery: React.FC = () => {
   const navigate = useNavigate();
@@ -48,6 +49,19 @@ const GardenGallery: React.FC = () => {
           Buenos días.<br />
           <span className="text-text-sec-light dark:text-text-sec-dark text-2xl font-normal">Tu jardín se ve genial hoy.</span>
         </h1>
+      </div>
+
+      {/* Daily Tip */}
+      <div className="px-5 py-3">
+        <div className="bg-white dark:bg-card-dark rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-white/5">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-2xl">💡</span>
+            <h3 className="text-sm font-bold text-gray-900 dark:text-white">Consejo del día</h3>
+          </div>
+          <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
+            {getDailyTip()}
+          </p>
+        </div>
       </div>
 
       {/* Filters */}
