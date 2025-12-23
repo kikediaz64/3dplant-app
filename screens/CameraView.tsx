@@ -182,7 +182,7 @@ const CameraView: React.FC = () => {
           </div>
         </main>
 
-        <footer className="w-full pb-8 pt-6 px-6 bg-gradient-to-t from-black/90 via-black/60 to-transparent">
+        <footer className="w-full pb-20 pt-6 px-6 bg-gradient-to-t from-black/90 via-black/60 to-transparent">
           <div className="flex items-center justify-between max-w-sm mx-auto">
             <button className="group flex shrink-0 items-center justify-center rounded-xl size-14 border-2 border-white/20 overflow-hidden relative active:scale-95 transition-transform">
               <img
