@@ -37,6 +37,13 @@ Reglas obligatorias:
 - Si no estás seguro de algo, dilo en lugar de inventar.`;
 
 export default async (request) => {
+  if (request.method === 'GET') {
+    return new Response(JSON.stringify({ ok: true, hasKey: !!process.env.GEMINI_API_KEY }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
+
   if (request.method !== 'POST') {
     return new Response('Method not allowed', { status: 405 });
   }
@@ -70,11 +77,19 @@ export default async (request) => {
       return new Response(JSON.stringify({ error: 'Acción desconocida' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
     }
 
-    const res = await fetch(ENDPOINT, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': API_KEY },
-      body: JSON.stringify(payload)
-    });
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 25000);
+    let res;
+    try {
+      res = await fetch(ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': API_KEY },
+        body: JSON.stringify(payload),
+        signal: controller.signal
+      });
+    } finally {
+      clearTimeout(timeoutId);
+    }
 
     if (!res.ok) {
       const errText = await res.text();
