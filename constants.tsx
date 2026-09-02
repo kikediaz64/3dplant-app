@@ -17,7 +17,10 @@ export const MOCK_PLANTS: Plant[] = [
       temp: '20°C',
       humidity: 'Alta'
     },
-    nextWatering: 'En 4 días'
+    nextWatering: 'En 4 días',
+    zona: 'Interior',
+    luz: 'Semisombra',
+    tipo: 'Ornamental'
   },
   {
     id: '2',
@@ -34,7 +37,10 @@ export const MOCK_PLANTS: Plant[] = [
       temp: '15-30°C',
       humidity: 'Baja'
     },
-    nextWatering: 'Riego hoy'
+    nextWatering: 'Riego hoy',
+    zona: 'Interior',
+    luz: 'Sombra',
+    tipo: 'Ornamental'
   },
   {
     id: '3',
@@ -51,6 +57,9 @@ export const MOCK_PLANTS: Plant[] = [
       temp: '18-24°C',
       humidity: 'Media'
     },
-    nextWatering: 'En 6 días'
+    nextWatering: 'En 6 días',
+    zona: 'Interior',
+    luz: 'Sol pleno',
+    tipo: 'Ornamental'
   }
 ];

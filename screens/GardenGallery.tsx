@@ -3,14 +3,45 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PlantCard from '../components/PlantCard';
 import { MOCK_PLANTS } from '../constants';
-import { FilterType } from '../types';
 import { plantStorage } from '../services/plantStorage';
 import { getDailyTip } from '../constants/dailyTips';
 
+interface FilterRowProps {
+  label: string;
+  options: string[];
+  selected: string[];
+  onToggle: (value: string) => void;
+}
+
+const FilterRow: React.FC<FilterRowProps> = ({ label, options, selected, onToggle }) => (
+  <div className="flex items-start gap-3">
+    <span className="text-xs font-bold text-text-sec-light dark:text-text-sec-dark uppercase tracking-wide w-16 shrink-0 pt-2">{label}</span>
+    <div className="flex flex-wrap gap-2">
+      {options.map(opt => {
+        const active = selected.includes(opt);
+        return (
+          <button
+            key={opt}
+            onClick={() => onToggle(opt)}
+            className={`shrink-0 flex h-9 items-center justify-center px-4 rounded-full text-sm font-bold transition-transform active:scale-95 ${active ? 'bg-primary text-black shadow-sm shadow-primary/30' : 'bg-white dark:bg-card-dark border border-black/5 dark:border-white/10 text-text-main-light dark:text-text-main-dark font-medium'}`}
+          >
+            {opt}
+          </button>
+        );
+      })}
+    </div>
+  </div>
+);
+
 const GardenGallery: React.FC = () => {
   const navigate = useNavigate();
-  const [filter, setFilter] = useState<FilterType>('Todo');
   const [plants, setPlants] = useState(MOCK_PLANTS);
+  const [filters, setFilters] = useState<{ zona: string[]; luz: string[]; riego: boolean; tipo: string[] }>({
+    zona: [],
+    luz: [],
+    riego: false,
+    tipo: []
+  });
 
   useEffect(() => {
     // Load saved plants and combine with mock plants
@@ -18,11 +49,21 @@ const GardenGallery: React.FC = () => {
     setPlants([...savedPlants, ...MOCK_PLANTS]);
   }, []);
 
-  const filters: FilterType[] = ['Todo', 'Necesita Agua', 'Habitación', 'Especie'];
+  const toggleFilter = (group: 'zona' | 'luz' | 'tipo', value: string) => {
+    setFilters(prev => {
+      const list = prev[group];
+      const next = list.includes(value) ? list.filter(v => v !== value) : [...list, value];
+      return { ...prev, [group]: next };
+    });
+  };
+
+  const clearFilters = () => setFilters({ zona: [], luz: [], riego: false, tipo: [] });
 
   const filteredPlants = plants.filter(p => {
-    if (filter === 'Todo') return true;
-    if (filter === 'Necesita Agua') return p.needsWater;
+    if (filters.zona.length && !filters.zona.includes(p.zona || '')) return false;
+    if (filters.luz.length && !filters.luz.includes(p.luz || '')) return false;
+    if (filters.riego && !p.needsWater) return false;
+    if (filters.tipo.length && !filters.tipo.includes(p.tipo || '')) return false;
     return true;
   });
 
@@ -37,7 +78,7 @@ const GardenGallery: React.FC = () => {
             <h2 className="text-xl font-bold leading-tight tracking-tight text-text-main-light dark:text-text-main-dark">Mi Jardín</h2>
             <p className="text-xs text-text-sec-light dark:text-text-sec-dark font-medium mt-0.5">{waterNeededCount} plantas necesitan agua</p>
           </div>
-          <button className="flex items-center justify-center w-10 h-10 rounded-full bg-white dark:bg-card-dark shadow-sm hover:bg-gray-50 dark:hover:bg-white/10 active:scale-95 transition-all text-text-main-light dark:text-text-main-dark border border-black/5 dark:border-white/10">
+          <button onClick={() => navigate('/scan')} className="flex items-center justify-center w-10 h-10 rounded-full bg-white dark:bg-card-dark shadow-sm hover:bg-gray-50 dark:hover:bg-white/10 active:scale-95 transition-all text-text-main-light dark:text-text-main-dark border border-black/5 dark:border-white/10">
             <span className="material-symbols-outlined text-[24px]">add</span>
           </button>
         </div>
@@ -65,19 +106,25 @@ const GardenGallery: React.FC = () => {
       </div>
 
       {/* Filters */}
-      <div className="flex gap-3 px-5 py-4 overflow-x-auto no-scrollbar snap-x">
-        {filters.map(f => (
+      <div className="flex flex-col gap-3 px-5 py-4">
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-bold text-text-sec-light dark:text-text-sec-dark uppercase tracking-wide">Filtros</span>
+          <button onClick={clearFilters} className="text-xs font-bold text-primary">Limpiar</button>
+        </div>
+
+        <FilterRow label="Zona" options={['Interior', 'Exterior']} selected={filters.zona} onToggle={(v) => toggleFilter('zona', v)} />
+        <FilterRow label="Luz" options={['Sol pleno', 'Semisombra', 'Sombra']} selected={filters.luz} onToggle={(v) => toggleFilter('luz', v)} />
+        <FilterRow label="Tipo" options={['Aromática', 'Floral', 'Frutal', 'Vegetal', 'Ornamental']} selected={filters.tipo} onToggle={(v) => toggleFilter('tipo', v)} />
+
+        <div className="flex items-start gap-3">
+          <span className="text-xs font-bold text-text-sec-light dark:text-text-sec-dark uppercase tracking-wide w-16 shrink-0 pt-2">Riego</span>
           <button
-            key={f}
-            onClick={() => setFilter(f)}
-            className={`snap-start shrink-0 flex h-9 items-center justify-center px-5 rounded-full text-sm font-bold transition-transform active:scale-95 
-              ${filter === f
-                ? 'bg-primary text-black shadow-sm shadow-primary/30'
-                : 'bg-white dark:bg-card-dark border border-black/5 dark:border-white/10 text-text-main-light dark:text-text-main-dark font-medium'}`}
+            onClick={() => setFilters(prev => ({ ...prev, riego: !prev.riego }))}
+            className={`shrink-0 flex h-9 items-center justify-center px-4 rounded-full text-sm font-bold transition-transform active:scale-95 ${filters.riego ? 'bg-primary text-black shadow-sm shadow-primary/30' : 'bg-white dark:bg-card-dark border border-black/5 dark:border-white/10 text-text-main-light dark:text-text-main-dark font-medium'}`}
           >
-            {f}
+            Necesita agua
           </button>
-        ))}
+        </div>
       </div>
 
       {/* Gallery */}
@@ -85,6 +132,9 @@ const GardenGallery: React.FC = () => {
         {filteredPlants.map(plant => (
           <PlantCard key={plant.id} plant={plant} />
         ))}
+        {filteredPlants.length === 0 && (
+          <p className="text-center text-sm text-text-sec-light dark:text-text-sec-dark py-8">No hay plantas con estos filtros.</p>
+        )}
       </div>
 
       {/* Bottom Navigation */}
@@ -110,7 +160,7 @@ const GardenGallery: React.FC = () => {
             <span className="text-[10px] font-medium text-gray-400 dark:text-gray-500 mt-2">Escanear</span>
           </li>
           <li
-            onClick={() => alert('Ajustes - Próximamente')}
+            onClick={() => navigate('/settings')}
             className="flex-1 flex flex-col items-center justify-center gap-1 cursor-pointer group"
           >
             <div className="w-12 h-8 rounded-full flex items-center justify-center text-gray-400 dark:text-gray-500 hover:text-green-800 dark:hover:text-green-300 transition-colors">

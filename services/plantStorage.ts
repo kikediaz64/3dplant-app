@@ -2,14 +2,8 @@
 import { Plant } from '../types';
 
 export interface SavedPlant extends Plant {
-    id: string;
     scannedAt: string;
     lastUpdated: string;
-    diagnosis?: {
-        health: string;
-        problems: string[];
-        recommendations: string[];
-    };
 }
 
 const STORAGE_KEY = 'savedPlants';
@@ -77,6 +71,16 @@ export const plantStorage = {
             }
         } catch (error) {
             console.error('Error updating plant:', error);
+            throw error;
+        }
+    },
+
+    // Clear all saved plants
+    clearAll(): void {
+        try {
+            localStorage.removeItem(STORAGE_KEY);
+        } catch (error) {
+            console.error('Error clearing plants:', error);
             throw error;
         }
     },

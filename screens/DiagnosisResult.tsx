@@ -69,24 +69,30 @@ const DiagnosisResult: React.FC = () => {
     if (!result) return;
 
     try {
+      const status: 'healthy' | 'warning' | 'sick' =
+        result.healthStatus === 'Saludable' ? 'healthy' : result.healthStatus === 'Enferma' ? 'sick' : 'warning';
+
       const plantData = {
         name: result.speciesName || 'Planta desconocida',
         scientificName: result.scientificName || '',
         image: image,
-        status: (result.severity === 'low' ? 'healthy' : result.severity === 'moderate' ? 'warning' : 'sick') as 'healthy' | 'warning' | 'sick',
+        status,
         location: 'Mi Jardín',
-        isToxic: false,
-        needsWater: result.actionPlan?.some(a => a.title?.toLowerCase().includes('agua')) || false,
+        isToxic: result.isToxic ?? false,
+        needsWater: result.hydration === 'Sedienta' || result.actionPlan?.some(a => a.title?.toLowerCase().includes('agua')) || false,
         nextWatering: 'En 3 días',
         careDetails: {
-          light: 'Media',
+          light: result.luz || 'Media',
           water: 'Media',
           temp: '18-24°C',
           humidity: 'Media'
         },
+        zona: result.zona,
+        luz: result.luz,
+        tipo: result.tipo,
         diagnosis: {
-          health: result.problemName || 'Diagnóstico completado',
-          problems: result.rootCauses?.map(c => c.title) || [],
+          health: result.healthStatus ? `${result.healthStatus} · ${result.healthScore ?? '—'}/100` : (result.problemName || 'Diagnóstico completado'),
+          problems: [...(result.symptoms || []), ...(result.pests || [])],
           recommendations: result.actionPlan?.map(a => a.description) || []
         }
       };
@@ -177,23 +183,50 @@ const DiagnosisResult: React.FC = () => {
       <div className="relative -mt-16 px-4 z-10">
         <div className="bg-white dark:bg-surface-dark rounded-2xl p-5 shadow-lg border border-gray-100 dark:border-white/5">
           <div className="flex justify-between items-start mb-2">
-            <div>
-              <div className="flex items-center gap-2 mb-1">
+            <div className="min-w-0 pr-3">
+              <div className="flex items-center gap-2 mb-1 flex-wrap">
                 <span className="bg-primary/20 text-green-800 dark:text-primary text-xs font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
                   <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>verified</span>
                   {result.confidence}% Coincidencia
                 </span>
+                {result.isToxic && (
+                  <span className="bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 text-xs font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+                    <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>pets</span>
+                    Tóxica
+                  </span>
+                )}
               </div>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white leading-tight">{result.problemName}</h1>
-              <p className="text-gray-500 dark:text-gray-400 text-sm font-medium mt-1">{result.speciesName} ({result.scientificName})</p>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white leading-tight">{result.speciesName}</h1>
+              <p className="text-gray-500 dark:text-gray-400 text-sm font-medium mt-0.5 italic">{result.scientificName}</p>
+              {result.family && <p className="text-gray-400 dark:text-gray-500 text-xs mt-0.5">Familia: {result.family}</p>}
             </div>
-            <div className={`size-12 rounded-full flex items-center justify-center shrink-0 ${result.severity === 'high' ? 'bg-red-100 dark:bg-red-900/30' : 'bg-orange-100 dark:bg-orange-900/30'}`}>
-              <span className={`material-symbols-outlined ${result.severity === 'high' ? 'text-red-600 dark:text-red-400' : 'text-orange-600 dark:text-orange-400'}`}>
-                {result.severity === 'high' ? 'warning' : 'info'}
-              </span>
+            <div className="text-center shrink-0">
+              <div className="text-3xl font-bold text-primary">{result.healthScore ?? '—'}<span className="text-sm text-gray-400">/100</span></div>
+              <div className={`mt-1 text-xs font-bold px-2 py-0.5 rounded-full ${result.healthStatus === 'Saludable' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' : result.healthStatus === 'Enferma' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300' : 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300'}`}>
+                {result.healthStatus ?? '—'}
+              </div>
             </div>
           </div>
+          {/* Estado rico */}
           <div className="flex gap-2 mt-4 flex-wrap">
+            {result.hydration && (
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/5">
+                <span className="material-symbols-outlined text-blue-500" style={{ fontSize: '16px' }}>water_drop</span>
+                <span className="text-xs font-medium text-gray-700 dark:text-gray-200">Hidratación: {result.hydration}</span>
+              </div>
+            )}
+            {result.lightStatus && (
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/5">
+                <span className="material-symbols-outlined text-yellow-500" style={{ fontSize: '16px' }}>wb_sunny</span>
+                <span className="text-xs font-medium text-gray-700 dark:text-gray-200">Luz: {result.lightStatus}</span>
+              </div>
+            )}
+            {result.urgency && (
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/5">
+                <span className="material-symbols-outlined text-red-500" style={{ fontSize: '16px' }}>timer</span>
+                <span className="text-xs font-medium text-gray-700 dark:text-gray-200">Urgencia: {result.urgency}</span>
+              </div>
+            )}
             <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/5">
               <span className="material-symbols-outlined text-orange-500" style={{ fontSize: '16px' }}>vital_signs</span>
               <span className="text-xs font-medium text-gray-700 dark:text-gray-200">Impacto {result.severity === 'low' ? 'Bajo' : result.severity === 'moderate' ? 'Moderado' : 'Crítico'}</span>
@@ -202,6 +235,39 @@ const DiagnosisResult: React.FC = () => {
               <span className="material-symbols-outlined text-primary" style={{ fontSize: '16px' }}>coronavirus</span>
               <span className="text-xs font-medium text-gray-700 dark:text-gray-200">{result.isContagious ? 'Contagioso' : 'No contagioso'}</span>
             </div>
+          </div>
+
+          {/* Síntomas y plagas */}
+          {(result.symptoms?.length || result.pests?.length) ? (
+            <div className="mt-4 space-y-3">
+              {result.symptoms?.length ? (
+                <div>
+                  <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5">Síntomas observados</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {result.symptoms.map((s, i) => (
+                      <span key={i} className="text-xs px-2.5 py-1 rounded-full bg-gray-100 dark:bg-white/5 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-white/5">{s}</span>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+              {result.pests?.length ? (
+                <div>
+                  <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5">Plagas / enfermedades</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {result.pests.map((p, i) => (
+                      <span key={i} className="text-xs px-2.5 py-1 rounded-full bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 border border-red-100 dark:border-red-900/30">{p}</span>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+
+          {/* Problema principal */}
+          <div className="mt-4 pt-4 border-t border-gray-100 dark:border-white/5">
+            <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Problema detectado</p>
+            <p className="text-base font-bold text-gray-900 dark:text-white">{result.problemName}</p>
+            <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">{result.impact}</p>
           </div>
         </div>
       </div>
