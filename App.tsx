@@ -6,6 +6,7 @@ import CameraView from './screens/CameraView';
 import DiagnosisResult from './screens/DiagnosisResult';
 import PlantDetail from './screens/PlantDetail';
 import Settings from './screens/Settings';
+import PlantAssistant from './screens/PlantAssistant';
 
 const App: React.FC = () => {
   return (
@@ -17,6 +18,7 @@ const App: React.FC = () => {
           <Route path="/result" element={<DiagnosisResult />} />
           <Route path="/plant/:id" element={<PlantDetail />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/assistant" element={<PlantAssistant />} />
         </Routes>
       </div>
     </HashRouter>

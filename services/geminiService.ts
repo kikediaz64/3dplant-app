@@ -117,3 +117,50 @@ export const diagnosePlant = async (base64Image: string): Promise<DiagnosisResul
     clearTimeout(timeoutId);
   }
 };
+
+export const askPlantExpert = async (question: string, plantContext?: string): Promise<string> => {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 60000);
+
+  try {
+    const systemPrompt = `Eres un experto en jardinería y cuidado de plantas (botánico y fitopatólogo). Responde dudas sobre riego, abono, plagas, enfermedades y remedios caseros.
+
+Reglas obligatorias:
+- Sé veraz y basado en evidencia. Si un remedio viral (leche, vinagre, bicarbonato, etc.) es un mito o es peligroso, dilo claramente.
+- Da dosis exactas y seguras (ej. "jabón potásico 15-20 ml por litro").
+- Advierte de riesgos (toxicidad, quemaduras por sol, exceso de riego o abono).
+- Responde en español, claro y breve (máximo 3-4 párrafos o una lista).
+- Si no estás seguro de algo, dilo en lugar de inventar.`;
+
+    const context = plantContext ? `\n\nPlanta en cuestión: ${plantContext}` : '';
+    const fullPrompt = `${systemPrompt}${context}\n\nPregunta del usuario: ${question}`;
+
+    const res = await fetch(ENDPOINT, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-goog-api-key': API_KEY
+      },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: fullPrompt }] }]
+      }),
+      signal: controller.signal
+    });
+
+    if (!res.ok) {
+      const errText = await res.text();
+      throw new Error(`HTTP ${res.status}: ${errText.slice(0, 200)}`);
+    }
+
+    const data = await res.json();
+    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+    return text || 'No pude generar una respuesta. Inténtalo de nuevo.';
+  } catch (error) {
+    if (error instanceof Error && error.name === 'AbortError') {
+      throw new Error('La IA tardó demasiado. Inténtalo de nuevo.');
+    }
+    throw new Error(error instanceof Error ? error.message : 'Error desconocido');
+  } finally {
+    clearTimeout(timeoutId);
+  }
+};

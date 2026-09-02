@@ -55,8 +55,8 @@ const PlantDetail: React.FC = () => {
                     >
                         <span className="material-symbols-outlined">close</span>
                     </button>
-                    <button className="flex size-10 items-center justify-center rounded-full bg-white/20 backdrop-blur-md text-white hover:bg-white/30 transition-colors">
-                        <span className="material-symbols-outlined">more_vert</span>
+                    <button onClick={() => navigate('/assistant')} className="flex size-10 items-center justify-center rounded-full bg-white/20 backdrop-blur-md text-white hover:bg-white/30 transition-colors">
+                        <span className="material-symbols-outlined">support_agent</span>
                     </button>
                 </div>
 
@@ -170,8 +170,31 @@ const PlantDetail: React.FC = () => {
                         <h3 className="text-base font-bold text-gray-900 dark:text-white">Plagas e insecticidas</h3>
                     </div>
                     <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
-                        Revisa el envés de las hojas cada semana. Para pulgones y cochinillas usa jabón potásico o aceite de neem. Para mosca del sustrato, reduce el riego y coloca trampas amarillas. Aísla la planta enferma para evitar contagios.
+                        Revisa el envés de las hojas cada semana. Aísla la planta enferma para evitar contagios.
                     </p>
+                    <ul className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed mt-2 list-disc list-inside space-y-1">
+                        <li><strong>Jabón potásico:</strong> 15–20 ml por litro (tratamiento) o 10 ml/L (prevención). Pulverizar toda la planta cada 7 días.</li>
+                        <li><strong>Aceite de neem:</strong> 3–5 ml por litro + 2–3 gotas de jabón suave. Aplicar al atardecer, cada 7–14 días.</li>
+                        <li><strong>Mosca del sustrato:</strong> reduce el riego y coloca trampas amarillas.</li>
+                    </ul>
+                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">Prueba siempre en 1–2 hojas y espera 24 h antes de aplicar a toda la planta.</p>
+                </div>
+
+                {/* Remedios caseros */}
+                <div className="bg-gray-50 dark:bg-surface-dark rounded-xl p-4 mb-4">
+                    <div className="flex items-center gap-2 mb-2">
+                        <span className="text-xl">🏡</span>
+                        <h3 className="text-base font-bold text-gray-900 dark:text-white">Remedios caseros</h3>
+                    </div>
+                    <ul className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed list-disc list-inside space-y-1">
+                        <li><strong>Cáscara de huevo</strong> (triturada): aporta calcio. Mezclar con el sustrato.</li>
+                        <li><strong>Café</strong> (posos secos): aporta nitrógeno y acidifica un poco. Usar con moderación.</li>
+                        <li><strong>Bicarbonato</strong>: fungicida suave. 1 cucharadita por litro de agua, pulverizar.</li>
+                        <li><strong>Agua oxigenada</strong> (3%): oxigena raíces. 1 parte por 4 de agua al regar.</li>
+                        <li><strong>Vinagre</strong>: acidifica el agua. Solo MUY diluido (1 cucharada por 4 L) y con cuidado.</li>
+                        <li><strong>Leche</strong>: fungicida suave (1 parte por 9 de agua), pero puede favorecer hongos si se abusa.</li>
+                    </ul>
+                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">Muchos remedios virales son mitos o dañinos: úsalos con moderación y prueba primero en una hoja.</p>
                 </div>
 
                 {/* Diagnóstico (si existe) */}

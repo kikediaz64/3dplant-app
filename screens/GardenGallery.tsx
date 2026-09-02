@@ -124,6 +124,15 @@ const GardenGallery: React.FC = () => {
           </li>
         </ul>
       </nav>
+
+      {/* Botón asistente (flotante) */}
+      <button
+        onClick={() => navigate('/assistant')}
+        aria-label="Asistente"
+        className="fixed bottom-24 right-4 z-50 flex items-center justify-center size-14 rounded-full bg-primary text-black shadow-xl shadow-primary/30 active:scale-95 transition-all"
+      >
+        <span className="material-symbols-outlined text-[28px]">support_agent</span>
+      </button>
     </div>
   );
 };
