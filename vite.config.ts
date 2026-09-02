@@ -1,11 +1,8 @@
 import path from 'path';
-import { defineConfig, loadEnv } from 'vite';
+import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
-export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, '.', '');
-  // En local se lee de .env.local; en Netlify (build desde Git) se inyecta como variable de entorno.
-  const apiKey = env.GEMINI_API_KEY || process.env.GEMINI_API_KEY || '';
+export default defineConfig(() => {
   return {
     base: '/',
     server: {
@@ -18,10 +15,6 @@ export default defineConfig(({ mode }) => {
     },
     publicDir: 'public',
     plugins: [react()],
-    define: {
-      'process.env.API_KEY': JSON.stringify(apiKey),
-      'process.env.GEMINI_API_KEY': JSON.stringify(apiKey)
-    },
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),
