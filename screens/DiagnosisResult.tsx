@@ -81,6 +81,8 @@ const DiagnosisResult: React.FC = () => {
         isToxic: result.isToxic ?? false,
         needsWater: result.hydration === 'Sedienta' || result.actionPlan?.some(a => a.title?.toLowerCase().includes('agua')) || false,
         nextWatering: 'En 3 días',
+        wateringFrequencyDays: result.hydration === 'Sedienta' ? 2 : result.hydration === 'Encharcada' ? 5 : 3,
+        lastWateredAt: new Date().toISOString(),
         careDetails: {
           light: result.luz || 'Media',
           water: 'Media',

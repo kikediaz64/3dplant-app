@@ -25,6 +25,8 @@ export interface Plant {
     humidity: string;
   };
   nextWatering: string;
+  wateringFrequencyDays?: number;
+  lastWateredAt?: string;
   diagnosis?: PlantDiagnosis;
   zona?: ZonaTipo;
   luz?: LuzTipo;

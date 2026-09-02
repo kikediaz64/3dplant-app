@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PlantCard from '../components/PlantCard';
 import { MOCK_PLANTS } from '../constants';
-import { plantStorage } from '../services/plantStorage';
+import { plantStorage, getWateringStatus } from '../services/plantStorage';
 import { getDailyTip } from '../constants/dailyTips';
 
 interface FilterRowProps {
@@ -62,12 +62,18 @@ const GardenGallery: React.FC = () => {
   const filteredPlants = plants.filter(p => {
     if (filters.zona.length && !filters.zona.includes(p.zona || '')) return false;
     if (filters.luz.length && !filters.luz.includes(p.luz || '')) return false;
-    if (filters.riego && !p.needsWater) return false;
+    if (filters.riego && !getWateringStatus(p).needsWater) return false;
     if (filters.tipo.length && !filters.tipo.includes(p.tipo || '')) return false;
     return true;
   });
 
-  const waterNeededCount = plants.filter(p => p.needsWater).length;
+  const waterNeededCount = plants.filter(p => getWateringStatus(p).needsWater).length;
+
+  const handleWater = (id: string) => {
+    const now = new Date().toISOString();
+    plantStorage.updatePlant(id, { lastWateredAt: now });
+    setPlants(prev => prev.map(p => p.id === id ? { ...p, lastWateredAt: now } : p));
+  };
 
   return (
     <div className="relative flex h-full min-h-screen w-full flex-col overflow-x-hidden pb-24 bg-background-light dark:bg-background-dark">
@@ -130,7 +136,7 @@ const GardenGallery: React.FC = () => {
       {/* Gallery */}
       <div className="flex flex-col gap-6 px-5 py-2">
         {filteredPlants.map(plant => (
-          <PlantCard key={plant.id} plant={plant} />
+          <PlantCard key={plant.id} plant={plant} onWater={handleWater} />
         ))}
         {filteredPlants.length === 0 && (
           <p className="text-center text-sm text-text-sec-light dark:text-text-sec-dark py-8">No hay plantas con estos filtros.</p>

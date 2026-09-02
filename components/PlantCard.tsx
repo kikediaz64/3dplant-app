@@ -2,16 +2,21 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plant } from '../types';
+import { getWateringStatus } from '../services/plantStorage';
 
 interface PlantCardProps {
   plant: Plant;
+  onWater?: (id: string) => void;
 }
 
-const PlantCard: React.FC<PlantCardProps> = ({ plant }) => {
+const PlantCard: React.FC<PlantCardProps> = ({ plant, onWater }) => {
   const navigate = useNavigate();
+  const watering = getWateringStatus(plant);
+  const needsWater = watering.needsWater;
+  const nextWatering = watering.nextWatering;
 
   const getStatusBadge = () => {
-    if (plant.needsWater) {
+    if (needsWater) {
       return (
         <div className="absolute top-3 left-3 bg-yellow-400 text-black px-2.5 py-1 rounded-lg flex items-center gap-1.5 shadow-sm">
           <span className="material-symbols-outlined text-[14px]">water_drop</span>
@@ -80,17 +85,23 @@ const PlantCard: React.FC<PlantCardProps> = ({ plant }) => {
 
         <div className="flex items-center justify-between gap-3 pt-1">
           <div className="flex flex-col">
-            <span className="text-xs text-gray-500 dark:text-gray-400">{plant.needsWater ? '¡Necesita atención!' : 'Próximo riego'}</span>
-            <span className={`text-sm font-bold flex items-center gap-1 ${plant.needsWater ? 'text-yellow-600 dark:text-yellow-400' : 'text-text-main-light dark:text-text-main-dark'}`}>
+            <span className="text-xs text-gray-500 dark:text-gray-400">{needsWater ? '¡Necesita atención!' : 'Próximo riego'}</span>
+            <span className={`text-sm font-bold flex items-center gap-1 ${needsWater ? 'text-yellow-600 dark:text-yellow-400' : 'text-text-main-light dark:text-text-main-dark'}`}>
               <span className="material-symbols-outlined text-primary text-[16px]">schedule</span>
-              {plant.nextWatering}
+              {nextWatering}
             </span>
           </div>
           <button
-            onClick={() => navigate(`/plant/${plant.id}`)}
-            className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${plant.needsWater ? 'bg-primary text-black shadow-lg shadow-primary/20 hover:bg-[#0fd60f]' : 'bg-primary/10 text-green-800 dark:text-green-300 hover:bg-primary/20'}`}
+            onClick={() => {
+              if (needsWater && onWater) {
+                onWater(plant.id);
+              } else {
+                navigate(`/plant/${plant.id}`);
+              }
+            }}
+            className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${needsWater ? 'bg-primary text-black shadow-lg shadow-primary/20 hover:bg-[#0fd60f]' : 'bg-primary/10 text-green-800 dark:text-green-300 hover:bg-primary/20'}`}
           >
-            {plant.needsWater ? 'Regar Ahora' : 'Detalles'}
+            {needsWater ? 'Regar Ahora' : 'Detalles'}
           </button>
         </div>
       </div>

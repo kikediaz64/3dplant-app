@@ -1,7 +1,7 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { plantStorage } from '../services/plantStorage';
+import { plantStorage, getWateringStatus } from '../services/plantStorage';
 import { MOCK_PLANTS } from '../constants';
 
 const PlantDetail: React.FC = () => {
@@ -9,9 +9,11 @@ const PlantDetail: React.FC = () => {
     const { id } = useParams<{ id: string }>();
 
     // Find plant from saved plants or mock plants
-    const savedPlants = plantStorage.getSavedPlants();
-    const allPlants = [...savedPlants, ...MOCK_PLANTS];
-    const plant = allPlants.find(p => p.id === id);
+    const [plant, setPlant] = useState(() => {
+        const savedPlants = plantStorage.getSavedPlants();
+        const allPlants = [...savedPlants, ...MOCK_PLANTS];
+        return allPlants.find(p => p.id === id);
+    });
 
     if (!plant) {
         return (
@@ -25,6 +27,14 @@ const PlantDetail: React.FC = () => {
         health: 'Información no disponible',
         problems: [],
         recommendations: []
+    };
+
+    const watering = getWateringStatus(plant);
+
+    const handleWater = () => {
+        const now = new Date().toISOString();
+        plantStorage.updatePlant(plant.id, { lastWateredAt: now });
+        setPlant(prev => prev ? { ...prev, lastWateredAt: now } : prev);
     };
 
     return (
@@ -62,7 +72,7 @@ const PlantDetail: React.FC = () => {
                 <div className="text-center">
                     <span className="material-symbols-outlined text-blue-500 text-[28px]">water_drop</span>
                     <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-1">Agua</p>
-                    <p className="text-sm font-bold text-gray-900 dark:text-white">{plant.nextWatering}</p>
+                    <p className="text-sm font-bold text-gray-900 dark:text-white">{watering.nextWatering}</p>
                 </div>
                 <div className="text-center">
                     <span className="material-symbols-outlined text-orange-500 text-[28px]">thermostat</span>
@@ -195,11 +205,18 @@ const PlantDetail: React.FC = () => {
             <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-surface-dark border-t border-gray-200 dark:border-white/10 p-4 pb-6">
                 <div className="flex gap-3 max-w-lg mx-auto">
                     <button
-                        onClick={() => navigate('/')}
+                        onClick={handleWater}
                         className="flex-1 rounded-xl bg-primary hover:bg-green-400 text-black font-bold h-12 flex items-center justify-center gap-2 transition-colors active:scale-95 shadow-lg shadow-primary/20"
                     >
+                        <span className="material-symbols-outlined">water_drop</span>
+                        Regar ahora
+                    </button>
+                    <button
+                        onClick={() => navigate('/')}
+                        className="flex-1 rounded-xl bg-gray-200 dark:bg-white/10 hover:bg-gray-300 dark:hover:bg-white/20 text-gray-900 dark:text-white font-bold h-12 flex items-center justify-center gap-2 transition-colors active:scale-95"
+                    >
                         <span className="material-symbols-outlined">home</span>
-                        Volver al Jardín
+                        Volver
                     </button>
                 </div>
             </div>

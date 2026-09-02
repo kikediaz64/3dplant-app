@@ -6,6 +6,36 @@ export interface SavedPlant extends Plant {
     lastUpdated: string;
 }
 
+export interface WateringStatus {
+    needsWater: boolean;
+    nextWatering: string;
+}
+
+// Calcula el estado de riego según la frecuencia y el último riego.
+export function getWateringStatus(plant: Plant): WateringStatus {
+    const frequencyDays = plant.wateringFrequencyDays ?? 3;
+    const lastWateredAt = plant.lastWateredAt ? new Date(plant.lastWateredAt).getTime() : null;
+
+    // Plantas sin datos de ciclo (mock o antiguas): usar valores guardados.
+    if (!lastWateredAt) {
+        return {
+            needsWater: plant.needsWater,
+            nextWatering: plant.nextWatering || 'En 3 días',
+        };
+    }
+
+    const elapsedDays = (Date.now() - lastWateredAt) / (1000 * 60 * 60 * 24);
+    const daysLeft = frequencyDays - elapsedDays;
+
+    if (daysLeft <= 0) {
+        return { needsWater: true, nextWatering: 'Riego hoy' };
+    }
+    if (daysLeft < 1) {
+        return { needsWater: false, nextWatering: `En ${Math.ceil(daysLeft * 24)} h` };
+    }
+    return { needsWater: false, nextWatering: `En ${Math.ceil(daysLeft)} días` };
+}
+
 const STORAGE_KEY = 'savedPlants';
 
 export const plantStorage = {
