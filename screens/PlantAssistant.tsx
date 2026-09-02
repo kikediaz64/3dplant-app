@@ -1,7 +1,22 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { askPlantExpert } from '../services/geminiService';
+import { plantStorage } from '../services/plantStorage';
+import { MOCK_PLANTS } from '../constants';
+import { Plant } from '../types';
+
+function buildPlantContext(p: Plant): string {
+  const parts = [
+    `${p.name}${p.scientificName ? ` (${p.scientificName})` : ''}`,
+    p.tipo ? `tipo ${p.tipo}` : '',
+    p.luz ? `luz ${p.luz}` : `luz ${p.careDetails.light}`,
+    `riego ${p.careDetails.water}`,
+    p.zona ? `zona ${p.zona}` : '',
+    p.status === 'healthy' ? 'estado saludable' : p.status === 'sick' ? 'estado enferma' : 'estado con aviso'
+  ].filter(Boolean);
+  return parts.join(', ');
+}
 
 interface Message {
   role: 'user' | 'assistant';
@@ -10,6 +25,11 @@ interface Message {
 
 const PlantAssistant: React.FC = () => {
   const navigate = useNavigate();
+  const { plantId } = useParams<{ plantId?: string }>();
+  const contextPlant = plantId
+    ? [...plantStorage.getSavedPlants(), ...MOCK_PLANTS].find(p => p.id === plantId)
+    : undefined;
+  const plantContext = contextPlant ? buildPlantContext(contextPlant) : undefined;
   const [messages, setMessages] = useState<Message[]>([
     {
       role: 'assistant',
@@ -31,7 +51,7 @@ const PlantAssistant: React.FC = () => {
     setMessages(prev => [...prev, { role: 'user', text: q }]);
     setLoading(true);
     try {
-      const answer = await askPlantExpert(q);
+      const answer = await askPlantExpert(q, plantContext);
       setMessages(prev => [...prev, { role: 'assistant', text: answer }]);
     } catch (err) {
       setMessages(prev => [...prev, { role: 'assistant', text: `⚠️ Error: ${err instanceof Error ? err.message : 'Error desconocido'}` }]);
@@ -56,7 +76,7 @@ const PlantAssistant: React.FC = () => {
         </button>
         <div className="flex-1">
           <h1 className="text-lg font-bold text-text-main-light dark:text-text-main-dark">Asistente de plantas</h1>
-          <p className="text-xs text-text-sec-light dark:text-text-sec-dark">Pregúntame cualquier duda de cuidado</p>
+          <p className="text-xs text-text-sec-light dark:text-text-sec-dark">{contextPlant ? `Consulta sobre: ${contextPlant.name}` : 'Pregúntame cualquier duda de cuidado'}</p>
         </div>
       </header>
 

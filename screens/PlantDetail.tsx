@@ -55,7 +55,7 @@ const PlantDetail: React.FC = () => {
                     >
                         <span className="material-symbols-outlined">close</span>
                     </button>
-                    <button onClick={() => navigate('/assistant')} className="flex size-10 items-center justify-center rounded-full bg-white/20 backdrop-blur-md text-white hover:bg-white/30 transition-colors">
+                    <button onClick={() => navigate(`/assistant/${plant.id}`)} className="flex size-10 items-center justify-center rounded-full bg-white/20 backdrop-blur-md text-white hover:bg-white/30 transition-colors">
                         <span className="material-symbols-outlined">support_agent</span>
                     </button>
                 </div>

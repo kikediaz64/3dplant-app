@@ -18,7 +18,7 @@ const App: React.FC = () => {
           <Route path="/result" element={<DiagnosisResult />} />
           <Route path="/plant/:id" element={<PlantDetail />} />
           <Route path="/settings" element={<Settings />} />
-          <Route path="/assistant" element={<PlantAssistant />} />
+          <Route path="/assistant/:plantId?" element={<PlantAssistant />} />
         </Routes>
       </div>
     </HashRouter>
