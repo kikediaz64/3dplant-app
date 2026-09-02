@@ -6,42 +6,10 @@ import { MOCK_PLANTS } from '../constants';
 import { plantStorage, getWateringStatus } from '../services/plantStorage';
 import { getDailyTip } from '../constants/dailyTips';
 
-interface FilterRowProps {
-  label: string;
-  options: string[];
-  selected: string[];
-  onToggle: (value: string) => void;
-}
-
-const FilterRow: React.FC<FilterRowProps> = ({ label, options, selected, onToggle }) => (
-  <div className="flex items-start gap-3">
-    <span className="text-xs font-bold text-text-sec-light dark:text-text-sec-dark uppercase tracking-wide w-16 shrink-0 pt-2">{label}</span>
-    <div className="flex flex-wrap gap-2">
-      {options.map(opt => {
-        const active = selected.includes(opt);
-        return (
-          <button
-            key={opt}
-            onClick={() => onToggle(opt)}
-            className={`shrink-0 flex h-9 items-center justify-center px-4 rounded-full text-sm font-bold transition-transform active:scale-95 ${active ? 'bg-primary text-black shadow-sm shadow-primary/30' : 'bg-white dark:bg-card-dark border border-black/5 dark:border-white/10 text-text-main-light dark:text-text-main-dark font-medium'}`}
-          >
-            {opt}
-          </button>
-        );
-      })}
-    </div>
-  </div>
-);
-
 const GardenGallery: React.FC = () => {
   const navigate = useNavigate();
   const [plants, setPlants] = useState(MOCK_PLANTS);
-  const [filters, setFilters] = useState<{ zona: string[]; luz: string[]; riego: boolean; tipo: string[] }>({
-    zona: [],
-    luz: [],
-    riego: false,
-    tipo: []
-  });
+  const [filters, setFilters] = useState<{ riego: boolean }>({ riego: false });
 
   useEffect(() => {
     // Load saved plants and combine with mock plants
@@ -49,23 +17,9 @@ const GardenGallery: React.FC = () => {
     setPlants([...savedPlants, ...MOCK_PLANTS]);
   }, []);
 
-  const toggleFilter = (group: 'zona' | 'luz' | 'tipo', value: string) => {
-    setFilters(prev => {
-      const list = prev[group];
-      const next = list.includes(value) ? list.filter(v => v !== value) : [...list, value];
-      return { ...prev, [group]: next };
-    });
-  };
+  const clearFilters = () => setFilters({ riego: false });
 
-  const clearFilters = () => setFilters({ zona: [], luz: [], riego: false, tipo: [] });
-
-  const filteredPlants = plants.filter(p => {
-    if (filters.zona.length && !filters.zona.includes(p.zona || '')) return false;
-    if (filters.luz.length && !filters.luz.includes(p.luz || '')) return false;
-    if (filters.riego && !getWateringStatus(p).needsWater) return false;
-    if (filters.tipo.length && !filters.tipo.includes(p.tipo || '')) return false;
-    return true;
-  });
+  const filteredPlants = plants.filter(p => !filters.riego || getWateringStatus(p).needsWater);
 
   const waterNeededCount = plants.filter(p => getWateringStatus(p).needsWater).length;
 
@@ -111,25 +65,19 @@ const GardenGallery: React.FC = () => {
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-col gap-3 px-5 py-4">
-        <div className="flex items-center justify-between">
-          <span className="text-xs font-bold text-text-sec-light dark:text-text-sec-dark uppercase tracking-wide">Filtros</span>
-          <button onClick={clearFilters} className="text-xs font-bold text-primary">Limpiar</button>
-        </div>
-
-        <FilterRow label="Zona" options={['Interior', 'Exterior']} selected={filters.zona} onToggle={(v) => toggleFilter('zona', v)} />
-        <FilterRow label="Luz" options={['Sol pleno', 'Semisombra', 'Sombra']} selected={filters.luz} onToggle={(v) => toggleFilter('luz', v)} />
-        <FilterRow label="Tipo" options={['Aromática', 'Floral', 'Frutal', 'Vegetal', 'Ornamental']} selected={filters.tipo} onToggle={(v) => toggleFilter('tipo', v)} />
-
-        <div className="flex items-start gap-3">
-          <span className="text-xs font-bold text-text-sec-light dark:text-text-sec-dark uppercase tracking-wide w-16 shrink-0 pt-2">Riego</span>
+      {/* Filtro rápido: solo riego */}
+      <div className="flex items-center justify-between px-5 py-4">
+        <div className="flex items-center gap-2">
           <button
             onClick={() => setFilters(prev => ({ ...prev, riego: !prev.riego }))}
             className={`shrink-0 flex h-9 items-center justify-center px-4 rounded-full text-sm font-bold transition-transform active:scale-95 ${filters.riego ? 'bg-primary text-black shadow-sm shadow-primary/30' : 'bg-white dark:bg-card-dark border border-black/5 dark:border-white/10 text-text-main-light dark:text-text-main-dark font-medium'}`}
           >
+            <span className="material-symbols-outlined text-[18px] mr-1">water_drop</span>
             Necesita agua
           </button>
+          {filters.riego && (
+            <button onClick={clearFilters} className="text-xs font-bold text-primary">Limpiar</button>
+          )}
         </div>
       </div>
 

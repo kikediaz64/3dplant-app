@@ -40,7 +40,7 @@ const PlantDetail: React.FC = () => {
     return (
         <div className="relative flex h-screen w-full flex-col overflow-hidden bg-background-light dark:bg-background-dark">
             {/* Hero Image with Overlay */}
-            <div className="relative h-64 w-full">
+            <div className="relative h-40 w-full">
                 <div
                     className="absolute inset-0 bg-cover bg-center"
                     style={{ backgroundImage: `url('${plant.image}')` }}
@@ -62,27 +62,8 @@ const PlantDetail: React.FC = () => {
 
                 {/* Plant Name */}
                 <div className="absolute bottom-4 left-0 right-0 px-6 text-center">
-                    <h1 className="text-3xl font-bold text-white drop-shadow-lg">{plant.name}</h1>
+                    <h1 className="text-2xl font-bold text-white drop-shadow-lg">{plant.name}</h1>
                     <p className="text-sm text-white/90 mt-1">{plant.location}</p>
-                </div>
-            </div>
-
-            {/* Quick Stats */}
-            <div className="flex justify-around py-4 bg-white dark:bg-surface-dark border-b border-gray-200 dark:border-white/10">
-                <div className="text-center">
-                    <span className="material-symbols-outlined text-blue-500 text-[28px]">water_drop</span>
-                    <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-1">Agua</p>
-                    <p className="text-sm font-bold text-gray-900 dark:text-white">{watering.nextWatering}</p>
-                </div>
-                <div className="text-center">
-                    <span className="material-symbols-outlined text-orange-500 text-[28px]">thermostat</span>
-                    <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-1">Temperatura</p>
-                    <p className="text-sm font-bold text-gray-900 dark:text-white">{plant.careDetails.temp}</p>
-                </div>
-                <div className="text-center">
-                    <span className="material-symbols-outlined text-yellow-500 text-[28px]">wb_sunny</span>
-                    <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-1">Luz</p>
-                    <p className="text-sm font-bold text-gray-900 dark:text-white">{plant.careDetails.light}</p>
                 </div>
             </div>
 
@@ -110,6 +91,17 @@ const PlantDetail: React.FC = () => {
                     </p>
                 </div>
 
+                {/* Abono / Fertilización */}
+                <div className="bg-gray-50 dark:bg-surface-dark rounded-xl p-4 mb-4">
+                    <div className="flex items-center gap-2 mb-2">
+                        <span className="text-xl">🌿</span>
+                        <h3 className="text-base font-bold text-gray-900 dark:text-white">Abono / Fertilización</h3>
+                    </div>
+                    <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
+                        Aplica fertilizante líquido equilibrado cada 2-4 semanas durante primavera y verano. Usa abono orgánico (humus de lombriz o compost) para mejorar el suelo. Evita fertilizar en exceso: las puntas quemadas suelen indicar exceso de sales.
+                    </p>
+                </div>
+
                 {/* Cuidado estacional */}
                 <div className="bg-gray-50 dark:bg-surface-dark rounded-xl p-4 mb-4">
                     <div className="flex items-center gap-2 mb-2">
@@ -130,6 +122,7 @@ const PlantDetail: React.FC = () => {
                     </div>
                     <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
                         Frecuencia: {plant.careDetails.water}<br />
+                        Próximo riego: <strong>{watering.nextWatering}</strong><br />
                         Regar cuando los primeros 2-3 cm de tierra estén secos al tacto. Evitar el encharcamiento. El agua no debe acumularse en la base de la planta.
                     </p>
                 </div>
@@ -167,6 +160,17 @@ const PlantDetail: React.FC = () => {
                     <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
                         Nivel: {plant.careDetails.humidity}<br />
                         Beneficia de pulverizaciones regulares en ambientes secos. Considera usar un humidificador o bandeja con guijarros y agua.
+                    </p>
+                </div>
+
+                {/* Plagas e insecticidas */}
+                <div className="bg-gray-50 dark:bg-surface-dark rounded-xl p-4 mb-4">
+                    <div className="flex items-center gap-2 mb-2">
+                        <span className="text-xl">🐛</span>
+                        <h3 className="text-base font-bold text-gray-900 dark:text-white">Plagas e insecticidas</h3>
+                    </div>
+                    <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
+                        Revisa el envés de las hojas cada semana. Para pulgones y cochinillas usa jabón potásico o aceite de neem. Para mosca del sustrato, reduce el riego y coloca trampas amarillas. Aísla la planta enferma para evitar contagios.
                     </p>
                 </div>
 
