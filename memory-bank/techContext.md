@@ -3,7 +3,7 @@
 ## Stack
 - **Frontend**: React 19.2, TypeScript 5.8, Vite 6.2, React Router DOM 7.11 (HashRouter).
 - **Estilos**: Tailwind CSS (clases utilitarias; tema claro/oscuro con prefijos `dark:`).
-- **IA**: Google Gemini API REST (modelo `gemini-3.6-flash`).
+- **IA**: OpenAI API REST (modelo `gpt-4o-mini`).
 - **Backend**: Netlify Functions (serverless, Node, archivo `.mjs`).
 - **Hosting**: Netlify (sitio estático + funciones).
 
@@ -25,14 +25,13 @@
 - URL: `https://famous-churros-89c618.netlify.app`.
 
 ## Variables de entorno
-- `GEMINI_API_KEY` — configurada en Netlify (server-side). NO debe ir en el cliente.
+- `OPENAI_API_KEY` — configurada en Netlify (server-side). NO debe ir en el cliente.
 - `.env.local` — existe localmente con la clave (solo desarrollo local, está en `.gitignore`).
 - `.env.example` — plantilla.
 
 ## Limitaciones
-- Función Netlify: timeout de **25s** hacia Gemini.
+- Función Netlify: timeout de **25s** hacia OpenAI.
 - Cliente: timeout de **60s**.
-- La clave de AI Studio tiene **cuota limitada** (causa actual del error 429).
 - `dist/` es el build generado (no editar a mano).
 
 ## Notas de herramientas

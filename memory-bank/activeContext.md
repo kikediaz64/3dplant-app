@@ -10,16 +10,17 @@
 - **PWA**: quitado `screenshots` roto del `manifest.json`; botón "Instalar como app" en Ajustes (beforeinstallprompt) + instrucciones iOS/Android.
 - **Respaldo**: exportar/importar JSON en Ajustes (`plantStorage.importPlants`).
 - **Almacenamiento**: compresión de la foto a 512px antes de guardar (`compressForStorage` en DiagnosisResult); `capturedPlantImage` se limpia tras guardar; try/catch ante `QuotaExceededError`.
-- **Errores IA**: `gemini.mjs` devuelve mensaje claro ante HTTP 429 (cuota agotada).
+- **Errores IA**: `ai.mjs` devuelve mensaje claro ante HTTP 429 (cuota agotada).
+- **Cambio de proveedor IA**: de Google Gemini a OpenAI GPT-4o-mini (función `ai.mjs` reescrita; env var `OPENAI_API_KEY`).
 
 ## Próximos pasos
 1. Confirmar en el celular: instalar la app (Android: aviso de instalación; iOS: "Añadir a pantalla de inicio") y probar el respaldo exportar/importar.
-2. Resolver la cuota de Gemini definitivamente (subir límite en Google Cloud o usar clave con más cuota).
+2. Configurar `OPENAI_API_KEY` en Netlify y verificar el diagnóstico con GPT-4o-mini.
 3. (Opcional) Persistencia en la nube (cuenta de usuario + backend) para no depender del navegador.
 
 ## Decisiones activas y consideraciones
-- Modelo de IA: `gemini-3.6-flash` (probado y funcionando).
-- Se usa `fetch` directo a la API REST de Gemini (NO el SDK `@google/genai`, que causaba timeouts).
+- Modelo de IA: `gpt-4o-mini` (OpenAI).
+- Se usa `fetch` directo a la API REST de OpenAI (chat/completions), no un SDK.
 - Sitio Netlify: `https://famous-churros-89c618.netlify.app`.
 - Repo GitHub: `kikediaz64/3dplant-app` (rama `main`), auto-deploy activado.
 

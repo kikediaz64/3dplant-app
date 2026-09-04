@@ -1,7 +1,7 @@
 
 import { DiagnosisResult } from "../types";
 
-const FUNCTION_URL = '/.netlify/functions/gemini';
+const FUNCTION_URL = '/.netlify/functions/ai';
 
 function extractJson(text: string): string {
   let cleaned = (text || '').trim();
@@ -24,7 +24,7 @@ function normalizeSeverity(value: unknown): 'low' | 'moderate' | 'high' {
   return 'low';
 }
 
-async function callGemini(body: Record<string, unknown>): Promise<string> {
+async function callAI(body: Record<string, unknown>): Promise<string> {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 60000);
 
@@ -54,7 +54,7 @@ async function callGemini(body: Record<string, unknown>): Promise<string> {
 }
 
 export const diagnosePlant = async (base64Image: string): Promise<DiagnosisResult> => {
-  const text = await callGemini({ action: 'diagnose', imageBase64: base64Image });
+  const text = await callAI({ action: 'diagnose', imageBase64: base64Image });
   const parsed = JSON.parse(extractJson(text));
   return {
     ...parsed,
@@ -68,6 +68,6 @@ export const diagnosePlant = async (base64Image: string): Promise<DiagnosisResul
 };
 
 export const askPlantExpert = async (question: string, plantContext?: string): Promise<string> => {
-  const text = await callGemini({ action: 'ask', question, plantContext });
+  const text = await callAI({ action: 'ask', question, plantContext });
   return text || 'No pude generar una respuesta. Inténtalo de nuevo.';
 };

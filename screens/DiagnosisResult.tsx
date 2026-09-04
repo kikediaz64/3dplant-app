@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { diagnosePlant } from '../services/geminiService';
+import { diagnosePlant } from '../services/aiService';
 import { DiagnosisResult as IDiagnosisResult } from '../types';
 import { plantStorage } from '../services/plantStorage';
 

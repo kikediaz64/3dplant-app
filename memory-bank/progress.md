@@ -18,11 +18,11 @@
 - Verificar desde el celular: diagnóstico y chat funcionando tras resolver la cuota.
 
 ## Problemas conocidos
-- `429 "You exceeded your current quota"` → límite de la clave de AI Studio (no es bug de código). Ya se muestra un mensaje claro al usuario.
+- `429` → puede ser cuota/saldo agotado del proveedor de IA (ahora OpenAI). Ya se muestra un mensaje claro al usuario.
 - `localStorage` es frágil: los datos viven solo en el navegador actual (cambiar de navegador, modo incógnito o limpiar datos = perder las plantas). Mitigado con respaldo exportar/importar.
 - (Histórico) El SDK `@google/genai` causaba timeouts → se reemplazó por `fetch` directo.
 - (Histórico) Error `Expected property name or '}' in JSON` en POST → fue transitorio; el error definitivo es el 429 de cuota.
-- Modelo `gemini-3.6-flash`: verificar disponibilidad si Google lo cambia.
+- Modelo `gpt-4o-mini` (OpenAI): vigente y barato ($0.15/$0.60 por 1M tokens).
 
 ## Evolución de decisiones
 1. Diagnóstico inicial con `@google/genai` → daba timeout con imágenes.
@@ -31,6 +31,7 @@
 4. Migración a Netlify Function + env var → seguro, clave solo en servidor.
 5. Filtros (zona/luz/tipo) → simplificados a solo "necesita agua".
 6. Detalle de planta básico → ampliado con abono, plagas y remedios.
+7. Proveedor IA: Google Gemini → **OpenAI GPT-4o-mini** (por el cupo limitado del tier gratuito de AI Studio).
 
 ## Documentación pendiente
 - `docs/superpowers/plans/2026-02-09-fix-3dplant-bugs.md` está desactualizado (refleja filtros viejos). Considerar actualizarlo o reemplazarlo por este Memory Bank.

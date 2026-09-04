@@ -1,5 +1,6 @@
-const MODEL = 'gemini-3.6-flash';
-const ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
+// 3dPlant — Función serverless que conecta con la IA (OpenAI GPT-4o-mini).
+const MODEL = 'gpt-4o-mini';
+const ENDPOINT = 'https://api.openai.com/v1/chat/completions';
 
 const DIAGNOSE_PROMPT = `Eres un botánico y fitopatólogo experto. Analiza la imagen de la planta y devuelve ÚNICAMENTE un objeto JSON válido (sin markdown, sin texto adicional) con exactamente estas claves:
 
@@ -38,7 +39,7 @@ Reglas obligatorias:
 
 export default async (request) => {
   if (request.method === 'GET') {
-    return new Response(JSON.stringify({ ok: true, hasKey: !!process.env.GEMINI_API_KEY }), {
+    return new Response(JSON.stringify({ ok: true, hasKey: !!process.env.OPENAI_API_KEY }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' }
     });
@@ -48,9 +49,9 @@ export default async (request) => {
     return new Response('Method not allowed', { status: 405 });
   }
 
-  const API_KEY = process.env.GEMINI_API_KEY;
+  const API_KEY = process.env.OPENAI_API_KEY;
   if (!API_KEY) {
-    return new Response(JSON.stringify({ error: 'Clave de IA no configurada en el servidor' }), {
+    return new Response(JSON.stringify({ error: 'Clave de IA (OPENAI_API_KEY) no configurada en el servidor' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' }
     });
@@ -64,14 +65,33 @@ export default async (request) => {
     if (action === 'diagnose') {
       const base64 = (body.imageBase64 || '').split(',')[1] || body.imageBase64;
       payload = {
-        contents: [{ parts: [{ inline_data: { mime_type: 'image/jpeg', data: base64 } }, { text: DIAGNOSE_PROMPT }] }],
-        generationConfig: { responseMimeType: 'application/json' }
+        model: MODEL,
+        messages: [
+          {
+            role: 'user',
+            content: [
+              { type: 'text', text: DIAGNOSE_PROMPT },
+              { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${base64}` } }
+            ]
+          }
+        ],
+        response_format: { type: 'json_object' },
+        temperature: 0.2,
+        max_tokens: 2000
       };
     } else if (action === 'ask') {
       const { question, plantContext } = body;
-      const context = plantContext ? `\n\nPlanta en cuestión: ${plantContext}` : '';
+      const userMessage = plantContext
+        ? `Planta en cuestión: ${plantContext}\n\nPregunta del usuario: ${question}`
+        : `Pregunta del usuario: ${question}`;
       payload = {
-        contents: [{ parts: [{ text: `${ASK_SYSTEM_PROMPT}${context}\n\nPregunta del usuario: ${question}` }] }]
+        model: MODEL,
+        messages: [
+          { role: 'system', content: ASK_SYSTEM_PROMPT },
+          { role: 'user', content: userMessage }
+        ],
+        temperature: 0.4,
+        max_tokens: 1000
       };
     } else {
       return new Response(JSON.stringify({ error: 'Acción desconocida' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
@@ -83,7 +103,7 @@ export default async (request) => {
     try {
       res = await fetch(ENDPOINT, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': API_KEY },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${API_KEY}` },
         body: JSON.stringify(payload),
         signal: controller.signal
       });
@@ -92,15 +112,21 @@ export default async (request) => {
     }
 
     if (!res.ok) {
-      const errText = await res.text();
+      let errText = '';
+      try {
+        const errJson = await res.json();
+        errText = errJson?.error?.message || JSON.stringify(errJson).slice(0, 300);
+      } catch {
+        errText = await res.text().catch(() => '');
+      }
       if (res.status === 429) {
-        return new Response(JSON.stringify({ error: 'Has alcanzado el límite de análisis de hoy (cuota de IA agotada). Vuelve a intentarlo mañana o revisa la cuota de tu clave en Google AI Studio.' }), { status: 429, headers: { 'Content-Type': 'application/json' } });
+        return new Response(JSON.stringify({ error: 'Has alcanzado el límite de uso de OpenAI (cuota o saldo agotado). Revisa tu facturación o intenta más tarde.' }), { status: 429, headers: { 'Content-Type': 'application/json' } });
       }
       return new Response(JSON.stringify({ error: `HTTP ${res.status}: ${errText.slice(0, 200)}` }), { status: res.status, headers: { 'Content-Type': 'application/json' } });
     }
 
     const data = await res.json();
-    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+    const text = data?.choices?.[0]?.message?.content ?? '';
     return new Response(JSON.stringify({ text }), { status: 200, headers: { 'Content-Type': 'application/json' } });
   } catch (error) {
     return new Response(JSON.stringify({ error: error?.message || 'Error' }), { status: 500, headers: { 'Content-Type': 'application/json' } });

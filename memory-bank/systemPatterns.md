@@ -5,8 +5,8 @@ SPA (React 19 + Vite 6 + TypeScript) desplegada en Netlify como sitio estático,
 
 ### Flujo de diagnóstico
 1. `CameraView.tsx` captura la foto (el video siempre está montado; el stream se adjunta después del mount, evitando pantalla negra).
-2. `services/geminiService.ts` (`diagnosePlant`) envía `{ action: 'diagnose', imageBase64 }` a `/.netlify/functions/gemini`.
-3. `netlify/functions/gemini.mjs` lee `GEMINI_API_KEY` del entorno y llama a Gemini REST.
+2. `services/aiService.ts` (`diagnosePlant`) envía `{ action: 'diagnose', imageBase64 }` a `/.netlify/functions/ai`.
+3. `netlify/functions/ai.mjs` lee `OPENAI_API_KEY` del entorno y llama a OpenAI REST (GPT-4o-mini).
 4. La respuesta JSON se parsea en el cliente (`extractJson` limpia markdown) y se muestra en `DiagnosisResult.tsx`.
 
 ## Componentes y relaciones
@@ -18,20 +18,20 @@ SPA (React 19 + Vite 6 + TypeScript) desplegada en Netlify como sitio estático,
 - `screens/PlantAssistant.tsx` — chat con contexto de planta.
 - `components/PlantCard.tsx` — tarjeta de planta con estado de riego.
 - `services/plantStorage.ts` — persistencia en localStorage + cálculo de riego.
-- `services/geminiService.ts` — cliente IA (solo llama a la función; NO tiene la clave).
+- `services/aiService.ts` — cliente IA (solo llama a la función; NO tiene la clave).
 - `constants/dailyTips.ts` — tips diarios.
 - `types.ts` y `constants.tsx` — tipos y constantes globales.
 
 ## Decisiones técnicas clave
-- **Seguridad**: la clave de IA está solo en Netlify (`GEMINI_API_KEY`), nunca en el bundle del cliente.
-- **IA por fetch directo**: se descartó `@google/genai` por timeouts; se usa `fetch` a `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent` con header `x-goog-api-key`.
-- **Modo JSON**: en `diagnose` se pide `generationConfig.responseMimeType: 'application/json'`.
+- **Seguridad**: la clave de IA está solo en Netlify (`OPENAI_API_KEY`), nunca en el bundle del cliente.
+- **IA por fetch directo**: se usa `fetch` a `https://api.openai.com/v1/chat/completions` con header `Authorization: Bearer`.
+- **Modo JSON**: en `diagnose` se usa `response_format: { type: 'json_object' }`.
 - **Riego**: `getWateringStatus()` calcula con `wateringFrequencyDays` y `lastWateredAt`.
 - **Persistencia**: localStorage con clave `savedPlants`.
 - **HashRouter** (no BrowserRouter) para que las rutas funcionen en Netlify sin redirecciones especiales.
 - **Estructura sin `src/`**: componentes/screens/services/constants en la raíz del proyecto.
 
 ## Rutas de implementación críticas
-- `netlify/functions/gemini.mjs` — única conexión con la IA (seguridad + prompts + timeout).
-- `services/geminiService.ts` — contrato cliente ↔ función.
+- `netlify/functions/ai.mjs` — única conexión con la IA (seguridad + prompts + timeout).
+- `services/aiService.ts` — contrato cliente ↔ función.
 - `services/plantStorage.ts` — modelo de datos y lógica de riego.

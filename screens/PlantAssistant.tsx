@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { askPlantExpert } from '../services/geminiService';
+import { askPlantExpert } from '../services/aiService';
 import { plantStorage } from '../services/plantStorage';
 import { MOCK_PLANTS } from '../constants';
 import { Plant } from '../types';
