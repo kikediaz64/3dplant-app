@@ -5,6 +5,26 @@ import { diagnosePlant } from '../services/geminiService';
 import { DiagnosisResult as IDiagnosisResult } from '../types';
 import { plantStorage } from '../services/plantStorage';
 
+// Comprime la imagen a una miniatura para no llenar el almacenamiento del navegador.
+const compressForStorage = (dataUrl: string): Promise<string> => {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const MAX = 512;
+      const scale = Math.min(1, MAX / Math.max(img.width, img.height));
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.max(1, Math.round(img.width * scale));
+      canvas.height = Math.max(1, Math.round(img.height * scale));
+      const ctx = canvas.getContext('2d');
+      if (!ctx) { resolve(dataUrl); return; }
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      resolve(canvas.toDataURL('image/jpeg', 0.7));
+    };
+    img.onerror = () => resolve(dataUrl);
+    img.src = dataUrl;
+  });
+};
+
 const DiagnosisResult: React.FC = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
@@ -65,17 +85,20 @@ const DiagnosisResult: React.FC = () => {
     setCompletedActions(newActions);
   };
 
-  const handleSavePlant = () => {
+  const handleSavePlant = async () => {
     if (!result) return;
 
     try {
       const status: 'healthy' | 'warning' | 'sick' =
         result.healthStatus === 'Saludable' ? 'healthy' : result.healthStatus === 'Enferma' ? 'sick' : 'warning';
 
+      // Guarda una versión comprimida de la foto para no llenar el almacenamiento.
+      const compressedImage = await compressForStorage(image);
+
       const plantData = {
         name: result.speciesName || 'Planta desconocida',
         scientificName: result.scientificName || '',
-        image: image,
+        image: compressedImage,
         status,
         location: 'Mi Jardín',
         isToxic: result.isToxic ?? false,
@@ -101,6 +124,8 @@ const DiagnosisResult: React.FC = () => {
 
       console.log('Saving plant:', plantData);
       plantStorage.savePlant(plantData);
+      // Limpia la imagen temporal capturada para no acumular peso en el navegador.
+      localStorage.removeItem('capturedPlantImage');
       setSaved(true);
       setTimeout(() => {
         navigate('/');

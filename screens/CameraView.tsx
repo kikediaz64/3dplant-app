@@ -82,7 +82,12 @@ const CameraView: React.FC = () => {
       const dataUrl = resizeToDataUrl(img, img.naturalWidth, img.naturalHeight);
       URL.revokeObjectURL(objectUrl);
       if (dataUrl) {
-        localStorage.setItem('capturedPlantImage', dataUrl);
+        try {
+          localStorage.setItem('capturedPlantImage', dataUrl);
+        } catch (e) {
+          alert('No hay espacio suficiente para guardar la foto. Borra datos del navegador e intenta de nuevo.');
+          return;
+        }
         navigate('/result');
       } else {
         alert('Error al procesar la imagen. Intenta de nuevo.');
@@ -103,7 +108,12 @@ const CameraView: React.FC = () => {
     if (!video || !video.videoWidth) return;
     const dataUrl = resizeToDataUrl(video, video.videoWidth, video.videoHeight);
     if (!dataUrl) return;
-    localStorage.setItem('capturedPlantImage', dataUrl);
+    try {
+      localStorage.setItem('capturedPlantImage', dataUrl);
+    } catch (e) {
+      alert('No hay espacio suficiente para guardar la foto. Borra datos del navegador e intenta de nuevo.');
+      return;
+    }
     navigate('/result');
   };
 

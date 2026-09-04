@@ -1,21 +1,21 @@
 # Contexto Activo
 
-## Foco actual (2026-02-09 → 2026-02-10)
-- **Resolver el cupo de la API de Google**: el diagnóstico y el asistente devuelven error `429 "You exceeded your current quota"`. No es error de código; es límite de cuota de la clave.
-- El usuario tiene **Google AI Pro** (suscripción paga), pero la clave `AQ.Ab8...` es de **AI Studio** y tiene su propio cupo diario separado.
+## Foco actual (2026-04-09)
+- **Feedback del usuario tras probar la app en el móvil** (3 problemas):
+  1. La web no "se guarda" como app (hay que copiar el enlace cada vez). → Solucionado con botón "Instalar" + instrucciones iOS + fix del manifest (referencia rota a `screenshot-1.png`).
+  2. La segunda foto ya no diagnostica. → Causa: cuota de Gemini (429). Se añadió mensaje claro en el servidor.
+  3. Las plantas guardadas desaparecieron. → Causa: `localStorage` es local del navegador. Se añadió respaldo exportar/importar y compresión de fotos.
 
-## Cambios recientes (sesión 2026-02-09)
-- **Seguridad**: clave movida a Netlify Function (`netlify/functions/gemini.mjs`) + env var `GEMINI_API_KEY`. Se eliminó `define` de `vite.config.ts` y el SDK `@google/genai` dejó de usarse en el cliente.
-- **Asistente de plantas** (`screens/PlantAssistant.tsx`, ruta `/assistant/:plantId?`) con contexto de planta.
-- **Ciclos de riego** (campos `wateringFrequencyDays`, `lastWateredAt`, función `getWateringStatus()`, botones "Regar ahora").
-- **Filtros simplificados**: se quitaron Zona/Luz/Tipo; solo queda el chip "Necesita agua".
-- **Detalle de planta ampliado** (secciones abono, plagas/insecticidas con dosis, remedios caseros).
+## Cambios recientes (sesión 2026-04-09)
+- **PWA**: quitado `screenshots` roto del `manifest.json`; botón "Instalar como app" en Ajustes (beforeinstallprompt) + instrucciones iOS/Android.
+- **Respaldo**: exportar/importar JSON en Ajustes (`plantStorage.importPlants`).
+- **Almacenamiento**: compresión de la foto a 512px antes de guardar (`compressForStorage` en DiagnosisResult); `capturedPlantImage` se limpia tras guardar; try/catch ante `QuotaExceededError`.
+- **Errores IA**: `gemini.mjs` devuelve mensaje claro ante HTTP 429 (cuota agotada).
 
-## Próximos pasos (mañana)
-1. Revisar cuotas en `console.cloud.google.com` → "Generative Language API" → "Quotas & System Limits".
-2. Si es cuota por minuto: esperar y probar. Si es por día: subir el límite o esperar al reset.
-3. Probar desde el celular: diagnóstico (foto) y asistente (chat).
-4. (Opcional) Actualizar o retirar el plan viejo `docs/superpowers/plans/2026-02-09-fix-3dplant-bugs.md` (está desactualizado).
+## Próximos pasos
+1. Confirmar en el celular: instalar la app (Android: aviso de instalación; iOS: "Añadir a pantalla de inicio") y probar el respaldo exportar/importar.
+2. Resolver la cuota de Gemini definitivamente (subir límite en Google Cloud o usar clave con más cuota).
+3. (Opcional) Persistencia en la nube (cuenta de usuario + backend) para no depender del navegador.
 
 ## Decisiones activas y consideraciones
 - Modelo de IA: `gemini-3.6-flash` (probado y funcionando).

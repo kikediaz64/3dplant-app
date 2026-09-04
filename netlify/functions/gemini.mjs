@@ -93,6 +93,9 @@ export default async (request) => {
 
     if (!res.ok) {
       const errText = await res.text();
+      if (res.status === 429) {
+        return new Response(JSON.stringify({ error: 'Has alcanzado el límite de análisis de hoy (cuota de IA agotada). Vuelve a intentarlo mañana o revisa la cuota de tu clave en Google AI Studio.' }), { status: 429, headers: { 'Content-Type': 'application/json' } });
+      }
       return new Response(JSON.stringify({ error: `HTTP ${res.status}: ${errText.slice(0, 200)}` }), { status: res.status, headers: { 'Content-Type': 'application/json' } });
     }
 

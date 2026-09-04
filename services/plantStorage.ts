@@ -69,6 +69,9 @@ export const plantStorage = {
             return newPlant;
         } catch (error) {
             console.error('Error saving plant:', error);
+            if (error instanceof DOMException && (error.name === 'QuotaExceededError' || error.name === 'NS_ERROR_DOM_QUOTA_REACHED')) {
+                throw new Error('El almacenamiento está lleno. Borra algunas plantas o reduce el tamaño de las fotos.');
+            }
             throw error;
         }
     },
@@ -81,6 +84,22 @@ export const plantStorage = {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
         } catch (error) {
             console.error('Error deleting plant:', error);
+            throw error;
+        }
+    },
+
+    // Replace all saved plants with an imported backup.
+    importPlants(plants: SavedPlant[]): void {
+        try {
+            const cleaned: SavedPlant[] = plants.map((p, i) => ({
+                ...p,
+                id: p.id || `plant_${Date.now()}_${i}`,
+                scannedAt: p.scannedAt || new Date().toISOString(),
+                lastUpdated: p.lastUpdated || new Date().toISOString(),
+            }));
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(cleaned));
+        } catch (error) {
+            console.error('Error importing plants:', error);
             throw error;
         }
     },

@@ -9,13 +9,17 @@
 - Detalle de planta ampliado: abono/fertilización, plagas e insecticidas (con dosis), remedios caseros.
 - Asistente de plantas con contexto (ruta `/assistant/:plantId?`, botón en jardín y detalle).
 - Seguridad: clave de IA en el servidor (Netlify Function), fuera del bundle del cliente.
+- PWA instalable: manifest corregido + botón "Instalar" + instrucciones iOS/Android (Ajustes).
+- Respaldo de datos: exportar/importar JSON (Ajustes).
+- Compresión de fotos al guardar (512px) para no llenar el almacenamiento.
 
 ## Qué falta / en progreso ⏳
 - **Resolver cupo de Google (429)**: bloquea diagnóstico y asistente hasta que la clave tenga cuota o se suba el límite.
 - Verificar desde el celular: diagnóstico y chat funcionando tras resolver la cuota.
 
 ## Problemas conocidos
-- `429 "You exceeded your current quota"` → límite de la clave de AI Studio (no es bug de código).
+- `429 "You exceeded your current quota"` → límite de la clave de AI Studio (no es bug de código). Ya se muestra un mensaje claro al usuario.
+- `localStorage` es frágil: los datos viven solo en el navegador actual (cambiar de navegador, modo incógnito o limpiar datos = perder las plantas). Mitigado con respaldo exportar/importar.
 - (Histórico) El SDK `@google/genai` causaba timeouts → se reemplazó por `fetch` directo.
 - (Histórico) Error `Expected property name or '}' in JSON` en POST → fue transitorio; el error definitivo es el 429 de cuota.
 - Modelo `gemini-3.6-flash`: verificar disponibilidad si Google lo cambia.

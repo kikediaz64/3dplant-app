@@ -22,14 +22,6 @@
             "purpose": "any maskable"
         }
     ],
-    "screenshots": [
-        {
-            "src": "/screenshot-1.png",
-            "sizes": "1170x2532",
-            "type": "image/png",
-            "form_factor": "narrow"
-        }
-    ],
     "categories": [
         "utilities",
         "lifestyle",
