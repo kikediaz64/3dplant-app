@@ -10,7 +10,7 @@ interface BeforeInstallPromptEvent extends Event {
 const Settings: React.FC = () => {
   const navigate = useNavigate();
   const [cleared, setCleared] = useState(false);
-  const [info, setInfo] = useState(plantStorage.getStorageInfo());
+  const [info, setInfo] = useState(() => plantStorage.getStorageInfo());
   const [installed, setInstalled] = useState(false);
   const [canInstall, setCanInstall] = useState(false);
   const [backupMsg, setBackupMsg] = useState<string | null>(null);

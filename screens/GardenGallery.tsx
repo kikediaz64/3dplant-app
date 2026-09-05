@@ -94,33 +94,39 @@ const GardenGallery: React.FC = () => {
       {/* Bottom Navigation */}
       <nav className="fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-[#0c1a0c]/90 backdrop-blur-lg border-t border-black/5 dark:border-white/5 pb-5 pt-3 px-6 z-50">
         <ul className="flex justify-between items-end">
-          <li
-            onClick={() => navigate('/')}
-            className="flex-1 flex flex-col items-center justify-center gap-1 cursor-pointer group"
-          >
-            <div className="w-12 h-8 rounded-full flex items-center justify-center bg-primary/20 text-green-900 dark:text-green-300 transition-colors">
-              <span className="material-symbols-outlined text-[24px]">potted_plant</span>
-            </div>
-            <span className="text-[10px] font-bold text-green-900 dark:text-green-300">Mi Jardín</span>
+          <li className="flex-1">
+            <button
+              onClick={() => navigate('/')}
+              className="w-full flex flex-col items-center justify-center gap-1 group"
+            >
+              <div className="w-12 h-8 rounded-full flex items-center justify-center bg-primary/20 text-green-900 dark:text-green-300 transition-colors">
+                <span className="material-symbols-outlined text-[24px]">potted_plant</span>
+              </div>
+              <span className="text-[10px] font-bold text-green-900 dark:text-green-300">Mi Jardín</span>
+            </button>
           </li>
-          <li
-            onClick={() => navigate('/scan')}
-            className="flex-1 flex flex-col items-center justify-center gap-1 cursor-pointer group relative"
-          >
-            <div className="absolute -top-10 bg-primary text-black rounded-full h-16 w-16 flex items-center justify-center shadow-[0_8px_20px_rgba(19,236,19,0.4)] border-4 border-background-light dark:border-background-dark transform transition-transform hover:scale-110 active:scale-95 z-10">
-              <span className="material-symbols-outlined text-[32px]">center_focus_strong</span>
-            </div>
-            <div className="h-6"></div>
-            <span className="text-[10px] font-medium text-gray-400 dark:text-gray-500 mt-2">Escanear</span>
+          <li className="flex-1 relative">
+            <button
+              onClick={() => navigate('/scan')}
+              className="w-full flex flex-col items-center justify-center gap-1 group"
+            >
+              <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-primary text-black rounded-full h-16 w-16 flex items-center justify-center shadow-[0_8px_20px_rgba(19,236,19,0.4)] border-4 border-background-light dark:border-background-dark transform transition-transform hover:scale-110 active:scale-95 z-10">
+                <span className="material-symbols-outlined text-[32px]">center_focus_strong</span>
+              </div>
+              <div className="h-6"></div>
+              <span className="text-[10px] font-medium text-gray-400 dark:text-gray-500 mt-2">Escanear</span>
+            </button>
           </li>
-          <li
-            onClick={() => navigate('/settings')}
-            className="flex-1 flex flex-col items-center justify-center gap-1 cursor-pointer group"
-          >
-            <div className="w-12 h-8 rounded-full flex items-center justify-center text-gray-400 dark:text-gray-500 hover:text-green-800 dark:hover:text-green-300 transition-colors">
-              <span className="material-symbols-outlined text-[24px]">settings</span>
-            </div>
-            <span className="text-[10px] font-medium text-gray-400 dark:text-gray-500 group-hover:text-green-900 dark:group-hover:text-green-300">Ajustes</span>
+          <li className="flex-1">
+            <button
+              onClick={() => navigate('/settings')}
+              className="w-full flex flex-col items-center justify-center gap-1 group"
+            >
+              <div className="w-12 h-8 rounded-full flex items-center justify-center text-gray-400 dark:text-gray-500 hover:text-green-800 dark:hover:text-green-300 transition-colors">
+                <span className="material-symbols-outlined text-[24px]">settings</span>
+              </div>
+              <span className="text-[10px] font-medium text-gray-400 dark:text-gray-500 group-hover:text-green-900 dark:group-hover:text-green-300">Ajustes</span>
+            </button>
           </li>
         </ul>
       </nav>

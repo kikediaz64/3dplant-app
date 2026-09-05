@@ -109,6 +109,7 @@ const PlantAssistant: React.FC = () => {
         <div className="flex items-center gap-2">
           <input
             type="text"
+            aria-label="Escribe tu pregunta sobre el cuidado de la planta"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
