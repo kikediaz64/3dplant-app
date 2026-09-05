@@ -65,7 +65,7 @@ export interface DiagnosisResult {
   rootCauses: {
     title: string;
     description: string;
-    image: string;
+    image?: string;
   }[];
   zona?: ZonaTipo;
   luz?: LuzTipo;

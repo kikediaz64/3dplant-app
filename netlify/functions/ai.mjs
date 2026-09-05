@@ -24,7 +24,7 @@ const DIAGNOSE_PROMPT = `Eres un botánico y fitopatólogo experto. Analiza la i
 - "luz": string ("Sol pleno", "Semisombra" o "Sombra")
 - "tipo": string ("Aromática", "Floral", "Frutal", "Vegetal" u "Ornamental")
 - "actionPlan": array de objetos { "title": string, "description": string, "icon": string (nombre de icono Material Symbols) } con 3 a 5 acciones inmediatas
-- "rootCauses": array de objetos { "title": string, "description": string, "image": string (URL de imagen de ejemplo) } con 2 a 4 causas
+- "rootCauses": array de objetos { "title": string, "description": string } con 2 a 4 causas
 
 Responde todo en español.`;
 
@@ -71,13 +71,13 @@ export default async (request) => {
             role: 'user',
             content: [
               { type: 'text', text: DIAGNOSE_PROMPT },
-              { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${base64}` } }
+              { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${base64}`, detail: 'low' } }
             ]
           }
         ],
         response_format: { type: 'json_object' },
         temperature: 0.2,
-        max_tokens: 2000
+        max_tokens: 1200
       };
     } else if (action === 'ask') {
       const { question, plantContext } = body;
@@ -98,7 +98,7 @@ export default async (request) => {
     }
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 25000);
+    const timeoutId = setTimeout(() => controller.abort(), 24000);
     let res;
     try {
       res = await fetch(ENDPOINT, {
