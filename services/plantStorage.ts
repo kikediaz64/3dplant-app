@@ -37,6 +37,7 @@ export function getWateringStatus(plant: Plant): WateringStatus {
 }
 
 const STORAGE_KEY = 'savedPlants';
+const DISMISSED_MOCK_KEY = 'dismissedMockPlants';
 
 export const plantStorage = {
     // Get all saved plants from localStorage
@@ -84,6 +85,39 @@ export const plantStorage = {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
         } catch (error) {
             console.error('Error deleting plant:', error);
+            throw error;
+        }
+    },
+
+    // Plantas de ejemplo (mock): marcarlas como descartadas para ocultarlas del jardín.
+    getDismissedMockPlants(): string[] {
+        try {
+            const data = localStorage.getItem(DISMISSED_MOCK_KEY);
+            return data ? JSON.parse(data) : [];
+        } catch (error) {
+            console.error('Error loading dismissed mock plants:', error);
+            return [];
+        }
+    },
+
+    dismissMockPlant(id: string): void {
+        try {
+            const ids = this.getDismissedMockPlants();
+            if (!ids.includes(id)) {
+                ids.push(id);
+                localStorage.setItem(DISMISSED_MOCK_KEY, JSON.stringify(ids));
+            }
+        } catch (error) {
+            console.error('Error dismissing mock plant:', error);
+            throw error;
+        }
+    },
+
+    restoreMockPlants(): void {
+        try {
+            localStorage.removeItem(DISMISSED_MOCK_KEY);
+        } catch (error) {
+            console.error('Error restoring mock plants:', error);
             throw error;
         }
     },

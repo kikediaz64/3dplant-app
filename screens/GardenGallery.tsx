@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PlantCard from '../components/PlantCard';
-import { MOCK_PLANTS } from '../constants';
+import { MOCK_PLANTS, isMockPlant } from '../constants';
 import { plantStorage, getWateringStatus } from '../services/plantStorage';
 import { getDailyTip } from '../constants/dailyTips';
 
@@ -11,10 +11,27 @@ const GardenGallery: React.FC = () => {
   const [plants, setPlants] = useState(MOCK_PLANTS);
   const [filters, setFilters] = useState<{ riego: boolean }>({ riego: false });
 
+  // Fuerza un re-render periódico para que "Próximo riego" se actualice con el paso del tiempo.
+  const [, setTick] = useState(0);
+
   useEffect(() => {
-    // Load saved plants and combine with mock plants
+    // Load saved plants and combine with mock plants (excluyendo las descartadas).
     const savedPlants = plantStorage.getSavedPlants();
-    setPlants([...savedPlants, ...MOCK_PLANTS]);
+    const dismissed = plantStorage.getDismissedMockPlants();
+    const mocks = MOCK_PLANTS.filter(p => !dismissed.includes(p.id));
+    setPlants([...savedPlants, ...mocks]);
+  }, []);
+
+  useEffect(() => {
+    const refresh = () => setTick(t => t + 1);
+    const interval = setInterval(refresh, 60 * 1000);
+    document.addEventListener('visibilitychange', refresh);
+    window.addEventListener('focus', refresh);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', refresh);
+      window.removeEventListener('focus', refresh);
+    };
   }, []);
 
   const clearFilters = () => setFilters({ riego: false });
@@ -27,6 +44,15 @@ const GardenGallery: React.FC = () => {
     const now = new Date().toISOString();
     plantStorage.updatePlant(id, { lastWateredAt: now });
     setPlants(prev => prev.map(p => p.id === id ? { ...p, lastWateredAt: now } : p));
+  };
+
+  const handleDelete = (id: string) => {
+    if (isMockPlant(id)) {
+      plantStorage.dismissMockPlant(id);
+    } else {
+      plantStorage.deletePlant(id);
+    }
+    setPlants(prev => prev.filter(p => p.id !== id));
   };
 
   return (
@@ -84,7 +110,7 @@ const GardenGallery: React.FC = () => {
       {/* Gallery */}
       <div className="flex flex-col gap-6 px-5 py-2">
         {filteredPlants.map(plant => (
-          <PlantCard key={plant.id} plant={plant} onWater={handleWater} />
+          <PlantCard key={plant.id} plant={plant} onWater={handleWater} onDelete={handleDelete} />
         ))}
         {filteredPlants.length === 0 && (
           <p className="text-center text-sm text-text-sec-light dark:text-text-sec-dark py-8">No hay plantas con estos filtros.</p>

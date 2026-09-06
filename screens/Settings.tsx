@@ -61,6 +61,13 @@ const Settings: React.FC = () => {
     }
   };
 
+  const handleRestoreMocks = () => {
+    if (window.confirm('¿Restaurar las plantas de ejemplo en tu jardín?')) {
+      plantStorage.restoreMockPlants();
+      navigate('/');
+    }
+  };
+
   const handleExport = () => {
     const plants = plantStorage.getSavedPlants();
     if (plants.length === 0) {
@@ -164,6 +171,15 @@ const Settings: React.FC = () => {
           </div>
           {backupMsg && <p className="text-xs font-medium text-green-700 dark:text-green-300 mt-2">{backupMsg}</p>}
         </div>
+
+        {/* Restaurar plantas de ejemplo */}
+        <button
+          onClick={handleRestoreMocks}
+          className="w-full rounded-xl bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-700 dark:text-gray-200 font-bold h-12 flex items-center justify-center gap-2 active:scale-95 transition-all"
+        >
+          <span className="material-symbols-outlined">restore</span>
+          Restaurar plantas de ejemplo
+        </button>
 
         {/* Borrar */}
         <button

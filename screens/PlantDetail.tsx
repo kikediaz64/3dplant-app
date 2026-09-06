@@ -1,8 +1,8 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { plantStorage, getWateringStatus } from '../services/plantStorage';
-import { MOCK_PLANTS } from '../constants';
+import { MOCK_PLANTS, isMockPlant } from '../constants';
 
 const PlantDetail: React.FC = () => {
     const navigate = useNavigate();
@@ -14,6 +14,21 @@ const PlantDetail: React.FC = () => {
         const allPlants = [...savedPlants, ...MOCK_PLANTS];
         return allPlants.find(p => p.id === id);
     });
+
+    // Fuerza un re-render periódico para que "Próximo riego" se actualice con el tiempo.
+    const [, setTick] = useState(0);
+
+    useEffect(() => {
+        const refresh = () => setTick(t => t + 1);
+        const interval = setInterval(refresh, 60 * 1000);
+        document.addEventListener('visibilitychange', refresh);
+        window.addEventListener('focus', refresh);
+        return () => {
+            clearInterval(interval);
+            document.removeEventListener('visibilitychange', refresh);
+            window.removeEventListener('focus', refresh);
+        };
+    }, []);
 
     if (!plant) {
         return (
@@ -37,6 +52,16 @@ const PlantDetail: React.FC = () => {
         setPlant(prev => prev ? { ...prev, lastWateredAt: now } : prev);
     };
 
+    const handleDelete = () => {
+        if (!window.confirm(`¿Eliminar ${plant.name} de tu jardín?`)) return;
+        if (isMockPlant(plant.id)) {
+            plantStorage.dismissMockPlant(plant.id);
+        } else {
+            plantStorage.deletePlant(plant.id);
+        }
+        navigate('/');
+    };
+
     return (
         <div className="relative flex h-screen w-full flex-col overflow-hidden bg-background-light dark:bg-background-dark">
             {/* Hero Image with Overlay */}
@@ -55,9 +80,18 @@ const PlantDetail: React.FC = () => {
                     >
                         <span className="material-symbols-outlined">close</span>
                     </button>
-                    <button onClick={() => navigate(`/assistant/${plant.id}`)} className="flex size-10 items-center justify-center rounded-full bg-white/20 backdrop-blur-md text-white hover:bg-white/30 transition-colors">
-                        <span className="material-symbols-outlined">support_agent</span>
-                    </button>
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={handleDelete}
+                            aria-label="Eliminar planta"
+                            className="flex size-10 items-center justify-center rounded-full bg-white/20 backdrop-blur-md text-white hover:bg-red-600/80 transition-colors"
+                        >
+                            <span className="material-symbols-outlined">delete</span>
+                        </button>
+                        <button onClick={() => navigate(`/assistant/${plant.id}`)} className="flex size-10 items-center justify-center rounded-full bg-white/20 backdrop-blur-md text-white hover:bg-white/30 transition-colors">
+                            <span className="material-symbols-outlined">support_agent</span>
+                        </button>
+                    </div>
                 </div>
 
                 {/* Plant Name */}

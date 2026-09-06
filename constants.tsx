@@ -1,6 +1,9 @@
 
 import { Plant } from './types';
 
+const now = Date.now();
+const daysAgo = (n: number) => new Date(now - n * 24 * 60 * 60 * 1000).toISOString();
+
 export const MOCK_PLANTS: Plant[] = [
   {
     id: '1',
@@ -18,6 +21,8 @@ export const MOCK_PLANTS: Plant[] = [
       humidity: 'Alta'
     },
     nextWatering: 'En 4 días',
+    wateringFrequencyDays: 4,
+    lastWateredAt: daysAgo(0),
     zona: 'Interior',
     luz: 'Semisombra',
     tipo: 'Ornamental'
@@ -38,6 +43,8 @@ export const MOCK_PLANTS: Plant[] = [
       humidity: 'Baja'
     },
     nextWatering: 'Riego hoy',
+    wateringFrequencyDays: 7,
+    lastWateredAt: daysAgo(7),
     zona: 'Interior',
     luz: 'Sombra',
     tipo: 'Ornamental'
@@ -58,8 +65,13 @@ export const MOCK_PLANTS: Plant[] = [
       humidity: 'Media'
     },
     nextWatering: 'En 6 días',
+    wateringFrequencyDays: 7,
+    lastWateredAt: daysAgo(1),
     zona: 'Interior',
     luz: 'Sol pleno',
     tipo: 'Ornamental'
   }
 ];
+
+// Indica si una planta es de las de ejemplo (no guardada por el usuario).
+export const isMockPlant = (id: string): boolean => MOCK_PLANTS.some(p => p.id === id);

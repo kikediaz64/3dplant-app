@@ -7,9 +7,10 @@ import { getWateringStatus } from '../services/plantStorage';
 interface PlantCardProps {
   plant: Plant;
   onWater?: (id: string) => void;
+  onDelete?: (id: string) => void;
 }
 
-const PlantCard: React.FC<PlantCardProps> = ({ plant, onWater }) => {
+const PlantCard: React.FC<PlantCardProps> = ({ plant, onWater, onDelete }) => {
   const navigate = useNavigate();
   const watering = getWateringStatus(plant);
   const needsWater = watering.needsWater;
@@ -43,6 +44,15 @@ const PlantCard: React.FC<PlantCardProps> = ({ plant, onWater }) => {
           style={{ backgroundImage: `url('${plant.image}')` }}
         ></div>
         {getStatusBadge()}
+        {onDelete && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onDelete(plant.id); }}
+            aria-label="Eliminar planta"
+            className="absolute top-3 right-3 size-8 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center text-white hover:bg-red-600/80 active:scale-95 transition-colors"
+          >
+            <span className="material-symbols-outlined text-[16px]">delete</span>
+          </button>
+        )}
       </div>
       <div className="p-5 flex flex-col gap-4">
         <div className="flex justify-between items-start">
