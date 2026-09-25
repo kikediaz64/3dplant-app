@@ -1,7 +1,7 @@
 
 import { DiagnosisResult } from "../types";
 
-const FUNCTION_URL = '/.netlify/functions/ai';
+const FUNCTION_URL = '/api/ai';
 
 function extractJson(text: string): string {
   let cleaned = (text || '').trim();

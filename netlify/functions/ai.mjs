@@ -2,6 +2,14 @@
 const MODEL = 'gpt-4o-mini';
 const ENDPOINT = 'https://api.openai.com/v1/chat/completions';
 
+// Topes de tamaño para que nadie dispare el gasto de tokens con payloads enormes.
+const MAX_IMAGE_BASE64_CHARS = 1_500_000; // ~1,1 MB reales; la app envía 150-500 KB
+const MAX_QUESTION_CHARS = 500;
+const MAX_CONTEXT_CHARS = 1000;
+
+const json = (data, status = 200) =>
+  new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } });
+
 const DIAGNOSE_PROMPT = `Eres un botánico y fitopatólogo experto. Analiza la imagen de la planta y devuelve ÚNICAMENTE un objeto JSON válido (sin markdown, sin texto adicional) con exactamente estas claves:
 
 - "speciesName": string (nombre común de la planta)
@@ -39,10 +47,7 @@ Reglas obligatorias:
 
 export default async (request) => {
   if (request.method === 'GET') {
-    return new Response(JSON.stringify({ ok: true, hasKey: !!process.env.OPENAI_API_KEY }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' }
-    });
+    return json({ ok: true });
   }
 
   if (request.method !== 'POST') {
@@ -63,7 +68,11 @@ export default async (request) => {
 
     let payload;
     if (action === 'diagnose') {
-      const base64 = (body.imageBase64 || '').split(',')[1] || body.imageBase64;
+      const rawImage = typeof body.imageBase64 === 'string' ? body.imageBase64 : '';
+      if (rawImage.length > MAX_IMAGE_BASE64_CHARS) {
+        return json({ error: 'La imagen es demasiado grande. Haz otra foto e inténtalo de nuevo.' }, 413);
+      }
+      const base64 = rawImage.split(',')[1] || rawImage;
       payload = {
         model: MODEL,
         messages: [
@@ -80,7 +89,17 @@ export default async (request) => {
         max_tokens: 1200
       };
     } else if (action === 'ask') {
-      const { question, plantContext } = body;
+      const { question } = body;
+      const plantContext = body.plantContext ?? '';
+      if (typeof question !== 'string' || typeof plantContext !== 'string' || question.trim() === '') {
+        return json({ error: 'Petición no válida.' }, 400);
+      }
+      if (question.length > MAX_QUESTION_CHARS) {
+        return json({ error: `La pregunta es demasiado larga (máximo ${MAX_QUESTION_CHARS} caracteres).` }, 413);
+      }
+      if (plantContext.length > MAX_CONTEXT_CHARS) {
+        return json({ error: `El contexto es demasiado largo (máximo ${MAX_CONTEXT_CHARS} caracteres).` }, 413);
+      }
       const userMessage = plantContext
         ? `Planta en cuestión: ${plantContext}\n\nPregunta del usuario: ${question}`
         : `Pregunta del usuario: ${question}`;
@@ -130,5 +149,15 @@ export default async (request) => {
     return new Response(JSON.stringify({ text }), { status: 200, headers: { 'Content-Type': 'application/json' } });
   } catch (error) {
     return new Response(JSON.stringify({ error: error?.message || 'Error' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+  }
+};
+
+// Rate limiting nativo de Netlify: 5 peticiones por minuto y por IP (respuesta 429 al pasarse).
+export const config = {
+  path: '/api/ai',
+  rateLimit: {
+    windowLimit: 5,
+    windowSize: 60,
+    aggregateBy: ['ip', 'domain']
   }
 };
