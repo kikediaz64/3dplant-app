@@ -10,19 +10,33 @@
   - Topes: imagen 1,5 MB (base64), pregunta 500 caracteres, contexto 1.000 (413 si se pasan).
   - 400 si la pregunta no es texto, está vacía o solo espacios. GET ya no devuelve hasKey.
 - Recuadro falso "Área Afectada" eliminado del resultado del diagnóstico.
+- Mensajes amables para el 429 (commit 54c00da, publicado y verificado en producción):
+  - Rate limit de Netlify (429 con cuerpo vacío): "Has hecho varias consultas muy seguidas. Espera un
+    minuto y vuelve a intentarlo."
+  - Cuota/saldo de OpenAI agotado (429 con JSON): "El servicio de diagnóstico no está disponible en este
+    momento. Inténtalo más tarde." El detalle técnico va solo a la consola.
+  - Se muestran sin prefijo en el diagnóstico y en el chat (clase AIUserError en aiService.ts).
 
 ## Qué está roto o sin verificar
 - Sin verificar: diagnóstico REAL desde el móvil con la ruta nueva /api/ai (solo se probó con
-  peticiones de acción inválida, sin gastar OpenAI).
-- El 429 llega al usuario sin mensaje amable (la respuesta va vacía; el cliente muestra "HTTP 429").
+  peticiones de acción inválida y GET, sin gastar OpenAI).
+- Sin verificar: ver el mensaje amable del 429 EN PANTALLA en producción (verificado en local con
+  respuestas simuladas; en producción se confirmó el JS publicado y que el 429 real llega vacío).
+  El caso de cuota de OpenAI agotada solo está probado con simulación.
+- En la pantalla de error del diagnóstico, el botón sigue siendo "Tomar otra foto" (no hay "Reintentar"
+  con la foto ya guardada); con un 429 pide una foto nueva cuando toca esperar.
 - Botones inferiores del resultado ("Guardar", "Volver") quedan fuera de la columna en escritorio.
-- React Doctor: 7 avisos en DiagnosisResult.tsx (componente gigante, complejidad, valor estático en
-  cada render línea 37, índice de array como key en líneas 269/279/304/328). Puntuación 67-69/100.
+- React Doctor: 8 avisos, puntuación 68/100 (componente gigante y complejidad en DiagnosisResult.tsx,
+  valor estático en cada render línea 37, índice de array como key en DiagnosisResult.tsx
+  273/283/308/332 y PlantAssistant.tsx:89).
 
 ## Siguiente paso
-1. Kike: un diagnóstico real desde el móvil para cerrar la verificación de extremo a extremo.
-2. Prioridad 2: mensaje amable del 429, botones inferiores en escritorio, avisos de React Doctor.
+1. Kike: un diagnóstico real desde el móvil para cerrar la verificación de extremo a extremo (esperar
+   1-2 min desde la última ráfaga de pruebas: el límite es por IP, 3/min).
+2. Prioridad 2, lo que queda: botones inferiores en escritorio, avisos de React Doctor, y decidir si se
+   añade un botón "Reintentar" en la pantalla de error.
 3. Recomendado (lo hace Kike en OpenAI): límite mensual de gasto en Billing → Limits.
 
-## Commits de esta sesión (Prioridad 1)
-569e35b rate limiting + validación · 2a09e6e límite a 3/min · 9604b48 quita recuadro falso
+## Commits de esta sesión
+Prioridad 1: 569e35b rate limiting + validación · 2a09e6e límite a 3/min · 9604b48 quita recuadro falso
+Prioridad 2, punto 1: 54c00da mensaje amable del 429 (publicado en producción)
