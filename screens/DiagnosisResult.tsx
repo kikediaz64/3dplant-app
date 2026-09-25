@@ -198,12 +198,6 @@ const DiagnosisResult: React.FC = () => {
       <div className="relative w-full aspect-[4/3] bg-gray-200 dark:bg-gray-800">
         <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url('${image}')` }}></div>
         <div className="absolute inset-0 bg-gradient-to-t from-background-dark via-transparent to-transparent opacity-90"></div>
-        {/* Mock Area Highlight as per PDF request */}
-        <div className="absolute top-1/4 left-1/4 w-1/2 h-1/2 border-2 border-primary rounded-xl shadow-[0_0_15px_rgba(19,236,19,0.5)] flex items-end justify-center pb-2">
-          <div className="bg-primary text-black text-[10px] font-bold px-2 py-0.5 rounded-md mb-[-10px] shadow-sm uppercase tracking-wider">
-            Área Afectada
-          </div>
-        </div>
       </div>
 
       {/* Summary Card */}
