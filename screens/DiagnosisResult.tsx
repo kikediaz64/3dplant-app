@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { diagnosePlant } from '../services/aiService';
+import { diagnosePlant, AIUserError } from '../services/aiService';
 import { DiagnosisResult as IDiagnosisResult } from '../types';
 import { plantStorage } from '../services/plantStorage';
 
@@ -74,7 +74,11 @@ const DiagnosisResult: React.FC = () => {
       setLoading(false);
     } catch (error) {
       console.error('Diagnosis error:', error);
-      setError(`Error al analizar la planta: ${error instanceof Error ? error.message : 'Error desconocido'}. Por favor, intenta de nuevo.`);
+      setError(
+        error instanceof AIUserError
+          ? error.message
+          : `Error al analizar la planta: ${error instanceof Error ? error.message : 'Error desconocido'}. Por favor, intenta de nuevo.`
+      );
       setLoading(false);
     }
   };

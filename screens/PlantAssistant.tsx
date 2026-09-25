@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { askPlantExpert } from '../services/aiService';
+import { askPlantExpert, AIUserError } from '../services/aiService';
 import { plantStorage } from '../services/plantStorage';
 import { MOCK_PLANTS } from '../constants';
 import { Plant } from '../types';
@@ -54,7 +54,10 @@ const PlantAssistant: React.FC = () => {
       const answer = await askPlantExpert(q, plantContext);
       setMessages(prev => [...prev, { role: 'assistant', text: answer }]);
     } catch (err) {
-      setMessages(prev => [...prev, { role: 'assistant', text: `⚠️ Error: ${err instanceof Error ? err.message : 'Error desconocido'}` }]);
+      const text = err instanceof AIUserError
+        ? `⚠️ ${err.message}`
+        : `⚠️ Error: ${err instanceof Error ? err.message : 'Error desconocido'}`;
+      setMessages(prev => [...prev, { role: 'assistant', text }]);
     } finally {
       setLoading(false);
     }

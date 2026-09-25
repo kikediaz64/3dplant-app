@@ -3,6 +3,12 @@ import { DiagnosisResult } from "../types";
 
 const FUNCTION_URL = '/api/ai';
 
+// Error con un mensaje ya listo para enseñar al usuario tal cual (sin prefijos técnicos).
+export class AIUserError extends Error {}
+
+const RATE_LIMIT_MESSAGE = 'Has hecho varias consultas muy seguidas. Espera un minuto y vuelve a intentarlo.';
+const UNAVAILABLE_MESSAGE = 'El servicio de diagnóstico no está disponible en este momento. Inténtalo más tarde.';
+
 function extractJson(text: string): string {
   let cleaned = (text || '').trim();
   cleaned = cleaned
@@ -37,13 +43,23 @@ async function callAI(body: Record<string, unknown>): Promise<string> {
     });
 
     if (!res.ok) {
-      const err = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
-      throw new Error(err.error || `HTTP ${res.status}`);
+      const err = await res.json().catch(() => null);
+      if (res.status === 429) {
+        // Con cuerpo JSON: el 429 lo generó ai.mjs por cuota/saldo de OpenAI (detalle solo a consola).
+        // Sin cuerpo: es el rate limit de Netlify (demasiadas consultas seguidas).
+        if (err?.error) {
+          console.error('IA no disponible (cuota o saldo de OpenAI):', err.error);
+          throw new AIUserError(UNAVAILABLE_MESSAGE);
+        }
+        throw new AIUserError(RATE_LIMIT_MESSAGE);
+      }
+      throw new Error(err?.error || `HTTP ${res.status}`);
     }
 
     const data = await res.json();
     return data.text ?? '';
   } catch (error) {
+    if (error instanceof AIUserError) throw error;
     if (error instanceof Error && error.name === 'AbortError') {
       throw new Error('La IA tardó demasiado. Inténtalo de nuevo.');
     }
