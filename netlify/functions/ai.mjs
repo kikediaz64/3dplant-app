@@ -152,11 +152,12 @@ export default async (request) => {
   }
 };
 
-// Rate limiting nativo de Netlify: 5 peticiones por minuto y por IP (respuesta 429 al pasarse).
+// Rate limiting nativo de Netlify: 3 peticiones por minuto y por IP (respuesta 429 al pasarse).
+// Netlify tarda hasta 10 s en empezar a bloquear, así que en ráfaga se cuelan algunas más.
 export const config = {
   path: '/api/ai',
   rateLimit: {
-    windowLimit: 5,
+    windowLimit: 3,
     windowSize: 60,
     aggregateBy: ['ip', 'domain']
   }
