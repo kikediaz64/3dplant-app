@@ -11,15 +11,15 @@
 - **Eliminar plantas:** papelera en `PlantCard` y `PlantDetail`; mock plants descartables (localStorage `dismissedMockPlants`) y restaurables desde Ajustes.
 - **Commit:** `f067de7` pusheado a `origin/main`.
 
-## ⚠️ Bloqueo de despliegue
-- Netlify con créditos agotados → deploys pausados. El commit `f067de7` está "Skipped". El usuario añadió créditos; falta disparar el deploy manualmente y verificar "Published".
+## Despliegue
+- Resuelto (2026-09-25): Netlify vuelve a publicar tras cada push (créditos repuestos). El commit `f067de7` quedó superado por los posteriores, ya publicados.
 
 ## Próximos pasos
-1. Disparar deploy en Netlify y verificar que la URL sirve el bundle nuevo (`index-C7ghK_Yf.js`).
-2. Confirmar en el móvil: papelera + botón "Restaurar plantas de ejemplo".
-3. (Opcional) Evaluar migración a Cloudflare Pages si Netlify vuelve a bloquear.
+1. Confirmar en el móvil: papelera + botón "Restaurar plantas de ejemplo".
+2. (Opcional) Evaluar migración a Cloudflare Pages si Netlify vuelve a bloquear por créditos.
+3. Pendientes actuales: ver `ESTADO.md`.
 
 ## Decisiones activas y consideraciones
-- Modelo de IA: `gpt-4o-mini` (OpenAI), vía función serverless `/.netlify/functions/ai`.
+- Modelo de IA: `gpt-4o-mini` (OpenAI), vía función serverless `/api/ai`.
 - Sitio Netlify: `https://famous-churros-89c618.netlify.app`.
-- Repo GitHub: `kikediaz64/3dplant-app` (rama `main`), auto-deploy activado (sujeto a créditos).
+- Repo GitHub: `kikediaz64/3dplant-app` (rama `main`), auto-deploy activado.

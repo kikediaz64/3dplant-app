@@ -16,10 +16,10 @@
 - Compresión de fotos al guardar (512px) para no llenar el almacenamiento.
 
 ## Qué falta / en progreso ⏳
-- **Desplegar la versión nueva en Netlify:** créditos agotados pausaron los deploys; el usuario añadió créditos pero falta disparar el deploy manualmente y confirmar "Published".
+- Nada bloqueante. El deploy de Netlify está activo desde 2026-09-25. Pendientes actuales: ver `ESTADO.md`.
 
 ## Problemas conocidos
-- **Netlify credit-based:** cuando se agotan los créditos, los deploys se pausan y no se relanzan solos (hay que "Trigger deploy").
+- **Netlify credit-based (riesgo, no bloqueo actual):** si se agotan los créditos, los deploys se pausan y no se relanzan solos (hay que "Trigger deploy"). Ocurrió y se resolvió el 2026-09-25.
 - `localStorage` es frágil: los datos viven solo en el navegador actual. Mitigado con respaldo exportar/importar.
 - Modelo `gpt-4o-mini` (OpenAI): de pago por uso; requiere saldo/crédito.
 - (Histórico) `429` de Gemini por cuota → se migró a OpenAI.
