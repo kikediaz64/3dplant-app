@@ -22,21 +22,21 @@
   solo probada en local.
   - Sustituye a "Tomar otra foto" solo en los errores 429; el resto (500, timeout, etc.) la mantienen.
   - Rate limit: deshabilitado con cuenta atrás de 60 s. Cuota agotada: activo sin cuenta atrás.
-
-## Historial de diagnósticos por planta (commit 7e48e75, solo local, sin push)
-- Cada planta guarda hasta 10 diagnósticos (fecha, estado, puntuación, miniatura); el más reciente es el
-  «actual». Desde la ficha, «Nuevo diagnóstico» abre el escaneo de esa planta y guardar añade al historial
-  (no crea planta nueva ni toca el riego). Las plantas antiguas muestran su diagnóstico de siempre como
-  una fila; no hay migración.
-- Visto en el navegador local (planta antigua sembrada a mano): la tarjeta con su fila, el botón «Nuevo
-  diagnóstico» abre el escaneo, cancelar vuelve a la ficha, la X de la ficha va al jardín. `tsc` y build OK;
-  lógica de guardado probada con datos simulados (13 pruebas).
-- NO visto: un reescaneo real con la IA (guardar y ver la fila nueva), la doble pulsación en pantalla,
-  móvil y modo claro. Nada en producción (falta push).
+- Historial de diagnósticos por planta (commit 7e48e75, publicado en Netlify; el JS de producción,
+  index-BV1cbvnZ.js, lleva los textos nuevos):
+  - Cada planta guarda hasta 10 diagnósticos (fecha, estado, puntuación, miniatura); el más reciente es el
+    «actual». Desde la ficha, «Nuevo diagnóstico» abre el escaneo de esa planta y guardar añade al historial
+    (no crea planta nueva ni toca el riego). Las plantas antiguas muestran su diagnóstico de siempre como
+    una fila; no hay migración.
+  - Visto en producción (Kike, con captura): una planta con dos entradas en el historial (65/100 «Actual» y
+    60/100 debajo), miniaturas distintas por entrada y el resto de la ficha intacto; el reescaneo funciona
+    de punta a punta.
+  - Visto solo en local: cancelar en el escaneo vuelve a la ficha y la X de la ficha va al jardín; la lógica
+    de guardado con datos simulados (13 pruebas).
 
 ## Qué está roto o sin verificar
-- Reescaneo real con IA sin probar (ver arriba). Hasta confirmarlo se mantienen 6 copias `.bak` sin borrar
-  (types, plantStorage, CameraView, DiagnosisResult ×2, PlantDetail).
+- Historial de diagnósticos, sin comprobar en producción: la doble pulsación de «Guardar», el modo claro y
+  cancelar un reescaneo. El caso de planta borrada antes de llegar a /result está sin proteger a propósito.
 - Sin verificar en producción: el caso de cuota de OpenAI agotada (mensaje "no está disponible" y
   "Reintentar" activo sin cuenta atrás); solo probado en local con respuestas simuladas.
 - React Doctor: el gancho de pre-commit (escanea solo los ficheros del commit) dio 14 avisos, 64/100 en
@@ -48,10 +48,8 @@
   CameraView.tsx:84 y función pura dentro del componente en CameraView.tsx:65.
 
 ## Siguiente paso
-1. Probar un reescaneo real con la IA (en producción tras el push, o en local si el endpoint /api/ai
-   responde). Si sale bien: borrar los `.bak` y decidir el push de 7e48e75.
-2. Prioridad 2, lo que queda: avisos de React Doctor.
-3. Recomendado (lo hace Kike en OpenAI): límite mensual de gasto en Billing → Limits.
+1. Prioridad 2, lo que queda: avisos de React Doctor.
+2. Recomendado (lo hace Kike en OpenAI): límite mensual de gasto en Billing → Limits.
 
 ## Prioridad 4 (backlog)
 - Botones de resultado (Guardar en Mi Jardín / Volver al Jardín) descolocados en escritorio (>768px) —
@@ -62,4 +60,4 @@ Prioridad 1: 569e35b rate limiting + validación · 2a09e6e límite a 3/min · 9
 Prioridad 2, punto 1: 54c00da mensaje amable del 429 (publicado en producción)
 Prioridad 2, claves de React: 7130244 claves estables en DiagnosisResult + puntuación de React Doctor
 Prioridad 2, botón Reintentar: ca3a93f Reintentar en el error 429 reutilizando la foto (publicado)
-Historial de diagnósticos: 7e48e75 historial por planta con reescaneo desde la ficha (sin push)
+Historial de diagnósticos: 7e48e75 historial por planta con reescaneo desde la ficha (publicado) · 52f527c docs de cierre

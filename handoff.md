@@ -31,7 +31,7 @@ nueva (`savePlant`, id nuevo) y cada planta guardaba un único diagnóstico, com
    «Actual»), botón «Nuevo diagnóstico» (no en plantas de ejemplo) y el botón cerrar pasa de `navigate(-1)` a
    `navigate('/')` para no caer en `/scan` o `/result` tras un reescaneo.
 5. Commit `7e48e75` «feat: historial de diagnósticos por planta, con reescaneo desde la ficha» (5 ficheros,
-   +204/−32). **Sin push.**
+   +204/−32). Publicado después (ver «Actualización»).
 
 **Qué se comprobó y con qué resultado**
 - `tsc --noEmit` y `vite build`: exit 0 tras cada bloque (no se repitieron después del commit).
@@ -48,9 +48,7 @@ nueva (`savePlant`, id nuevo) y cada planta guardaba un único diagnóstico, com
   solo los 5 ficheros del commit; sin línea base para separar avisos nuevos de antiguos.
 
 **Qué NO se comprobó**
-- Un reescaneo real de punta a punta con la IA (guardar, fila nueva, «Actual», riego intacto, miniatura de
-  una foto real). Pendiente; el dev server local puede no tener el endpoint `/api/ai` (sin comprobar).
-- Nada en producción (no hay push).
+- Un reescaneo real con la IA se comprobó después, en producción (ver «Actualización»).
 - El bloqueo de doble pulsación en pantalla, el aspecto en móvil y en modo claro.
 
 **Descubrimientos útiles**
@@ -59,6 +57,9 @@ nueva (`savePlant`, id nuevo) y cada planta guardaba un único diagnóstico, com
 - Hay un gancho de pre-commit con React Doctor: avisa de «regresiones» pero no bloquea.
 - `.bak` no está en `.gitignore`: para commitear se añadieron los ficheros por nombre.
 
-**Pendiente**
-- `.bak` sin borrar hasta confirmar el reescaneo real: `types.ts.bak`, `services/plantStorage.ts.bak`,
-  `screens/CameraView.tsx.bak`, `screens/DiagnosisResult.tsx.bak` y `.bak2`, `screens/PlantDetail.tsx.bak`.
+**Actualización (misma sesión)**
+- Push de `7e48e75` y despliegue en Netlify. Producción pasó de `index-ChxaCMpm.js` a `index-BV1cbvnZ.js`,
+  con «Historial de diagnósticos», «Nuevo diagnóstico», «Añadir al historial» y «Guardando…» dentro.
+- Kike confirmó la prueba real en producción, con captura: dos entradas (65/100 «Actual» y 60/100),
+  miniaturas distintas y el resto de la ficha intacto.
+- Los 6 `.bak` se borraron después de esa confirmación.
