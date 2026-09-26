@@ -12,12 +12,15 @@ const CameraView: React.FC = () => {
   const resultPath = plantId ? `/result?plantId=${encodeURIComponent(plantId)}` : '/result';
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  // Número de la última petición de cámara: si cambia mientras esperamos, la respuesta ya no vale.
+  const requestRef = useRef(0);
   const [flashOn, setFlashOn] = useState(false);
   const [showTip, setShowTip] = useState(false);
   const [cameraActive, setCameraActive] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
 
   const startCamera = useCallback(async () => {
+    const requestId = ++requestRef.current;
     // Limpia cualquier cámara anterior antes de intentar de nuevo.
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(t => t.stop());
@@ -35,9 +38,15 @@ const CameraView: React.FC = () => {
         video: { facingMode: { ideal: 'environment' } },
         audio: false
       });
+      // Si la pantalla se cerró (o React repitió el efecto) mientras esperábamos, apaga la cámara.
+      if (requestId !== requestRef.current) {
+        stream.getTracks().forEach(t => t.stop());
+        return;
+      }
       streamRef.current = stream;
       setCameraActive(true);
     } catch (err) {
+      if (requestId !== requestRef.current) return;
       console.error('Camera error:', err);
       setCameraError('ERROR');
     }
@@ -47,6 +56,7 @@ const CameraView: React.FC = () => {
     startCamera();
 
     return () => {
+      requestRef.current++;
       streamRef.current?.getTracks().forEach(t => t.stop());
       streamRef.current = null;
     };

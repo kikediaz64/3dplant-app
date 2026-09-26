@@ -16,6 +16,7 @@ export class AIUserError extends Error {
 
 const RATE_LIMIT_MESSAGE = 'Has hecho varias consultas muy seguidas. Espera un minuto y vuelve a intentarlo.';
 const UNAVAILABLE_MESSAGE = 'El servicio de diagnóstico no está disponible en este momento. Inténtalo más tarde.';
+const BAD_RESPONSE_MESSAGE = 'La IA devolvió una respuesta que no se pudo entender. Inténtalo de nuevo.';
 
 function extractJson(text: string): string {
   let cleaned = (text || '').trim();
@@ -36,6 +37,13 @@ function normalizeSeverity(value: unknown): 'low' | 'moderate' | 'high' {
   if (v === 'alta' || v === 'high') return 'high';
   if (v === 'media' || v === 'moderate' || v === 'moderada' || v === 'medium') return 'moderate';
   return 'low';
+}
+
+// La IA a veces devuelve un texto donde debería ir una lista: lista tal cual, texto suelto -> lista de uno, otra cosa -> [].
+function toArray<T>(value: unknown, fromString: (s: string) => T): T[] {
+  if (Array.isArray(value)) return value as T[];
+  if (typeof value === 'string' && value.trim()) return [fromString(value)];
+  return [];
 }
 
 async function callAI(body: Record<string, unknown>): Promise<string> {
@@ -79,15 +87,25 @@ async function callAI(body: Record<string, unknown>): Promise<string> {
 
 export const diagnosePlant = async (base64Image: string): Promise<DiagnosisResult> => {
   const text = await callAI({ action: 'diagnose', imageBase64: base64Image });
-  const parsed = JSON.parse(extractJson(text));
+  let parsed: any;
+  try {
+    parsed = JSON.parse(extractJson(text));
+  } catch (error) {
+    console.error('Respuesta de la IA no es JSON válido:', error, text);
+    throw new AIUserError(BAD_RESPONSE_MESSAGE, 'unavailable');
+  }
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    console.error('Respuesta de la IA con formato inesperado:', parsed);
+    throw new AIUserError(BAD_RESPONSE_MESSAGE, 'unavailable');
+  }
   return {
     ...parsed,
     confidence: Math.round((parsed.confidence ?? 0) * 100),
     severity: normalizeSeverity(parsed.severity),
-    actionPlan: parsed.actionPlan || [],
-    rootCauses: parsed.rootCauses || [],
-    symptoms: parsed.symptoms || [],
-    pests: parsed.pests || []
+    actionPlan: toArray(parsed.actionPlan, s => ({ title: 'Recomendación', description: s, icon: 'task_alt' })),
+    rootCauses: toArray(parsed.rootCauses, s => ({ title: 'Posible causa', description: s })),
+    symptoms: toArray<string>(parsed.symptoms, s => s),
+    pests: toArray<string>(parsed.pests, s => s)
   };
 };
 

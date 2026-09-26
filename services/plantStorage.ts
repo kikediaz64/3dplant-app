@@ -62,16 +62,34 @@ export function getDiagnosisHistory(plant: Plant & { scannedAt?: string }): Diag
 
 const STORAGE_KEY = 'savedPlants';
 const DISMISSED_MOCK_KEY = 'dismissedMockPlants';
+const CORRUPT_BACKUP_KEY = 'savedPlants_corrupt_backup';
 
 export const plantStorage = {
     // Get all saved plants from localStorage
     getSavedPlants(): SavedPlant[] {
+        let data: string | null = null;
         try {
-            const data = localStorage.getItem(STORAGE_KEY);
-            return data ? JSON.parse(data) : [];
+            data = localStorage.getItem(STORAGE_KEY);
+            if (!data) return [];
+            const parsed = JSON.parse(data);
+            if (Array.isArray(parsed)) return parsed;
+            console.error('Saved plants data is not an array, ignoring it');
         } catch (error) {
             console.error('Error loading saved plants:', error);
-            return [];
+        }
+        // Datos corruptos: guardar el texto original aparte antes de que una escritura los pise.
+        if (data) this.backupCorruptedPlants(data);
+        return [];
+    },
+
+    // Copia de seguridad del valor crudo (solo la primera; no pisa una copia anterior).
+    backupCorruptedPlants(raw: string): void {
+        try {
+            if (localStorage.getItem(CORRUPT_BACKUP_KEY) === null) {
+                localStorage.setItem(CORRUPT_BACKUP_KEY, raw);
+            }
+        } catch (error) {
+            console.error('Could not back up corrupted plants data:', error);
         }
     },
 
