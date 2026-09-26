@@ -25,6 +25,14 @@ const compressForStorage = (dataUrl: string): Promise<string> => {
   });
 };
 
+const loadingMessages = [
+  "Identificando la especie...",
+  "Analizando síntomas visuales...",
+  "Buscando en la base de datos de 400,000 especies...",
+  "Generando plan de acción ecológico...",
+  "Finalizando diagnóstico..."
+];
+
 const DiagnosisResult: React.FC = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
@@ -34,13 +42,6 @@ const DiagnosisResult: React.FC = () => {
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const loadingMessages = [
-    "Identificando la especie...",
-    "Analizando síntomas visuales...",
-    "Buscando en la base de datos de 400,000 especies...",
-    "Generando plan de acción ecológico...",
-    "Finalizando diagnóstico..."
-  ];
   const [loadingMsgIdx, setLoadingMsgIdx] = useState(0);
 
   useEffect(() => {
@@ -269,8 +270,8 @@ const DiagnosisResult: React.FC = () => {
                 <div>
                   <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5">Síntomas observados</p>
                   <div className="flex flex-wrap gap-1.5">
-                    {result.symptoms.map((s, i) => (
-                      <span key={i} className="text-xs px-2.5 py-1 rounded-full bg-gray-100 dark:bg-white/5 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-white/5">{s}</span>
+                    {result.symptoms.map((s) => (
+                      <span key={s} className="text-xs px-2.5 py-1 rounded-full bg-gray-100 dark:bg-white/5 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-white/5">{s}</span>
                     ))}
                   </div>
                 </div>
@@ -279,8 +280,8 @@ const DiagnosisResult: React.FC = () => {
                 <div>
                   <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5">Plagas / enfermedades</p>
                   <div className="flex flex-wrap gap-1.5">
-                    {result.pests.map((p, i) => (
-                      <span key={i} className="text-xs px-2.5 py-1 rounded-full bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 border border-red-100 dark:border-red-900/30">{p}</span>
+                    {result.pests.map((p) => (
+                      <span key={p} className="text-xs px-2.5 py-1 rounded-full bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 border border-red-100 dark:border-red-900/30">{p}</span>
                     ))}
                   </div>
                 </div>
@@ -329,7 +330,7 @@ const DiagnosisResult: React.FC = () => {
         <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-3">Causas Probables</h3>
         <div className="flex flex-col gap-3">
           {result.rootCauses.map((cause, idx) => (
-            <div key={idx} className="rounded-xl bg-gray-100 dark:bg-surface-dark p-4 border border-transparent dark:border-white/5">
+            <div key={cause.title} className="rounded-xl bg-gray-100 dark:bg-surface-dark p-4 border border-transparent dark:border-white/5">
               <div className="flex gap-4 items-center">
                 <div
                   className="h-20 w-20 shrink-0 rounded-lg bg-cover bg-center bg-gray-300 dark:bg-gray-800"

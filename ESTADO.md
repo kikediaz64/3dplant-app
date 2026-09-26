@@ -1,4 +1,4 @@
-# ESTADO — 3dPlant v2 (2026-09-25)
+# ESTADO — 3dPlant v2 (2026-09-26)
 
 ## Qué funciona
 - Diagnóstico por foto (OpenAI gpt-4o-mini vía función Netlify), Mi Jardín, riego, chat/asistente,
@@ -25,17 +25,21 @@
   El caso de cuota de OpenAI agotada solo está probado con simulación.
 - En la pantalla de error del diagnóstico, el botón sigue siendo "Tomar otra foto" (no hay "Reintentar"
   con la foto ya guardada); con un 429 pide una foto nueva cuando toca esperar.
-- Botones inferiores del resultado ("Guardar", "Volver") quedan fuera de la columna en escritorio.
-- React Doctor: 8 avisos, puntuación 68/100 (componente gigante y complejidad en DiagnosisResult.tsx,
-  valor estático en cada render línea 37, índice de array como key en DiagnosisResult.tsx
-  273/283/308/332 y PlantAssistant.tsx:89).
+- React Doctor: 7 avisos, puntuación 69/100 (react-doctor 0.9.14): componente gigante y complejidad
+  alta en DiagnosisResult.tsx:36; índice de array como key en DiagnosisResult.tsx:309 (plan de acción,
+  no tocado a propósito), PlantAssistant.tsx:89 y PlantDetail.tsx:243/:258; createObjectURL sin
+  revokeObjectURL en CameraView.tsx:79.
 
 ## Siguiente paso
 1. Kike: un diagnóstico real desde el móvil para cerrar la verificación de extremo a extremo (esperar
    1-2 min desde la última ráfaga de pruebas: el límite es por IP, 3/min).
-2. Prioridad 2, lo que queda: botones inferiores en escritorio, avisos de React Doctor, y decidir si se
-   añade un botón "Reintentar" en la pantalla de error.
+2. Prioridad 2, lo que queda: avisos de React Doctor, y decidir si se añade un botón "Reintentar" en
+   la pantalla de error.
 3. Recomendado (lo hace Kike en OpenAI): límite mensual de gasto en Billing → Limits.
+
+## Prioridad 4 (backlog)
+- Botones de resultado (Guardar en Mi Jardín / Volver al Jardín) descolocados en escritorio (>768px) —
+  cosmético, sin impacto en móvil, no priorizado
 
 ## Commits de esta sesión
 Prioridad 1: 569e35b rate limiting + validación · 2a09e6e límite a 3/min · 9604b48 quita recuadro falso
