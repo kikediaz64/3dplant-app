@@ -1,10 +1,15 @@
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { getDailyTip } from '../constants/dailyTips';
 
 const CameraView: React.FC = () => {
   const navigate = useNavigate();
+  // Reescaneo: /scan?plantId=X. Cancelar vuelve a la ficha de esa planta; si no, al inicio.
+  const [searchParams] = useSearchParams();
+  const plantId = searchParams.get('plantId');
+  const backPath = plantId ? `/plant/${encodeURIComponent(plantId)}` : '/';
+  const resultPath = plantId ? `/result?plantId=${encodeURIComponent(plantId)}` : '/result';
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const [flashOn, setFlashOn] = useState(false);
@@ -88,7 +93,7 @@ const CameraView: React.FC = () => {
           alert('No hay espacio suficiente para guardar la foto. Borra datos del navegador e intenta de nuevo.');
           return;
         }
-        navigate('/result');
+        navigate(resultPath);
       } else {
         alert('Error al procesar la imagen. Intenta de nuevo.');
       }
@@ -114,7 +119,7 @@ const CameraView: React.FC = () => {
       alert('No hay espacio suficiente para guardar la foto. Borra datos del navegador e intenta de nuevo.');
       return;
     }
-    navigate('/result');
+    navigate(resultPath);
   };
 
   return (
@@ -124,7 +129,7 @@ const CameraView: React.FC = () => {
         {/* Top Bar */}
         <header className="absolute top-0 left-0 right-0 z-50 flex items-center justify-between p-4 bg-gradient-to-b from-black/60 to-transparent">
           <button
-            onClick={() => navigate('/')}
+            onClick={() => navigate(backPath)}
             className="flex items-center justify-center rounded-full size-10 bg-white/10 backdrop-blur-md text-white border border-white/10 hover:bg-white/20 active:scale-95 transition-all"
           >
             <span className="material-symbols-outlined text-[24px]">close</span>
@@ -224,7 +229,7 @@ const CameraView: React.FC = () => {
 
         <footer className="absolute bottom-0 left-0 right-0 z-50 w-full pb-8 pt-2 px-6 bg-gradient-to-t from-black/90 via-black/70 to-transparent">
           <div className="flex items-center justify-between max-w-sm mx-auto">
-            <button onClick={() => navigate('/')} className="group flex shrink-0 items-center justify-center rounded-xl size-14 border-2 border-white/20 overflow-hidden relative active:scale-95 transition-transform">
+            <button onClick={() => navigate(backPath)} className="group flex shrink-0 items-center justify-center rounded-xl size-14 border-2 border-white/20 overflow-hidden relative active:scale-95 transition-transform">
               <img
                 alt="Thumbnail"
                 className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"

@@ -28,6 +28,7 @@ export interface Plant {
   wateringFrequencyDays?: number;
   lastWateredAt?: string;
   diagnosis?: PlantDiagnosis;
+  diagnosisHistory?: DiagnosisEntry[];
   zona?: ZonaTipo;
   luz?: LuzTipo;
   tipo?: PlantTipo;
@@ -43,6 +44,16 @@ export type HealthStatus = 'Saludable' | 'Aviso' | 'Enferma';
 export type UrgencyLevel = 'Baja' | 'Media' | 'Alta';
 export type HydrationState = 'Sedienta' | 'Bien' | 'Encharcada';
 export type LightState = 'Falta' | 'Adecuada' | 'Exceso';
+
+export interface DiagnosisEntry {
+  id: string;
+  date: string;
+  healthStatus?: HealthStatus;
+  healthScore?: number;
+  image: string;
+  problems: string[];
+  recommendations: string[];
+}
 
 export interface DiagnosisResult {
   speciesName: string;

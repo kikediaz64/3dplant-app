@@ -1,24 +1,24 @@
 
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { diagnosePlant, AIUserError, type AIUserErrorKind } from '../services/aiService';
-import { DiagnosisResult as IDiagnosisResult } from '../types';
+import { DiagnosisResult as IDiagnosisResult, DiagnosisEntry } from '../types';
 import { plantStorage } from '../services/plantStorage';
 
-// Comprime la imagen a una miniatura para no llenar el almacenamiento del navegador.
-const compressForStorage = (dataUrl: string): Promise<string> => {
+// Comprime la imagen para no llenar el almacenamiento del navegador.
+// Por defecto: foto principal (512 px, calidad 0.7). Historial: 240 px, calidad 0.5.
+const compressForStorage = (dataUrl: string, maxDim = 512, quality = 0.7): Promise<string> => {
   return new Promise((resolve) => {
     const img = new Image();
     img.onload = () => {
-      const MAX = 512;
-      const scale = Math.min(1, MAX / Math.max(img.width, img.height));
+      const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
       const canvas = document.createElement('canvas');
       canvas.width = Math.max(1, Math.round(img.width * scale));
       canvas.height = Math.max(1, Math.round(img.height * scale));
       const ctx = canvas.getContext('2d');
       if (!ctx) { resolve(dataUrl); return; }
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-      resolve(canvas.toDataURL('image/jpeg', 0.7));
+      resolve(canvas.toDataURL('image/jpeg', quality));
     };
     img.onerror = () => resolve(dataUrl);
     img.src = dataUrl;
@@ -101,11 +101,20 @@ const DiagnosisError: React.FC<DiagnosisErrorProps> = ({ message, kind, onRetry,
 
 const DiagnosisResult: React.FC = () => {
   const navigate = useNavigate();
+  // Reescaneo: /result?plantId=X añade el diagnóstico al historial de esa planta.
+  const [searchParams] = useSearchParams();
+  const plantId = searchParams.get('plantId');
+  const backPath = plantId ? `/plant/${encodeURIComponent(plantId)}` : '/';
+  const scanPath = plantId ? `/scan?plantId=${encodeURIComponent(plantId)}` : '/scan';
   const [loading, setLoading] = useState(true);
   const [result, setResult] = useState<IDiagnosisResult | null>(null);
   const [completedActions, setCompletedActions] = useState<boolean[]>([]);
   const [image, setImage] = useState<string>('');
   const [saved, setSaved] = useState(false);
+  const [savedAsNew, setSavedAsNew] = useState(false);
+  // Evita guardar dos veces con toques seguidos. El ref frena al instante; el estado es solo visual.
+  const savingRef = useRef(false);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [errorKind, setErrorKind] = useState<AIUserErrorKind | null>(null);
 
@@ -166,7 +175,9 @@ const DiagnosisResult: React.FC = () => {
   };
 
   const handleSavePlant = async () => {
-    if (!result) return;
+    if (!result || savingRef.current) return;
+    savingRef.current = true;
+    setSaving(true);
 
     try {
       const status: 'healthy' | 'warning' | 'sick' =
@@ -174,6 +185,28 @@ const DiagnosisResult: React.FC = () => {
 
       // Guarda una versión comprimida de la foto para no llenar el almacenamiento.
       const compressedImage = await compressForStorage(image);
+      // Miniatura más pequeña para el historial (hasta 10 por planta).
+      const historyImage = await compressForStorage(image, 240, 0.5);
+
+      const problems = [...(result.symptoms || []), ...(result.pests || [])];
+      const recommendations = result.actionPlan?.map(a => a.description) || [];
+      const diagnosis = {
+        health: result.healthStatus ? `${result.healthStatus} · ${result.healthScore ?? '—'}/100` : (result.problemName || 'Diagnóstico completado'),
+        problems,
+        recommendations
+      };
+      const entry: DiagnosisEntry = {
+        id: `diag_${Date.now()}`,
+        date: new Date().toISOString(),
+        healthStatus: result.healthStatus,
+        healthScore: result.healthScore,
+        image: historyImage,
+        problems,
+        recommendations
+      };
+
+      // Reescaneo solo si la planta sigue existiendo; si no, se guarda como planta nueva.
+      const target = plantId && plantStorage.getSavedPlants().some(p => p.id === plantId) ? plantId : null;
 
       const plantData = {
         name: result.speciesName || 'Planta desconocida',
@@ -195,27 +228,39 @@ const DiagnosisResult: React.FC = () => {
         zona: result.zona,
         luz: result.luz,
         tipo: result.tipo,
-        diagnosis: {
-          health: result.healthStatus ? `${result.healthStatus} · ${result.healthScore ?? '—'}/100` : (result.problemName || 'Diagnóstico completado'),
-          problems: [...(result.symptoms || []), ...(result.pests || [])],
-          recommendations: result.actionPlan?.map(a => a.description) || []
-        }
+        diagnosis,
+        diagnosisHistory: [entry]
       };
 
-      console.log('Saving plant:', plantData);
-      plantStorage.savePlant(plantData);
+      if (target) {
+        // No toca riego, nombre ni ubicación (lo garantiza addDiagnosis).
+        plantStorage.addDiagnosis(target, entry, { diagnosis, status, image: compressedImage });
+      } else {
+        console.log('Saving plant:', plantData);
+        plantStorage.savePlant(plantData);
+        setSavedAsNew(!!plantId);
+      }
       // Limpia la imagen temporal capturada para no acumular peso en el navegador.
       localStorage.removeItem('capturedPlantImage');
       setSaved(true);
+      // Si era un reescaneo con la planta ya borrada, más tiempo para leer el aviso.
       setTimeout(() => {
-        navigate('/');
-      }, 1500);
+        navigate(target ? backPath : '/', { replace: !!target });
+      }, plantId && !target ? 3000 : 1500);
     } catch (error) {
+      // Si falla, se libera el bloqueo para poder reintentar.
+      savingRef.current = false;
+      setSaving(false);
       console.error('Error saving plant:', error);
       console.error('Result data:', result);
       alert(`Error al guardar la planta: ${error instanceof Error ? error.message : 'Error desconocido'}`);
     }
   };
+
+  const saveLabel = saved
+    ? (savedAsNew ? 'Guardada como planta nueva (la original ya no existe)' : plantId ? 'Añadido al historial' : 'Guardada en Mi Jardín')
+    : saving ? 'Guardando…'
+    : (plantId ? 'Añadir al historial' : 'Guardar en Mi Jardín');
 
   if (loading) {
     return (
@@ -239,7 +284,7 @@ const DiagnosisResult: React.FC = () => {
         message={error}
         kind={errorKind}
         onRetry={handleRetry}
-        onNewPhoto={() => navigate('/scan')}
+        onNewPhoto={() => navigate(scanPath)}
         onHome={() => navigate('/')}
       />
     );
@@ -252,7 +297,7 @@ const DiagnosisResult: React.FC = () => {
       {/* Top Bar */}
       <div className="sticky top-0 z-50 flex items-center bg-background-light/95 dark:bg-background-dark/95 backdrop-blur-md p-4 justify-between border-b border-gray-200 dark:border-white/5">
         <button
-          onClick={() => navigate('/')}
+          onClick={() => navigate(backPath)}
           className="flex size-10 shrink-0 items-center justify-center rounded-full active:bg-gray-200 dark:active:bg-white/10 transition-colors"
         >
           <span className="material-symbols-outlined text-gray-900 dark:text-white">arrow_back</span>
@@ -414,21 +459,21 @@ const DiagnosisResult: React.FC = () => {
         <div className="flex flex-col gap-3 max-w-lg mx-auto">
           <button
             onClick={handleSavePlant}
-            disabled={saved}
+            disabled={saved || saving}
             className={`w-full rounded-xl font-bold h-12 flex items-center justify-center gap-2 transition-colors active:scale-95 shadow-lg ${saved
               ? 'bg-green-600 text-white'
               : 'bg-primary hover:bg-green-400 text-black shadow-primary/20'
               }`}
           >
             <span className="material-symbols-outlined">{saved ? 'check_circle' : 'add_circle'}</span>
-            {saved ? 'Guardada en Mi Jardín' : 'Guardar en Mi Jardín'}
+            {saveLabel}
           </button>
           <button
-            onClick={() => navigate('/')}
+            onClick={() => navigate(backPath)}
             className="w-full rounded-xl bg-gray-200 dark:bg-surface-dark hover:bg-gray-300 dark:hover:bg-white/10 text-gray-900 dark:text-white font-bold h-12 flex items-center justify-center gap-2 transition-colors active:scale-95 border border-gray-300 dark:border-white/10"
           >
             <span className="material-symbols-outlined">home</span>
-            Volver al Jardín
+            {plantId ? 'Volver a la planta' : 'Volver al Jardín'}
           </button>
         </div>
       </div>

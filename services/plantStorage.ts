@@ -1,5 +1,5 @@
 
-import { Plant } from '../types';
+import { Plant, DiagnosisEntry } from '../types';
 
 export interface SavedPlant extends Plant {
     scannedAt: string;
@@ -34,6 +34,30 @@ export function getWateringStatus(plant: Plant): WateringStatus {
         return { needsWater: false, nextWatering: `En ${Math.ceil(daysLeft * 24)} h` };
     }
     return { needsWater: false, nextWatering: `En ${Math.ceil(daysLeft)} días` };
+}
+
+const MAX_DIAGNOSIS_HISTORY = 10;
+
+// Devuelve el historial de diagnósticos de una planta, más reciente primero.
+// Plantas antiguas (sin historial): se muestra su único diagnóstico como una entrada.
+export function getDiagnosisHistory(plant: Plant & { scannedAt?: string }): DiagnosisEntry[] {
+    const stored = Array.isArray(plant.diagnosisHistory)
+        ? plant.diagnosisHistory.filter(e => e && typeof e.id === 'string' && typeof e.date === 'string')
+        : [];
+    if (stored.length > 0) return stored;
+
+    if (!plant.diagnosis || !plant.scannedAt) return [];
+    const health = plant.diagnosis.health || '';
+    const score = health.match(/(\d{1,3})\s*\/\s*100/);
+    return [{
+        id: `diag_legacy_${plant.id}`,
+        date: plant.scannedAt,
+        healthStatus: (['Saludable', 'Aviso', 'Enferma'] as const).find(s => health.startsWith(s)),
+        healthScore: score ? Number(score[1]) : undefined,
+        image: plant.image,
+        problems: plant.diagnosis.problems || [],
+        recommendations: plant.diagnosis.recommendations || [],
+    }];
 }
 
 const STORAGE_KEY = 'savedPlants';
@@ -154,6 +178,40 @@ export const plantStorage = {
             }
         } catch (error) {
             console.error('Error updating plant:', error);
+            throw error;
+        }
+    },
+
+    // Añade un diagnóstico nuevo al historial y lo convierte en el "actual".
+    // No toca riego, nombre ni ubicación. Una sola escritura para no dejar datos a medias.
+    addDiagnosis(
+        id: string,
+        entry: DiagnosisEntry,
+        current: Pick<SavedPlant, 'diagnosis' | 'status' | 'image'>
+    ): void {
+        try {
+            const plants = this.getSavedPlants();
+            const index = plants.findIndex(p => p.id === id);
+            if (index === -1) {
+                throw new Error('La planta ya no existe en tu jardín.');
+            }
+
+            const plant = plants[index];
+            // Si era una planta antigua, su diagnóstico previo pasa a ser una entrada real.
+            const history = [entry, ...getDiagnosisHistory(plant)].slice(0, MAX_DIAGNOSIS_HISTORY);
+
+            plants[index] = {
+                ...plant,
+                ...current,
+                diagnosisHistory: history,
+                lastUpdated: new Date().toISOString(),
+            };
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(plants));
+        } catch (error) {
+            console.error('Error adding diagnosis:', error);
+            if (error instanceof DOMException && (error.name === 'QuotaExceededError' || error.name === 'NS_ERROR_DOM_QUOTA_REACHED')) {
+                throw new Error('El almacenamiento está lleno. Borra algunas plantas o reduce el tamaño de las fotos.');
+            }
             throw error;
         }
     },
