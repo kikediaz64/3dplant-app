@@ -33,8 +33,10 @@
     de punta a punta.
   - Visto solo en local: cancelar en el escaneo vuelve a la ficha y la X de la ficha va al jardín; la lógica
     de guardado con datos simulados (13 pruebas).
-- Tres arreglos de la auditoría de código (2026-09-26), **solo en local: sin commit ni publicar**.
-  Pasan `tsc --noEmit` y `npm run build`, y una prueba en Node contra el código anterior (que sí fallaba):
+- Tres arreglos de la auditoría de código: commit `c2de8f4`, subido a `main` el 2026-09-26. Kike dice que
+  ya está publicado en producción (no comprobado por Claude). **Sin probar aún en producción**: la prueba
+  real queda para el día siguiente (ver «Siguiente paso»). En local pasan `tsc --noEmit` y
+  `npm run build`, y una prueba en Node contra el código anterior (que sí fallaba):
   - Datos de Mi Jardín corruptos (`plantStorage.ts`): ya no se pisan al guardar; el texto original se
     copia una vez en `savedPlants_corrupt_backup` de localStorage. No se recupera solo: hay que sacarlo a mano.
   - Cámara (`CameraView.tsx`): si sales antes de que responda, el stream se apaga (contador `requestRef`).
@@ -44,6 +46,10 @@
     Probado con `fetch` simulado (4 casos); no probado contra la IA real ni en pantalla.
 
 ## Qué está roto o sin verificar
+- Arreglos `c2de8f4` (datos corruptos, cámara, respuesta de IA mal formada), sin ver en producción. Ojo con
+  la prueba del jardín corrupto: pisa la clave `savedPlants`, hacerla solo con datos de prueba.
+- El hook de pre-commit de React Doctor dio 8 avisos, 74/100 en `c2de8f4` (avisó de «regresiones» y no
+  bloqueó). No se ha comprobado cuáles de los 8 son nuevos; los que se vieron ya figuraban abajo.
 - Historial de diagnósticos, sin comprobar en producción: la doble pulsación de «Guardar», el modo claro y
   cancelar un reescaneo. El caso de planta borrada antes de llegar a /result está sin proteger a propósito.
 - Sin verificar en producción: el caso de cuota de OpenAI agotada (mensaje "no está disponible" y
@@ -85,9 +91,9 @@ Las líneas son las del momento de la auditoría y pueden haberse movido en los 
   (`tsc --noEmit` se ha lanzado a mano).
 
 ## Siguiente paso
-1. Decidir el commit de los 3 arreglos de la auditoría (pendiente de aprobación de Kike) y, ya publicados,
-   comprobarlos en producción. Al aprobarlo, borrar los `.bak` (`plantStorage.ts.bak`, `CameraView.tsx.bak`,
-   `aiService.ts.bak`), que no están en `.gitignore`.
+1. Kike prueba en producción los 3 arreglos de `c2de8f4`. Cuando lo confirme, borrar los 3 `.bak`
+   (`services/plantStorage.ts.bak`, `screens/CameraView.tsx.bak`, `services/aiService.ts.bak`); siguen ahí,
+   sin seguimiento en git y sin estar en `.gitignore`.
 2. Prioridad 2, lo que queda: avisos de React Doctor.
 3. Recomendado (lo hace Kike en OpenAI): límite mensual de gasto en Billing → Limits.
 
@@ -100,4 +106,5 @@ Prioridad 1: 569e35b rate limiting + validación · 2a09e6e límite a 3/min · 9
 Prioridad 2, punto 1: 54c00da mensaje amable del 429 (publicado en producción)
 Prioridad 2, claves de React: 7130244 claves estables en DiagnosisResult + puntuación de React Doctor
 Prioridad 2, botón Reintentar: ca3a93f Reintentar en el error 429 reutilizando la foto (publicado)
-Historial de diagnósticos: 7e48e75 historial por planta con reescaneo desde la ficha (publicado) · 52f527c docs de cierre
+Historial de diagnósticos: 7e48e75 historial por planta con reescaneo desde la ficha (publicado) · 52f527c docs de cierre · c47a806 docs
+Auditoría de código: c2de8f4 datos corruptos del jardín, cámara encendida al salir y respuestas de IA mal formadas (subido a main)
