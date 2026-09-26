@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { diagnosePlant, AIUserError } from '../services/aiService';
+import { diagnosePlant, AIUserError, type AIUserErrorKind } from '../services/aiService';
 import { DiagnosisResult as IDiagnosisResult } from '../types';
 import { plantStorage } from '../services/plantStorage';
 
@@ -33,6 +33,72 @@ const loadingMessages = [
   "Finalizando diagnóstico..."
 ];
 
+const RETRY_WAIT_SECONDS = 60;
+
+interface DiagnosisErrorProps {
+  message: string;
+  kind: AIUserErrorKind | null;
+  onRetry: () => void;
+  onNewPhoto: () => void;
+  onHome: () => void;
+}
+
+// Pantalla de error. Se crea de nuevo cada vez que aparece un error, así que la cuenta atrás
+// arranca sola. Solo el rate limit tiene una espera real; la cuota agotada no (depende del saldo).
+const DiagnosisError: React.FC<DiagnosisErrorProps> = ({ message, kind, onRetry, onNewPhoto, onHome }) => {
+  const isRateLimit = kind === 'rate-limit';
+  // Se cuenta contra una hora objetivo (no restando de 1 en 1) para que no se desfase
+  // si el navegador frena el temporizador con la pestaña en segundo plano.
+  const [endAt] = useState(() => Date.now() + RETRY_WAIT_SECONDS * 1000);
+  const [secondsLeft, setSecondsLeft] = useState(isRateLimit ? RETRY_WAIT_SECONDS : 0);
+
+  useEffect(() => {
+    if (!isRateLimit) return;
+    const interval = setInterval(() => {
+      const left = Math.max(0, Math.ceil((endAt - Date.now()) / 1000));
+      setSecondsLeft(left);
+      if (left === 0) clearInterval(interval);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [isRateLimit, endAt]);
+
+  const waiting = secondsLeft > 0;
+
+  return (
+    <div className="flex h-screen w-full flex-col items-center justify-center bg-background-dark p-6 text-center">
+      <div className="mb-8">
+        <span className="material-symbols-outlined text-red-500 text-[80px]">error</span>
+      </div>
+      <h2 className="text-2xl font-bold mb-4 text-white">¡Oops!</h2>
+      <p className="text-text-sec-dark font-medium mb-8 max-w-md">{message}</p>
+      <div className="flex gap-3">
+        {kind ? (
+          <button
+            onClick={onRetry}
+            disabled={waiting}
+            className="px-6 py-3 rounded-xl bg-primary hover:bg-green-400 text-black font-bold transition-colors active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {waiting ? `Reintentar en ${secondsLeft}s` : 'Reintentar'}
+          </button>
+        ) : (
+          <button
+            onClick={onNewPhoto}
+            className="px-6 py-3 rounded-xl bg-primary hover:bg-green-400 text-black font-bold transition-colors active:scale-95"
+          >
+            Tomar otra foto
+          </button>
+        )}
+        <button
+          onClick={onHome}
+          className="px-6 py-3 rounded-xl bg-gray-700 hover:bg-gray-600 text-white font-bold transition-colors active:scale-95"
+        >
+          Volver al inicio
+        </button>
+      </div>
+    </div>
+  );
+};
+
 const DiagnosisResult: React.FC = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
@@ -41,6 +107,7 @@ const DiagnosisResult: React.FC = () => {
   const [image, setImage] = useState<string>('');
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [errorKind, setErrorKind] = useState<AIUserErrorKind | null>(null);
 
   const [loadingMsgIdx, setLoadingMsgIdx] = useState(0);
 
@@ -80,8 +147,16 @@ const DiagnosisResult: React.FC = () => {
           ? error.message
           : `Error al analizar la planta: ${error instanceof Error ? error.message : 'Error desconocido'}. Por favor, intenta de nuevo.`
       );
+      setErrorKind(error instanceof AIUserError ? error.kind : null);
       setLoading(false);
     }
+  };
+
+  const handleRetry = () => {
+    setError(null);
+    setErrorKind(null);
+    setLoading(true);
+    handleDiagnosis(image);
   };
 
   const toggleAction = (index: number) => {
@@ -160,27 +235,13 @@ const DiagnosisResult: React.FC = () => {
 
   if (error) {
     return (
-      <div className="flex h-screen w-full flex-col items-center justify-center bg-background-dark p-6 text-center">
-        <div className="mb-8">
-          <span className="material-symbols-outlined text-red-500 text-[80px]">error</span>
-        </div>
-        <h2 className="text-2xl font-bold mb-4 text-white">¡Oops!</h2>
-        <p className="text-text-sec-dark font-medium mb-8 max-w-md">{error}</p>
-        <div className="flex gap-3">
-          <button
-            onClick={() => navigate('/scan')}
-            className="px-6 py-3 rounded-xl bg-primary hover:bg-green-400 text-black font-bold transition-colors active:scale-95"
-          >
-            Tomar otra foto
-          </button>
-          <button
-            onClick={() => navigate('/')}
-            className="px-6 py-3 rounded-xl bg-gray-700 hover:bg-gray-600 text-white font-bold transition-colors active:scale-95"
-          >
-            Volver al inicio
-          </button>
-        </div>
-      </div>
+      <DiagnosisError
+        message={error}
+        kind={errorKind}
+        onRetry={handleRetry}
+        onNewPhoto={() => navigate('/scan')}
+        onHome={() => navigate('/')}
+      />
     );
   }
 

@@ -23,19 +23,22 @@
 - Sin verificar: ver el mensaje amable del 429 EN PANTALLA en producción (verificado en local con
   respuestas simuladas; en producción se confirmó el JS publicado y que el 429 real llega vacío).
   El caso de cuota de OpenAI agotada solo está probado con simulación.
-- En la pantalla de error del diagnóstico, el botón sigue siendo "Tomar otra foto" (no hay "Reintentar"
-  con la foto ya guardada); con un 429 pide una foto nueva cuando toca esperar.
+- Sin verificar: botón "Reintentar" en el error 429 (commit local, sin push: no está en producción).
+  Probado solo en local con respuestas simuladas: reutiliza la misma foto; con rate limit sale
+  deshabilitado con cuenta atrás de 60 s; con cuota agotada sale activo sin cuenta atrás; el resto de
+  errores (500, timeout, etc.) siguen con "Tomar otra foto". Falta verlo con un 429 real.
 - React Doctor: 7 avisos, puntuación 69/100 (react-doctor 0.9.14): componente gigante y complejidad
-  alta en DiagnosisResult.tsx:36; índice de array como key en DiagnosisResult.tsx:309 (plan de acción,
+  alta en DiagnosisResult.tsx:102; índice de array como key en DiagnosisResult.tsx:370 (plan de acción,
   no tocado a propósito), PlantAssistant.tsx:89 y PlantDetail.tsx:243/:258; createObjectURL sin
   revokeObjectURL en CameraView.tsx:79.
 
 ## Siguiente paso
 1. Kike: un diagnóstico real desde el móvil para cerrar la verificación de extremo a extremo (esperar
    1-2 min desde la última ráfaga de pruebas: el límite es por IP, 3/min).
-2. Prioridad 2, lo que queda: avisos de React Doctor, y decidir si se añade un botón "Reintentar" en
-   la pantalla de error.
-3. Recomendado (lo hace Kike en OpenAI): límite mensual de gasto en Billing → Limits.
+2. Push del commit del botón "Reintentar" cuando Kike lo pida (Netlify publica solo) y comprobarlo en
+   producción con un 429 real: debe salir "Reintentar en 60s" y activarse al terminar la cuenta atrás.
+3. Prioridad 2, lo que queda: avisos de React Doctor.
+4. Recomendado (lo hace Kike en OpenAI): límite mensual de gasto en Billing → Limits.
 
 ## Prioridad 4 (backlog)
 - Botones de resultado (Guardar en Mi Jardín / Volver al Jardín) descolocados en escritorio (>768px) —

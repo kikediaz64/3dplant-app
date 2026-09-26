@@ -4,7 +4,15 @@ import { DiagnosisResult } from "../types";
 const FUNCTION_URL = '/api/ai';
 
 // Error con un mensaje ya listo para enseñar al usuario tal cual (sin prefijos técnicos).
-export class AIUserError extends Error {}
+export type AIUserErrorKind = 'rate-limit' | 'unavailable';
+
+export class AIUserError extends Error {
+  kind: AIUserErrorKind;
+  constructor(message: string, kind: AIUserErrorKind) {
+    super(message);
+    this.kind = kind;
+  }
+}
 
 const RATE_LIMIT_MESSAGE = 'Has hecho varias consultas muy seguidas. Espera un minuto y vuelve a intentarlo.';
 const UNAVAILABLE_MESSAGE = 'El servicio de diagnóstico no está disponible en este momento. Inténtalo más tarde.';
@@ -49,9 +57,9 @@ async function callAI(body: Record<string, unknown>): Promise<string> {
         // Sin cuerpo: es el rate limit de Netlify (demasiadas consultas seguidas).
         if (err?.error) {
           console.error('IA no disponible (cuota o saldo de OpenAI):', err.error);
-          throw new AIUserError(UNAVAILABLE_MESSAGE);
+          throw new AIUserError(UNAVAILABLE_MESSAGE, 'unavailable');
         }
-        throw new AIUserError(RATE_LIMIT_MESSAGE);
+        throw new AIUserError(RATE_LIMIT_MESSAGE, 'rate-limit');
       }
       throw new Error(err?.error || `HTTP ${res.status}`);
     }
