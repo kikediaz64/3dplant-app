@@ -44,6 +44,11 @@
     no se ha forzado en producción un caso de JSON inválido/`null`.
   - En local pasan `tsc --noEmit` y `npm run build`, y las pruebas en Node contra el código anterior (que sí
     fallaba) para los tres casos.
+- Fallo de `confidence` en `aiService.ts` arreglado: `normalizeConfidence` sustituye a
+  `Math.round((confidence ?? 0) * 100)`. Acepta fracción (0-1) o ya-porcentaje (0-100), texto con "%", y
+  cualquier valor no numérico ("alta", `null`) cae a 0 en vez de dar NaN%. Verificado con `tsc --noEmit`
+  (sin errores) y un script Node suelto con 9 casos (0.85→85, 85→85, 100→100, 1→100, "85%"→85, "alta"→0,
+  null→0, undefined→0, 0→0), todos OK. **Sin probar aún** contra la IA real ni en pantalla.
 
 ## Qué está roto o sin verificar
 - Pendiente, gravedad baja, no bloqueante: en consola de producción sale repetido "Uncaught (in promise)
@@ -87,9 +92,6 @@ Las líneas son las del momento de la auditoría y pueden haberse movido en los 
   - 12. `PlantAssistant.tsx:113`: el campo de texto no tiene `maxLength`; con más de 500 caracteres llega
     un 413 y se pierde lo escrito.
   - 13. `ai.mjs:144`: el texto de error de OpenAI se reenvía tal cual al cliente.
-- Nuevo, fuera de la lista del auditor (`aiService.ts`, `confidence`): la fórmula
-  `Math.round((c ?? 0) * 100)` da 8500% si la IA devuelve el número ya en porcentaje (85) y NaN% si
-  devuelve un texto como "alta" o "85%". Comprobado ejecutando la fórmula; no se ha visto en la app.
 - `types.ts` no fue leído por el auditor y no hay tests automáticos ni script de tipos en `package.json`
   (`tsc --noEmit` se ha lanzado a mano).
 

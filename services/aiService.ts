@@ -39,6 +39,15 @@ function normalizeSeverity(value: unknown): 'low' | 'moderate' | 'high' {
   return 'low';
 }
 
+// Acepta confianza como fracción (0-1) o ya en porcentaje (0-100), incluido texto con "%".
+// Si no se puede interpretar como número, devuelve 0 en vez de NaN.
+function normalizeConfidence(value: unknown): number {
+  const n = typeof value === 'number' ? value : parseFloat(String(value ?? '').replace('%', ''));
+  if (!Number.isFinite(n)) return 0;
+  const percent = n > 1 ? n : n * 100;
+  return Math.min(100, Math.max(0, Math.round(percent)));
+}
+
 // La IA a veces devuelve un texto donde debería ir una lista: lista tal cual, texto suelto -> lista de uno, otra cosa -> [].
 function toArray<T>(value: unknown, fromString: (s: string) => T): T[] {
   if (Array.isArray(value)) return value as T[];
@@ -100,7 +109,7 @@ export const diagnosePlant = async (base64Image: string): Promise<DiagnosisResul
   }
   return {
     ...parsed,
-    confidence: Math.round((parsed.confidence ?? 0) * 100),
+    confidence: normalizeConfidence(parsed.confidence),
     severity: normalizeSeverity(parsed.severity),
     actionPlan: toArray(parsed.actionPlan, s => ({ title: 'Recomendación', description: s, icon: 'task_alt' })),
     rootCauses: toArray(parsed.rootCauses, s => ({ title: 'Posible causa', description: s })),
