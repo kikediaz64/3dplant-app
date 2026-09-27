@@ -33,21 +33,24 @@
     de punta a punta.
   - Visto solo en local: cancelar en el escaneo vuelve a la ficha y la X de la ficha va al jardín; la lógica
     de guardado con datos simulados (13 pruebas).
-- Tres arreglos de la auditoría de código: commit `c2de8f4`, subido a `main` el 2026-09-26. Kike dice que
-  ya está publicado en producción (no comprobado por Claude). **Sin probar aún en producción**: la prueba
-  real queda para el día siguiente (ver «Siguiente paso»). En local pasan `tsc --noEmit` y
-  `npm run build`, y una prueba en Node contra el código anterior (que sí fallaba):
-  - Datos de Mi Jardín corruptos (`plantStorage.ts`): ya no se pisan al guardar; el texto original se
-    copia una vez en `savedPlants_corrupt_backup` de localStorage. No se recupera solo: hay que sacarlo a mano.
-  - Cámara (`CameraView.tsx`): si sales antes de que responda, el stream se apaga (contador `requestRef`).
-    Probado el componente real con jsdom y `getUserMedia` simulado; la luz real de la cámara no se ha visto.
-  - Respuesta de la IA mal formada (`aiService.ts`): un JSON inválido o `null` da un mensaje amable con
-    "Reintentar" (`AIUserError`, `unavailable`); una lista que llega como texto se convierte en lista de uno.
-    Probado con `fetch` simulado (4 casos); no probado contra la IA real ni en pantalla.
+- Tres arreglos de la auditoría de código: commit `c2de8f4`, subido a `main` el 2026-09-26.
+  **Confirmado en producción por Kike, con capturas:**
+  - Datos de Mi Jardín corruptos (`plantStorage.ts`): probado en incógnito con datos rotos (`{"a":1}`); la
+    app lo detectó ("Saved plants data is not an array, ignoring it"), guardó la copia en
+    `savedPlants_corrupt_backup` y el jardín nuevo se guardó bien sin perder nada.
+  - Cámara (`CameraView.tsx`): diagnóstico normal (Pothos, 70% coincidencia, 65/100) sin errores; sigue sin
+    verse específicamente la luz de la cámara apagándose al salir antes de tiempo.
+  - Respuesta de la IA mal formada (`aiService.ts`): cubierto por el mismo diagnóstico normal sin errores;
+    no se ha forzado en producción un caso de JSON inválido/`null`.
+  - En local pasan `tsc --noEmit` y `npm run build`, y las pruebas en Node contra el código anterior (que sí
+    fallaba) para los tres casos.
 
 ## Qué está roto o sin verificar
-- Arreglos `c2de8f4` (datos corruptos, cámara, respuesta de IA mal formada), sin ver en producción. Ojo con
-  la prueba del jardín corrupto: pisa la clave `savedPlants`, hacerla solo con datos de prueba.
+- Pendiente, gravedad baja, no bloqueante: en consola de producción sale repetido "Uncaught (in promise)
+  TypeError: Failed to execute 'put' on 'Cache': Request method 'POST' is unsupported" (`sw.js:48`). El
+  service worker intenta cachear cualquier respuesta 200 sin mirar el método, y cae en las peticiones POST
+  a `/api/ai`; los navegadores no soportan cachear POST. No impide el funcionamiento (todo funciona bien a
+  pesar del error). Sin tocar código a propósito.
 - El hook de pre-commit de React Doctor dio 8 avisos, 74/100 en `c2de8f4` (avisó de «regresiones» y no
   bloqueó). No se ha comprobado cuáles de los 8 son nuevos; los que se vieron ya figuraban abajo.
 - Historial de diagnósticos, sin comprobar en producción: la doble pulsación de «Guardar», el modo claro y
@@ -100,6 +103,12 @@ Las líneas son las del momento de la auditoría y pueden haberse movido en los 
 ## Prioridad 4 (backlog)
 - Botones de resultado (Guardar en Mi Jardín / Volver al Jardín) descolocados en escritorio (>768px) —
   cosmético, sin impacto en móvil, no priorizado
+- Curiosidad menor, sin prioridad: en iOS, al salir de la cámara el indicador de grabación pasa de verde a
+  naranja brevemente, aunque el código pide `audio: false` (CameraView.tsx) y no hay ningún acceso a
+  micrófono en todo el proyecto (confirmado por búsqueda de código: sin `getUserMedia` con audio, sin
+  `MediaRecorder`, sin `SpeechRecognition`). Probablemente comportamiento propio de iOS/Safari con la sesión
+  de audio del sistema, no un fallo de la app. No se ha encontrado fuente que lo confirme con exactitud;
+  queda documentado sin más investigación.
 
 ## Commits de esta sesión
 Prioridad 1: 569e35b rate limiting + validación · 2a09e6e límite a 3/min · 9604b48 quita recuadro falso
