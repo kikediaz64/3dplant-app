@@ -1,4 +1,4 @@
-# ESTADO — 3dPlant v2 (2026-09-26)
+# ESTADO — 3dPlant v2 (2026-09-27)
 
 ## Qué funciona
 - Diagnóstico por foto (OpenAI gpt-4o-mini vía función Netlify), Mi Jardín, riego, chat/asistente,
@@ -49,6 +49,21 @@
   cualquier valor no numérico ("alta", `null`) cae a 0 en vez de dar NaN%. Verificado con `tsc --noEmit`
   (sin errores) y un script Node suelto con 9 casos (0.85→85, 85→85, 100→100, 1→100, "85%"→85, "alta"→0,
   null→0, undefined→0, 0→0), todos OK. **Sin probar aún** contra la IA real ni en pantalla.
+- Mejora de precisión, paso 1: `detail: 'low'` → `'high'` en la imagen enviada a OpenAI en
+  `ai.mjs` (diagnóstico, no `ask`). La imagen que llega ya está redimensionada a 1024px por
+  `CameraView.tsx`. Coste estimado ×4 por diagnóstico (de ~0,001 $ a ~0,004-0,005 $), dentro
+  del tope duro de 5 $/mes (~1.000-1.200 diagnósticos/mes de margen). Timeout de 24s sin
+  cambios, con margen de sobra. Verificado con `node --check` (sintaxis OK); **sin probar
+  aún** contra la IA real ni en producción. Copia de seguridad en `ai.mjs.bak`. El paso 2
+  (separar identificación de especie y diagnóstico en dos llamadas) queda pendiente, solo si
+  hace falta tras probar este cambio.
+- Troceado de `DiagnosisResult.tsx` (componente gigante, aviso de React Doctor) en marcha, con diff aprobado
+  + `tsc` + `build` + prueba visual entre cada pieza. Alcance de la sesión: solo `LoadingView`,
+  `RootCausesList` y `ActionPlanList`; `SummaryCard`, `BottomBar` y `TopBar` quedan para otra sesión.
+  `handleSavePlant`, el `useEffect` inicial y `DiagnosisError` no se tocan; la key `idx` de `ActionPlanList`
+  se deja igual, fuera de alcance. Extraídas y confirmadas visualmente: `LoadingView` y `RootCausesList`.
+  **`ActionPlanList` diagnosticada y con diff mostrado, pero sin aprobar ni aplicar** — el archivo real
+  sigue con el bloque de "Plan de Acción Inmediato" tal cual estaba, sin extraer.
 
 ## Qué está roto o sin verificar
 - Pendiente, gravedad baja, no bloqueante: en consola de producción sale repetido "Uncaught (in promise)
@@ -96,11 +111,18 @@ Las líneas son las del momento de la auditoría y pueden haberse movido en los 
   (`tsc --noEmit` se ha lanzado a mano).
 
 ## Siguiente paso
-1. Kike prueba en producción los 3 arreglos de `c2de8f4`. Cuando lo confirme, borrar los 3 `.bak`
-   (`services/plantStorage.ts.bak`, `screens/CameraView.tsx.bak`, `services/aiService.ts.bak`); siguen ahí,
-   sin seguimiento en git y sin estar en `.gitignore`.
-2. Prioridad 2, lo que queda: avisos de React Doctor.
-3. Recomendado (lo hace Kike en OpenAI): límite mensual de gasto en Billing → Limits.
+1. Retomar el troceado de `DiagnosisResult.tsx`: aprobar y aplicar el diff de `ActionPlanList` (ya
+   diagnosticado), verificar (`tsc` + `build` + pantalla), y seguir con `SummaryCard`, `BottomBar` y
+   `TopBar` en otra sesión.
+2. **Pendiente de diagnóstico, sin empezar:** mejora de precisión en `netlify/functions/ai.mjs` — separar
+   identificación de especie y diagnóstico en dos llamadas a OpenAI (en vez de una sola), y cambiar
+   `detail: 'low'` a `'high'` en la imagen. Sin código tocado, sin medir tiempo/coste/impacto en el rate
+   limit todavía. Antes de implementar: diagnóstico completo (qué cambia en la latencia con dos llamadas,
+   coste extra por doble llamada + `detail: 'high'` más caro, y si el rate limit de 3/min por IP sigue
+   siendo suficiente con llamadas más lentas).
+3. Prioridad 2, lo que queda: resto de avisos de React Doctor.
+4. ~~Recomendado (lo hace Kike en OpenAI): límite mensual de gasto en Billing → Limits.~~ Hecho:
+   límite duro de 5 $/mes configurado el 2026-09-26, con aviso por email.
 
 ## Prioridad 4 (backlog)
 - Botones de resultado (Guardar en Mi Jardín / Volver al Jardín) descolocados en escritorio (>768px) —
@@ -119,3 +141,7 @@ Prioridad 2, claves de React: 7130244 claves estables en DiagnosisResult + puntu
 Prioridad 2, botón Reintentar: ca3a93f Reintentar en el error 429 reutilizando la foto (publicado)
 Historial de diagnósticos: 7e48e75 historial por planta con reescaneo desde la ficha (publicado) · 52f527c docs de cierre · c47a806 docs
 Auditoría de código: c2de8f4 datos corruptos del jardín, cámara encendida al salir y respuestas de IA mal formadas (subido a main)
+Confirmación en producción: e6b6ab7 docs (junto con 4dc50a3, que llevaba un commit sin subir)
+Fix confidence: b058115 normalizar confidence para evitar 8500% o NaN en pantalla
+Troceado DiagnosisResult (sin commitear aún): LoadingView y RootCausesList extraídos y verificados;
+ActionPlanList diagnosticada, diff mostrado, sin aplicar

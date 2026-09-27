@@ -80,7 +80,7 @@ export default async (request) => {
             role: 'user',
             content: [
               { type: 'text', text: DIAGNOSE_PROMPT },
-              { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${base64}`, detail: 'low' } }
+              { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${base64}`, detail: 'high' } }
             ]
           }
         ],
