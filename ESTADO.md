@@ -111,18 +111,20 @@ Las líneas son las del momento de la auditoría y pueden haberse movido en los 
   (`tsc --noEmit` se ha lanzado a mano).
 
 ## Siguiente paso
-1. Retomar el troceado de `DiagnosisResult.tsx`: aprobar y aplicar el diff de `ActionPlanList` (ya
+1. **Verificar en producción** el cambio de `detail: 'high'` (commit `0a11186`, subido a `main`): ¿mejora
+   la identificación de especie? ¿Coste y tiempo de respuesta dentro de lo estimado (~×4 coste, timeout
+   con margen)? Sin probar aún contra la IA real.
+2. Solo si tras el punto 1 la identificación de especie sigue sin ser suficientemente buena: separar
+   identificación de especie y diagnóstico en dos llamadas a OpenAI en `ai.mjs` (hoy sigue siendo una
+   sola). Sin diagnosticar todavía (el diagnóstico de esta opción, hecho el 2026-09-27, está en el
+   handoff archivado si hace falta retomarlo).
+3. Retomar el troceado de `DiagnosisResult.tsx`: aprobar y aplicar el diff de `ActionPlanList` (ya
    diagnosticado), verificar (`tsc` + `build` + pantalla), y seguir con `SummaryCard`, `BottomBar` y
    `TopBar` en otra sesión.
-2. **Pendiente de diagnóstico, sin empezar:** mejora de precisión en `netlify/functions/ai.mjs` — separar
-   identificación de especie y diagnóstico en dos llamadas a OpenAI (en vez de una sola), y cambiar
-   `detail: 'low'` a `'high'` en la imagen. Sin código tocado, sin medir tiempo/coste/impacto en el rate
-   limit todavía. Antes de implementar: diagnóstico completo (qué cambia en la latencia con dos llamadas,
-   coste extra por doble llamada + `detail: 'high'` más caro, y si el rate limit de 3/min por IP sigue
-   siendo suficiente con llamadas más lentas).
-3. Prioridad 2, lo que queda: resto de avisos de React Doctor.
-4. ~~Recomendado (lo hace Kike en OpenAI): límite mensual de gasto en Billing → Limits.~~ Hecho:
-   límite duro de 5 $/mes configurado el 2026-09-26, con aviso por email.
+4. Prioridad 2, lo que queda: resto de avisos de React Doctor.
+
+~~Recomendado (lo hace Kike en OpenAI): límite mensual de gasto en Billing → Limits.~~ Hecho: límite duro
+de 5 $/mes configurado el 2026-09-26, con aviso por email.
 
 ## Prioridad 4 (backlog)
 - Botones de resultado (Guardar en Mi Jardín / Volver al Jardín) descolocados en escritorio (>768px) —
@@ -145,3 +147,5 @@ Confirmación en producción: e6b6ab7 docs (junto con 4dc50a3, que llevaba un co
 Fix confidence: b058115 normalizar confidence para evitar 8500% o NaN en pantalla
 Troceado DiagnosisResult (sin commitear aún): LoadingView y RootCausesList extraídos y verificados;
 ActionPlanList diagnosticada, diff mostrado, sin aplicar
+Mejora de precisión, paso 1: 0a11186 detail:'high' en el diagnóstico por imagen (subido a main, sin
+probar aún en producción)
