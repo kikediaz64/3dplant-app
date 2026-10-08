@@ -381,6 +381,9 @@ const DiagnosisResult: React.FC = () => {
               </div>
             </div>
           </div>
+          <p role="note" className="text-sm text-gray-600 dark:text-gray-300 leading-snug">
+            Diagnóstico orientativo generado por IA: puede contener errores. Si la planta no coincide, repite la foto. Ante dudas sobre toxicidad, consulta a un veterinario o a un médico.
+          </p>
           {/* Estado rico */}
           <div className="flex gap-2 mt-4 flex-wrap">
             {result.hydration && (
