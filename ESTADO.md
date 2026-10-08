@@ -1,4 +1,4 @@
-# ESTADO — 3dPlant v2 (2026-09-27)
+# ESTADO — 3dPlant v2 (2026-10-08)
 
 ## Qué funciona
 - Diagnóstico por foto (OpenAI gpt-4o-mini vía función Netlify), Mi Jardín, riego, chat/asistente,
@@ -64,6 +64,11 @@
   se deja igual, fuera de alcance. Extraídas y confirmadas visualmente: `LoadingView` y `RootCausesList`.
   **`ActionPlanList` diagnosticada y con diff mostrado, pero sin aprobar ni aplicar** — el archivo real
   sigue con el bloque de "Plan de Acción Inmediato" tal cual estaba, sin extraer.
+- Aviso «Diagnóstico orientativo generado por IA» en `DiagnosisResult.tsx` (commit `35f84ba`, rama
+  `mejoras-diseno-apple`, **sin fusionar con main**): 3 líneas, un `<p role="note">` bajo la tarjeta
+  de resultado. **Comprobado solo con respuesta simulada**; sin probar con un diagnóstico real ni en
+  el móvil. React Doctor al confirmar: 79/100, 3 avisos (componente gigante y complejidad alta en
+  :156, índice como key en :460), sin corregir a propósito.
 
 ## Qué está roto o sin verificar
 - Pendiente, gravedad baja, no bloqueante: en consola de producción sale repetido "Uncaught (in promise)
@@ -110,6 +115,31 @@ Las líneas son las del momento de la auditoría y pueden haberse movido en los 
 - `types.ts` no fue leído por el auditor y no hay tests automáticos ni script de tipos en `package.json`
   (`tsc --noEmit` se ha lanzado a mano).
 
+## Pendientes de la revisión de diseño (skill apple-design, 2026-10-08)
+Salen de revisar `DiagnosisResult.tsx` con la skill; ninguno está tocado. Los puntos 9-12 de la lista
+original ya figuran en otras secciones y se enlazan aquí.
+- A1. Accesibilidad en `DiagnosisResult.tsx`: `aria-label` en el botón de volver; casilla del plan de
+  acción con `role="checkbox"`, `aria-checked`, `aria-label` y área pulsable de 44x44; «Ver guía
+  completa» no hace nada (quitarlo o hacerlo un enlace real).
+- A2. Contraste de textos pequeños: en modo oscuro `gray-500` sobre `#162e16` da 3,02:1 («Familia» y
+  similares); subir a `gray-600` / `dark:gray-300`.
+- A3. Modo claro: el verde `#13ec13` da 1,61:1 sobre blanco, e `index.html` fuerza `class="dark"`.
+  Arreglarlo o eliminar el modo claro. Usar `prefers-color-scheme` y `prefers-reduced-motion`.
+- A4. Jerarquía: subir «problema detectado» y el estado bajo el nombre; plegar chips secundarios.
+- A5. Botón «Corregir especie» (funcionalidad nueva, requiere decidir cómo funciona).
+- A6. Sustituir el `alert()` bloqueante al fallar el guardado por un mensaje en pantalla con
+  reintento.
+- A7. Quitar la foto aleatoria de `picsum.photos` en las causas sin imagen.
+- A8. Mensajes de carga que rotan por tiempo sin reflejar lo real, y sin opción de cancelar.
+- A9. Ya recogidos arriba: React Doctor (79/100, :156 y :460), `sw.js` con POST y versión antigua en
+  desarrollo (ver «Qué está roto»), botones inferiores en ventana ancha (Prioridad 4) y doble
+  diagnóstico en desarrollo (endurecimiento nº 9; comprobar si pasa en producción).
+- A10. Antes de fusionar a `main`: probar el aviso con un diagnóstico real y en el móvil.
+- A11. La skill apple-design está en `G:\Laboratorio IA\3dPlant\.claude\skills` (carpeta padre), no en
+  la raíz del proyecto; decidir si moverla.
+- A12. `netlify/functions/ai.mjs.bak` sigue sin seguimiento en git y `.gitignore` no incluye
+  `.netlify`.
+
 ## Siguiente paso
 1. **Verificar en producción** el cambio de `detail: 'high'` (commit `0a11186`, subido a `main`): ¿mejora
    la identificación de especie? ¿Coste y tiempo de respuesta dentro de lo estimado (~×4 coste, timeout
@@ -122,6 +152,8 @@ Las líneas son las del momento de la auditoría y pueden haberse movido en los 
    diagnosticado), verificar (`tsc` + `build` + pantalla), y seguir con `SummaryCard`, `BottomBar` y
    `TopBar` en otra sesión.
 4. Prioridad 2, lo que queda: resto de avisos de React Doctor.
+5. Rama `mejoras-diseno-apple`: no fusionar hasta probar el aviso con un diagnóstico real y en el
+   móvil (A10); después, abordar A1-A8 por orden de impacto.
 
 ~~Recomendado (lo hace Kike en OpenAI): límite mensual de gasto en Billing → Limits.~~ Hecho: límite duro
 de 5 $/mes configurado el 2026-09-26, con aviso por email.
