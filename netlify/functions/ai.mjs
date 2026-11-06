@@ -1,9 +1,11 @@
 // 3dPlant — Función serverless que conecta con la IA (OpenAI GPT-4o-mini).
+import { getStore } from '@netlify/blobs';
+import { validateImage, consumeDailyQuota, dailyStoreName } from '../lib/limites.mjs';
+
 const MODEL = 'gpt-4o-mini';
 const ENDPOINT = 'https://api.openai.com/v1/chat/completions';
 
 // Topes de tamaño para que nadie dispare el gasto de tokens con payloads enormes.
-const MAX_IMAGE_BASE64_CHARS = 1_500_000; // ~1,1 MB reales; la app envía 150-500 KB
 const MAX_QUESTION_CHARS = 500;
 const MAX_CONTEXT_CHARS = 1000;
 
@@ -45,7 +47,7 @@ Reglas obligatorias:
 - Responde en español, claro y breve (máximo 3-4 párrafos o una lista).
 - Si no estás seguro de algo, dilo en lugar de inventar.`;
 
-export default async (request) => {
+export default async (request, context) => {
   if (request.method === 'GET') {
     return json({ ok: true });
   }
@@ -68,11 +70,11 @@ export default async (request) => {
 
     let payload;
     if (action === 'diagnose') {
-      const rawImage = typeof body.imageBase64 === 'string' ? body.imageBase64 : '';
-      if (rawImage.length > MAX_IMAGE_BASE64_CHARS) {
-        return json({ error: 'La imagen es demasiado grande. Haz otra foto e inténtalo de nuevo.' }, 413);
+      const image = validateImage(body.imageBase64);
+      if (!image.ok) {
+        return json({ error: image.error }, image.status);
       }
-      const base64 = rawImage.split(',')[1] || rawImage;
+      const base64 = image.base64;
       payload = {
         model: MODEL,
         messages: [
@@ -114,6 +116,23 @@ export default async (request) => {
       };
     } else {
       return new Response(JSON.stringify({ error: 'Acción desconocida' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+    }
+
+    // Tope diario (A1): se cuenta antes de llamar a OpenAI, solo con peticiones ya validadas.
+    // Si el almacén falla, no se llama a OpenAI (mejor sin servicio que sin control del gasto).
+    if (!context?.ip) {
+      console.warn('AVISO A1: no ha llegado la IP del visitante (context.ip vacío). Estas peticiones comparten un único cupo "desconocida".');
+    }
+    let quota;
+    try {
+      const store = getStore({ name: dailyStoreName(context?.deploy?.context), consistency: 'strong' });
+      quota = await consumeDailyQuota(store, { action, ip: context?.ip });
+    } catch (error) {
+      console.error('No se pudo comprobar el tope diario:', error);
+      return json({ error: 'El servicio no está disponible en este momento. Inténtalo más tarde.' }, 503);
+    }
+    if (!quota.allowed) {
+      return json({ error: 'Se ha alcanzado el límite de consultas de hoy. Vuelve a intentarlo mañana.', code: 'daily-limit' }, 429);
     }
 
     const controller = new AbortController();
