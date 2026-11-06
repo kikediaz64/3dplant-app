@@ -12,6 +12,10 @@ dist
 dist-ssr
 *.local
 
+# Copias de seguridad (incluye sufijos de fecha, pero no extensiones como .backup)
+*.bak
+*.bak-*
+
 # Scripts de prueba / ayuda local
 test-*.mjs
 
