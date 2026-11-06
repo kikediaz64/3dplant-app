@@ -1,4 +1,35 @@
-# ESTADO — 3dPlant v2 (2026-09-27)
+# ESTADO — 3dPlant v2 (2026-11-06)
+
+## Preparación para el Kanban (2026-11-06)
+- 3dPlant será el primer repo real del Kanban de kike-srv. Requisito: que `main` tenga pruebas (A1 las trae).
+- **A1 en PR #1** (https://github.com/kikediaz64/3dplant-app/pull/1), commit `94ec7ee`, SIN fusionar.
+  Probar las pruebas: `node --test --experimental-test-module-mocks` (27/27). Ojo: con `tests/` como
+  argumento falla en Node 24; sin argumento o con el archivo funciona.
+- El PR se abrió sin poner antes la `OPENAI_API_KEY` falsa en Deploy Previews: la vista previa usa la clave
+  real, frenada por el propio tope de A1 (30 diagnósticos/día, contador aparte de producción).
+- Rama `mejoras-diseno-apple` subida como PR en borrador (fusionar después de A1).
+- Playwright descartado por ahora: `package.json`/`package-lock.json` vueltos a lo commiteado; versión con
+  Playwright guardada en `*.bak-playwright-20261106` (sin seguir en git).
+- Pendiente (propuesto, sin hacer): script `"test"` en `package.json` (cambio de código → Codex o
+  «construye»); en kike-srv clonar el repo y `comandos_pruebas` =
+  `["sh","-c","npm ci --no-audit --no-fund && npm run build && node --test --experimental-test-module-mocks"]`.
+  Primeras tarjetas: pruebas de los límites de pregunta (400/413) y `*.bak*` al `.gitignore`.
+
+## A1 — Tope diario de gasto (rama `a1-tope-diario`, commiteado y en PR #1, sin fusionar)
+- Trabajo en el worktree `G:\Laboratorio IA\3dplant-a1` (fuera del proyecto), rama `a1-tope-diario`
+  creada desde `origin/main` (`0a11186`). Detalle y pasos para la vista previa:
+  `G:\Laboratorio IA\3dPlant\handoff\A1_RESULTADO.md`.
+- Qué hace: valida la imagen (solo JPEG, tamaño mín./máx.) y aplica un tope diario en Netlify Blobs:
+  diagnósticos 10/IP y 30 globales, preguntas 30/IP y 100 globales (día UTC); 429 `daily-limit`, y 503 si
+  Blobs falla. Contadores separados por contexto de despliegue. Aviso en el log si no llega la IP.
+  `.nvmrc` = 24.
+- Comprobado en local: 27/27 pruebas (Blobs y OpenAI simulados), build y empaquetado OK, mensaje amable
+  del 429 mantenido. **Sin verificar en Netlify**: Blobs real, `context.ip`, `context.deploy.context` y la
+  versión de Node real. Coste de Blobs en el plan: sin mirar.
+- En producción hoy (sin A1): cualquiera puede llamar a `/api/ai` desde fuera de la app; solo frena el
+  límite por minuto, que deja pasar ~5 antes del 429.
+- Auditoría completa del diagnóstico (hallazgos A1-A5, M1-M6, B1-B6):
+  `G:\Laboratorio IA\3dPlant\handoff\AUDITORIA_3DPLANT.md`. Solo A1 está construido.
 
 ## Qué funciona
 - Diagnóstico por foto (OpenAI gpt-4o-mini vía función Netlify), Mi Jardín, riego, chat/asistente,
@@ -64,6 +95,13 @@
   se deja igual, fuera de alcance. Extraídas y confirmadas visualmente: `LoadingView` y `RootCausesList`.
   **`ActionPlanList` diagnosticada y con diff mostrado, pero sin aprobar ni aplicar** — el archivo real
   sigue con el bloque de "Plan de Acción Inmediato" tal cual estaba, sin extraer.
+- Aviso «Diagnóstico orientativo generado por IA» en `DiagnosisResult.tsx` (commit `35f84ba`, rama
+  `mejoras-diseno-apple`, **sin fusionar con main**): 3 líneas, un `<p role="note">` bajo la tarjeta
+  de resultado. **Comprobado solo con respuesta simulada**; sin probar con un diagnóstico real ni en
+  el móvil. React Doctor al confirmar: 79/100, 3 avisos (componente gigante y complejidad alta en
+  :156, índice como key en :460), sin corregir a propósito.
+- Playwright: probado el 2026-10-08 y **descartado el 2026-11-06** (sin pruebas escritas, 3 avisos de
+  seguridad). Sigue en `node_modules` hasta el próximo `npm ci`; copia en `*.bak-playwright-20261106`.
 
 ## Qué está roto o sin verificar
 - Pendiente, gravedad baja, no bloqueante: en consola de producción sale repetido "Uncaught (in promise)
@@ -84,6 +122,9 @@
   (DiagnosisResult.tsx:415, PlantDetail.tsx:296/:311), claves de localStorage sin versión ×6 en
   plantStorage.ts (ya existían; `addDiagnosis` usa la misma), createObjectURL sin revoke en
   CameraView.tsx:84 y función pura dentro del componente en CameraView.tsx:65.
+- `npm install` de Playwright avisa de 3 vulnerabilidades (1 moderada, 2 altas), sin revisar ni saber si
+  ya existían. Copias `package.json.bak-20261008-192557` y `package-lock.json.bak-20261008-192557` sin
+  seguir en git, pendientes de borrar cuando Kike dé por buena la instalación.
 
 ## Pendientes de endurecimiento (auditoría de code-auditor, 2026-09-26)
 Salen de una lectura del código, sin ejecutarlo; ninguno está reproducido. Sin tocar código a propósito.
@@ -110,19 +151,51 @@ Las líneas son las del momento de la auditoría y pueden haberse movido en los 
 - `types.ts` no fue leído por el auditor y no hay tests automáticos ni script de tipos en `package.json`
   (`tsc --noEmit` se ha lanzado a mano).
 
+## Pendientes de la revisión de diseño (skill apple-design, 2026-10-08)
+Salen de revisar `DiagnosisResult.tsx` con la skill; ninguno está tocado. Los puntos 9-12 de la lista
+original ya figuran en otras secciones y se enlazan aquí.
+- A1. Accesibilidad en `DiagnosisResult.tsx`: `aria-label` en el botón de volver; casilla del plan de
+  acción con `role="checkbox"`, `aria-checked`, `aria-label` y área pulsable de 44x44; «Ver guía
+  completa» no hace nada (quitarlo o hacerlo un enlace real).
+- A2. Contraste de textos pequeños: en modo oscuro `gray-500` sobre `#162e16` da 3,02:1 («Familia» y
+  similares); subir a `gray-600` / `dark:gray-300`.
+- A3. Modo claro: el verde `#13ec13` da 1,61:1 sobre blanco, e `index.html` fuerza `class="dark"`.
+  Arreglarlo o eliminar el modo claro. Usar `prefers-color-scheme` y `prefers-reduced-motion`.
+- A4. Jerarquía: subir «problema detectado» y el estado bajo el nombre; plegar chips secundarios.
+- A5. Botón «Corregir especie» (funcionalidad nueva, requiere decidir cómo funciona).
+- A6. Sustituir el `alert()` bloqueante al fallar el guardado por un mensaje en pantalla con
+  reintento.
+- A7. Quitar la foto aleatoria de `picsum.photos` en las causas sin imagen.
+- A8. Mensajes de carga que rotan por tiempo sin reflejar lo real, y sin opción de cancelar.
+- A9. Ya recogidos arriba: React Doctor (79/100, :156 y :460), `sw.js` con POST y versión antigua en
+  desarrollo (ver «Qué está roto»), botones inferiores en ventana ancha (Prioridad 4) y doble
+  diagnóstico en desarrollo (endurecimiento nº 9; comprobar si pasa en producción).
+- A10. Antes de fusionar a `main`: probar el aviso con un diagnóstico real y en el móvil.
+- A11. La skill apple-design está en `G:\Laboratorio IA\3dPlant\.claude\skills` (carpeta padre), no en
+  la raíz del proyecto; decidir si moverla.
+- A12. `netlify/functions/ai.mjs.bak` sigue sin seguimiento en git y `.gitignore` no incluye
+  `.netlify`.
+
 ## Siguiente paso
-1. Retomar el troceado de `DiagnosisResult.tsx`: aprobar y aplicar el diff de `ActionPlanList` (ya
+0. **A1 (PR #1)**: Kike revisa en Netlify que no exista `AWS_LAMBDA_JS_RUNTIME` y si Blobs gasta créditos,
+   prueba la vista previa del PR y lo fusiona (= publicar en producción). Luego: script `"test"`, añadir
+   3dPlant al Kanban en kike-srv y las dos primeras tarjetas (ver arriba).
+1. **Verificar en producción** el cambio de `detail: 'high'` (commit `0a11186`, subido a `main`): ¿mejora
+   la identificación de especie? ¿Coste y tiempo de respuesta dentro de lo estimado (~×4 coste, timeout
+   con margen)? Sin probar aún contra la IA real.
+2. Solo si tras el punto 1 la identificación de especie sigue sin ser suficientemente buena: separar
+   identificación de especie y diagnóstico en dos llamadas a OpenAI en `ai.mjs` (hoy sigue siendo una
+   sola). Sin diagnosticar todavía (el diagnóstico de esta opción, hecho el 2026-09-27, está en el
+   handoff archivado si hace falta retomarlo).
+3. Retomar el troceado de `DiagnosisResult.tsx`: aprobar y aplicar el diff de `ActionPlanList` (ya
    diagnosticado), verificar (`tsc` + `build` + pantalla), y seguir con `SummaryCard`, `BottomBar` y
    `TopBar` en otra sesión.
-2. **Pendiente de diagnóstico, sin empezar:** mejora de precisión en `netlify/functions/ai.mjs` — separar
-   identificación de especie y diagnóstico en dos llamadas a OpenAI (en vez de una sola), y cambiar
-   `detail: 'low'` a `'high'` en la imagen. Sin código tocado, sin medir tiempo/coste/impacto en el rate
-   limit todavía. Antes de implementar: diagnóstico completo (qué cambia en la latencia con dos llamadas,
-   coste extra por doble llamada + `detail: 'high'` más caro, y si el rate limit de 3/min por IP sigue
-   siendo suficiente con llamadas más lentas).
-3. Prioridad 2, lo que queda: resto de avisos de React Doctor.
-4. ~~Recomendado (lo hace Kike en OpenAI): límite mensual de gasto en Billing → Limits.~~ Hecho:
-   límite duro de 5 $/mes configurado el 2026-09-26, con aviso por email.
+4. Prioridad 2, lo que queda: resto de avisos de React Doctor.
+5. Rama `mejoras-diseno-apple`: no fusionar hasta probar el aviso con un diagnóstico real y en el
+   móvil (A10); después, abordar A1-A8 por orden de impacto.
+
+~~Recomendado (lo hace Kike en OpenAI): límite mensual de gasto en Billing → Limits.~~ Hecho: límite duro
+de 5 $/mes configurado el 2026-09-26, con aviso por email.
 
 ## Prioridad 4 (backlog)
 - Botones de resultado (Guardar en Mi Jardín / Volver al Jardín) descolocados en escritorio (>768px) —
@@ -145,3 +218,5 @@ Confirmación en producción: e6b6ab7 docs (junto con 4dc50a3, que llevaba un co
 Fix confidence: b058115 normalizar confidence para evitar 8500% o NaN en pantalla
 Troceado DiagnosisResult (sin commitear aún): LoadingView y RootCausesList extraídos y verificados;
 ActionPlanList diagnosticada, diff mostrado, sin aplicar
+Mejora de precisión, paso 1: 0a11186 detail:'high' en el diagnóstico por imagen (subido a main, sin
+probar aún en producción)

@@ -99,6 +99,60 @@ const DiagnosisError: React.FC<DiagnosisErrorProps> = ({ message, kind, onRetry,
   );
 };
 
+interface LoadingViewProps {
+  message: string;
+}
+
+// Pantalla de carga mientras se espera el diagnóstico de la IA.
+const LoadingView: React.FC<LoadingViewProps> = ({ message }) => (
+  <div className="flex h-screen w-full flex-col items-center justify-center bg-background-dark p-6 text-center">
+    <div className="relative size-32 mb-8">
+      <div className="absolute inset-0 border-4 border-primary/20 rounded-full"></div>
+      <div className="absolute inset-0 border-4 border-primary rounded-full border-t-transparent animate-spin"></div>
+      <div className="absolute inset-0 flex items-center justify-center">
+        <span className="material-symbols-outlined text-primary text-[48px] animate-pulse">psychology</span>
+      </div>
+    </div>
+    <h2 className="text-2xl font-bold mb-2">Analizando Planta</h2>
+    <p className="text-text-sec-dark font-medium transition-opacity duration-500">{message}</p>
+  </div>
+);
+
+interface RootCause {
+  title: string;
+  description: string;
+  image?: string;
+}
+
+interface RootCausesListProps {
+  causes: RootCause[];
+}
+
+// Lista de causas probables del problema detectado.
+const RootCausesList: React.FC<RootCausesListProps> = ({ causes }) => (
+  <div className="px-4 mt-8 mb-4">
+    <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-3">Causas Probables</h3>
+    <div className="flex flex-col gap-3">
+      {causes.map((cause, idx) => (
+        <div key={cause.title} className="rounded-xl bg-gray-100 dark:bg-surface-dark p-4 border border-transparent dark:border-white/5">
+          <div className="flex gap-4 items-center">
+            <div
+              className="h-20 w-20 shrink-0 rounded-lg bg-cover bg-center bg-gray-300 dark:bg-gray-800"
+              style={{ backgroundImage: `url('${cause.image || "https://picsum.photos/200/200?random=" + idx}')` }}
+            ></div>
+            <div className="flex flex-col gap-1">
+              <p className="text-sm font-bold text-gray-900 dark:text-white">{cause.title}</p>
+              <p className="text-xs text-gray-600 dark:text-gray-300 leading-normal">
+                {cause.description}
+              </p>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
 const DiagnosisResult: React.FC = () => {
   const navigate = useNavigate();
   // Reescaneo: /result?plantId=X añade el diagnóstico al historial de esa planta.
@@ -263,19 +317,7 @@ const DiagnosisResult: React.FC = () => {
     : (plantId ? 'Añadir al historial' : 'Guardar en Mi Jardín');
 
   if (loading) {
-    return (
-      <div className="flex h-screen w-full flex-col items-center justify-center bg-background-dark p-6 text-center">
-        <div className="relative size-32 mb-8">
-          <div className="absolute inset-0 border-4 border-primary/20 rounded-full"></div>
-          <div className="absolute inset-0 border-4 border-primary rounded-full border-t-transparent animate-spin"></div>
-          <div className="absolute inset-0 flex items-center justify-center">
-            <span className="material-symbols-outlined text-primary text-[48px] animate-pulse">psychology</span>
-          </div>
-        </div>
-        <h2 className="text-2xl font-bold mb-2">Analizando Planta</h2>
-        <p className="text-text-sec-dark font-medium transition-opacity duration-500">{loadingMessages[loadingMsgIdx]}</p>
-      </div>
-    );
+    return <LoadingView message={loadingMessages[loadingMsgIdx]} />;
   }
 
   if (error) {
@@ -339,6 +381,9 @@ const DiagnosisResult: React.FC = () => {
               </div>
             </div>
           </div>
+          <p role="note" className="text-sm text-gray-600 dark:text-gray-300 leading-snug">
+            Diagnóstico orientativo generado por IA: puede contener errores. Si la planta no coincide, repite la foto. Ante dudas sobre toxicidad, consulta a un veterinario o a un médico.
+          </p>
           {/* Estado rico */}
           <div className="flex gap-2 mt-4 flex-wrap">
             {result.hydration && (
@@ -432,27 +477,7 @@ const DiagnosisResult: React.FC = () => {
       </div>
 
       {/* Root Causes */}
-      <div className="px-4 mt-8 mb-4">
-        <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-3">Causas Probables</h3>
-        <div className="flex flex-col gap-3">
-          {result.rootCauses.map((cause, idx) => (
-            <div key={cause.title} className="rounded-xl bg-gray-100 dark:bg-surface-dark p-4 border border-transparent dark:border-white/5">
-              <div className="flex gap-4 items-center">
-                <div
-                  className="h-20 w-20 shrink-0 rounded-lg bg-cover bg-center bg-gray-300 dark:bg-gray-800"
-                  style={{ backgroundImage: `url('${cause.image || "https://picsum.photos/200/200?random=" + idx}')` }}
-                ></div>
-                <div className="flex flex-col gap-1">
-                  <p className="text-sm font-bold text-gray-900 dark:text-white">{cause.title}</p>
-                  <p className="text-xs text-gray-600 dark:text-gray-300 leading-normal">
-                    {cause.description}
-                  </p>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
+      <RootCausesList causes={result.rootCauses} />
 
       {/* Sticky Bottom Bar */}
       <div className="fixed bottom-0 w-full bg-background-light dark:bg-background-dark border-t border-gray-200 dark:border-white/10 p-4 pb-6 z-50">
