@@ -1,4 +1,35 @@
-# ESTADO — 3dPlant v2 (2026-10-08)
+# ESTADO — 3dPlant v2 (2026-11-06)
+
+## Preparación para el Kanban (2026-11-06)
+- 3dPlant será el primer repo real del Kanban de kike-srv. Requisito: que `main` tenga pruebas (A1 las trae).
+- **A1 en PR #1** (https://github.com/kikediaz64/3dplant-app/pull/1), commit `94ec7ee`, SIN fusionar.
+  Probar las pruebas: `node --test --experimental-test-module-mocks` (27/27). Ojo: con `tests/` como
+  argumento falla en Node 24; sin argumento o con el archivo funciona.
+- El PR se abrió sin poner antes la `OPENAI_API_KEY` falsa en Deploy Previews: la vista previa usa la clave
+  real, frenada por el propio tope de A1 (30 diagnósticos/día, contador aparte de producción).
+- Rama `mejoras-diseno-apple` subida como PR en borrador (fusionar después de A1).
+- Playwright descartado por ahora: `package.json`/`package-lock.json` vueltos a lo commiteado; versión con
+  Playwright guardada en `*.bak-playwright-20261106` (sin seguir en git).
+- Pendiente (propuesto, sin hacer): script `"test"` en `package.json` (cambio de código → Codex o
+  «construye»); en kike-srv clonar el repo y `comandos_pruebas` =
+  `["sh","-c","npm ci --no-audit --no-fund && npm run build && node --test --experimental-test-module-mocks"]`.
+  Primeras tarjetas: pruebas de los límites de pregunta (400/413) y `*.bak*` al `.gitignore`.
+
+## A1 — Tope diario de gasto (rama `a1-tope-diario`, commiteado y en PR #1, sin fusionar)
+- Trabajo en el worktree `G:\Laboratorio IA\3dplant-a1` (fuera del proyecto), rama `a1-tope-diario`
+  creada desde `origin/main` (`0a11186`). Detalle y pasos para la vista previa:
+  `G:\Laboratorio IA\3dPlant\handoff\A1_RESULTADO.md`.
+- Qué hace: valida la imagen (solo JPEG, tamaño mín./máx.) y aplica un tope diario en Netlify Blobs:
+  diagnósticos 10/IP y 30 globales, preguntas 30/IP y 100 globales (día UTC); 429 `daily-limit`, y 503 si
+  Blobs falla. Contadores separados por contexto de despliegue. Aviso en el log si no llega la IP.
+  `.nvmrc` = 24.
+- Comprobado en local: 27/27 pruebas (Blobs y OpenAI simulados), build y empaquetado OK, mensaje amable
+  del 429 mantenido. **Sin verificar en Netlify**: Blobs real, `context.ip`, `context.deploy.context` y la
+  versión de Node real. Coste de Blobs en el plan: sin mirar.
+- En producción hoy (sin A1): cualquiera puede llamar a `/api/ai` desde fuera de la app; solo frena el
+  límite por minuto, que deja pasar ~5 antes del 429.
+- Auditoría completa del diagnóstico (hallazgos A1-A5, M1-M6, B1-B6):
+  `G:\Laboratorio IA\3dPlant\handoff\AUDITORIA_3DPLANT.md`. Solo A1 está construido.
 
 ## Qué funciona
 - Diagnóstico por foto (OpenAI gpt-4o-mini vía función Netlify), Mi Jardín, riego, chat/asistente,
@@ -69,6 +100,8 @@
   de resultado. **Comprobado solo con respuesta simulada**; sin probar con un diagnóstico real ni en
   el móvil. React Doctor al confirmar: 79/100, 3 avisos (componente gigante y complejidad alta en
   :156, índice como key en :460), sin corregir a propósito.
+- Playwright: probado el 2026-10-08 y **descartado el 2026-11-06** (sin pruebas escritas, 3 avisos de
+  seguridad). Sigue en `node_modules` hasta el próximo `npm ci`; copia en `*.bak-playwright-20261106`.
 
 ## Qué está roto o sin verificar
 - Pendiente, gravedad baja, no bloqueante: en consola de producción sale repetido "Uncaught (in promise)
@@ -89,6 +122,9 @@
   (DiagnosisResult.tsx:415, PlantDetail.tsx:296/:311), claves de localStorage sin versión ×6 en
   plantStorage.ts (ya existían; `addDiagnosis` usa la misma), createObjectURL sin revoke en
   CameraView.tsx:84 y función pura dentro del componente en CameraView.tsx:65.
+- `npm install` de Playwright avisa de 3 vulnerabilidades (1 moderada, 2 altas), sin revisar ni saber si
+  ya existían. Copias `package.json.bak-20261008-192557` y `package-lock.json.bak-20261008-192557` sin
+  seguir en git, pendientes de borrar cuando Kike dé por buena la instalación.
 
 ## Pendientes de endurecimiento (auditoría de code-auditor, 2026-09-26)
 Salen de una lectura del código, sin ejecutarlo; ninguno está reproducido. Sin tocar código a propósito.
@@ -141,6 +177,9 @@ original ya figuran en otras secciones y se enlazan aquí.
   `.netlify`.
 
 ## Siguiente paso
+0. **A1 (PR #1)**: Kike revisa en Netlify que no exista `AWS_LAMBDA_JS_RUNTIME` y si Blobs gasta créditos,
+   prueba la vista previa del PR y lo fusiona (= publicar en producción). Luego: script `"test"`, añadir
+   3dPlant al Kanban en kike-srv y las dos primeras tarjetas (ver arriba).
 1. **Verificar en producción** el cambio de `detail: 'high'` (commit `0a11186`, subido a `main`): ¿mejora
    la identificación de especie? ¿Coste y tiempo de respuesta dentro de lo estimado (~×4 coste, timeout
    con margen)? Sin probar aún contra la IA real.

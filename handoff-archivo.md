@@ -258,3 +258,160 @@ hallazgo nuevo en consola (service worker).
 - Fix de `confidence`: verificar en pantalla real cuando la IA devuelva un caso límite.
 - Hallazgo del service worker (`sw.js:48`): sin arreglar, sin priorizar.
 - Resto de pendientes de endurecimiento y avisos de React Doctor: siguen igual, ver `ESTADO.md`.
+
+## Sesión 2026-09-27 (tarde) — Mejora de precisión, paso 1: `detail: 'high'` en el diagnóstico
+
+**Punto de partida.** Kike confirmó que el límite mensual de gasto en OpenAI (5 $, límite duro, con
+aviso por email) ya estaba configurado el 2026-09-26 — corregida la nota de `ESTADO.md` que lo daba
+como pendiente.
+
+**Decisión.** La mejora de precisión del diagnóstico se separa en dos pasos independientes. Hoy solo
+el más simple y barato: subir `detail: 'low'` a `'high'` en la imagen que recibe OpenAI, sin tocar la
+arquitectura (sigue siendo una sola llamada a OpenAI, una sola petición del cliente a `/api/ai`).
+Separar identificación de especie y diagnóstico en dos llamadas queda pendiente, y solo se retoma si,
+tras probar `detail: 'high'`, la identificación de especie sigue sin mejorar.
+
+**Diagnóstico antes de tocar código**
+- Confirmado con `CameraView.tsx:76`: la imagen que llega a la IA ya está redimensionada a `MAX_DIM =
+  1024` px (calidad JPEG 0.8) antes de convertirse a base64.
+- Coste estimado con `detail: 'high'` sobre esa imagen: ×4 aprox. por diagnóstico (de ~0,001 $ a
+  ~0,004-0,005 $), por el salto en tokens de imagen (fórmula de gpt-4o-mini, estimación aproximada, no
+  exacta). Con el tope de 5 $/mes, deja margen para ~1.000-1.200 diagnósticos/mes.
+- Timeout de 24 s en `ai.mjs`: sin cambios necesarios, sigue siendo una sola llamada con margen de sobra.
+- Sin razón encontrada para no aplicar el cambio ahora.
+
+**Qué se hizo**
+1. Cambio de una línea en `netlify/functions/ai.mjs` (línea 83): `detail: 'low'` → `'high'` en la
+   llamada de diagnóstico (no afecta a `action: 'ask'`).
+2. Copia de seguridad `ai.mjs.bak` antes de tocar el archivo (sin seguimiento en git, sin borrar).
+3. `ESTADO.md` actualizado: nota del límite de gasto marcada como hecha (2026-09-26); entrada nueva en
+   «Qué funciona» documentando el cambio de `detail` y sus estimaciones.
+4. Commit `0a11186` («feat: mejorar precisión con detail:'high' en el diagnóstico por imagen»), solo con
+   `ai.mjs` y `ESTADO.md` — se dejaron fuera a propósito `handoff.md`, `handoff-archivo.md` y
+   `DiagnosisResult.tsx` (troceado pendiente de otra sesión, sin terminar). Push hecho a `main`
+   (`b058115..0a11186`); Netlify debería desplegarlo solo.
+
+**Qué se comprobó y con qué resultado**
+- `node --check netlify/functions/ai.mjs`: sintaxis OK. No aplica `tsc`/`npm run build` (archivo JS puro
+  de Netlify Functions, no TypeScript del frontend).
+
+**Qué NO se comprobó**
+- **Sin probar contra la IA real ni en producción.** No se ha verificado si la identificación de especie
+  mejora de verdad con `detail: 'high'`, ni si el coste real coincide con la estimación, ni el tiempo de
+  respuesta real en producción.
+
+**Pendiente**
+- Verificar en producción, con diagnósticos reales: ¿mejora la identificación de especie con
+  `detail: 'high'`? ¿Coste y tiempo de respuesta dentro de lo estimado?
+- Paso 2 (separar identificación de especie y diagnóstico en dos llamadas a OpenAI): **solo si**, tras
+  probar el paso 1, la identificación de especie sigue sin ser suficientemente buena. Sin empezar.
+- Retomar el troceado de `DiagnosisResult.tsx` desde `ActionPlanList` (diff ya diagnosticado, sin
+  aplicar) — sigue igual que la sesión anterior, ver `handoff-archivo.md`.
+- Resto de pendientes sin cambios: ver `ESTADO.md`.
+
+## Sesión 2026-10-08 — Commit de pendientes de la revisión de diseño en ESTADO.md
+
+**Qué se hizo.** Sesión mínima: se comprobó que la rama era `mejoras-diseno-apple` y que lo único
+modificado era `ESTADO.md` (más `netlify/functions/ai.mjs.bak` sin seguir, esperado). Se añadió solo
+`ESTADO.md` por nombre y se confirmó como `74d07eb` («docs: anotar en ESTADO.md los pendientes de la
+revisión de diseño»), +33/−1 líneas. Sin push, sin tocar `main`, sin cambios de configuración de git.
+
+**Qué se comprobó.** `git status --short` antes y después: tras el commit solo queda `ai.mjs.bak` sin
+seguir. React Doctor no mostró avisos. Aviso de Git LF→CRLF en `ESTADO.md`: normal en Windows.
+
+**Qué NO se hizo.** No se tocó código. Los pendientes del 27 de septiembre (verificar `detail: 'high'` en
+producción, paso 2 de separar llamadas) siguen igual: ver `ESTADO.md` y `handoff-archivo.md`.
+
+**Pendiente.** Todo lo que recoge `ESTADO.md` (pendientes de la revisión de diseño). Cierre acotado a
+`handoff.md` por decisión de Kike («b»): sin memoria nueva, sin notas en Obsidian.
+
+## Sesión 2026-10-08 — Instalación de Playwright (solo herramienta, sin pruebas)
+
+**Qué se hizo.** Se instaló Playwright para poder probar la app con navegador, sin escribir pruebas ni
+tocar código de la app. Carpeta: `3dplant---ai-plant-diagnosis v2\` (el `package.json` no está en la
+carpeta padre `3dPlant`).
+1. Copias de seguridad: `package.json.bak-20261008-192557` y `package-lock.json.bak-20261008-192557`
+   (en la raíz del proyecto, sin seguir en git).
+2. `npm install -D @playwright/test` → `@playwright/test ^1.64.0` en `devDependencies`. Ninguna otra
+   dependencia declarada cambió. En `package-lock.json` sí hubo retoques colaterales: `playwright-core`
+   1.63.0 → 1.64.0, `@emnapi/wasi-threads` 1.2.2 → 1.2.3, copias anidadas de `@emnapi/*` bajo
+   `@oxc-resolver/binding-wasm32-wasi` y una marca `"peer": true` quitada. React, Vite y `@google/genai`
+   no cambiaron.
+3. `npx playwright install chromium` → código de salida 0. Chromium (Chrome for Testing 156.0.8078.4),
+   headless shell y ffmpeg quedaron en `C:\Users\diazb\AppData\Local\ms-playwright\` (caché de usuario,
+   fuera del proyecto). Playwright borró por su cuenta `chromium-1200` y `chromium_headless_shell-1200`
+   (los consideró sin uso); las 1217 y 1243 siguen.
+
+**Qué se comprobó.** Con `npm run dev` (Vite 6.4.3, puerto 3000) y un `node -e` suelto (sin crear
+ficheros): Chromium 156.0.8078.4 abrió `http://localhost:3000`, HTTP 200, título «3dPlant - AI Plant
+Diagnosis», 1 hijo en `#root`, 0 errores de página, navegador cerrado, salida 0. El servidor se cerró
+después y el puerto 3000 quedó libre.
+
+**Qué se descubrió.**
+- La primera descarga de FFmpeg falló con `SELF_SIGNED_CERT_IN_CHAIN` (síntoma de Kaspersky, ver
+  `CLAUDE.md` del laboratorio); Playwright reintentó con otro servidor y funcionó. No se tocó ninguna
+  configuración de certificados.
+- `npm install` avisa de 3 vulnerabilidades (1 moderada, 2 altas). No se miraron ni se sabe si ya
+  existían antes; no se ejecutó `npm audit fix`.
+
+**Qué NO se hizo.** Sin `playwright.config.ts`, sin pruebas, sin cambios en código de la app. Solo se
+verificó que la página carga; no se probó ninguna función. El diagnóstico con IA no es probable con
+`npm run dev` (la función `/api/ai` es de Netlify; haría falta `netlify dev`, sin comprobar).
+`package.json` y `package-lock.json` quedan modificados y **sin commitear**.
+
+**Siguiente.** Decidir si se borran las dos copias `.bak-20261008-192557`, si se miran los avisos de
+`npm audit`, y si se crea un `playwright.config.ts` que arranque Vite solo + una prueba de humo. Los
+pendientes anteriores (verificar `detail: 'high'` en producción, troceado de `DiagnosisResult.tsx`,
+rama `mejoras-diseno-apple`) siguen igual: ver `ESTADO.md` y `handoff-archivo.md`.
+
+## Sesión 2026-10-29 — Auditoría del diagnóstico y A1 (tope diario de gasto), sin publicar
+
+**Qué se hizo.**
+1. **Auditoría de solo lectura** del flujo de diagnóstico → `G:\Laboratorio IA\3dPlant\handoff\AUDITORIA_3DPLANT.md`
+   (carpeta `handoff\` en `3dPlant`, fuera del repo). Código fuente + web publicada con REA
+   (`capture_browser_scenario`, evidencia `ev_8ef079cf…`) + búsqueda de textos en el JS publicado
+   (`index-BpikBkjs.js`). El análisis estructural de REA (`analyze_javascript_application`) falló por tiempo
+   (300 s); no cambia las conclusiones.
+2. **A1 construido** (Kike dijo «construye») en la rama **`a1-tope-diario`**, worktree **fuera del proyecto**
+   en `G:\Laboratorio IA\3dplant-a1`, creada desde **`origin/main` (`0a11186`)** y no desde `main` local
+   (que lleva `53654e1` sin subir, ajeno a A1). Detalle completo en
+   `G:\Laboratorio IA\3dPlant\handoff\A1_RESULTADO.md`.
+   - `netlify/lib/limites.mjs` (nuevo): `validateImage` (solo JPEG: prefijo + bytes `FF D8 FF`, mín. 1.000
+     bytes, máx. 1.500.000 caracteres) y `consumeDailyQuota` en Netlify Blobs (ETag + `onlyIfNew`/`onlyIfMatch`,
+     5 reintentos; IP con hash SHA-256 + día). Topes elegidos por Kike: diagnósticos 10/IP y 30 globales,
+     preguntas 30/IP y 100 globales (día UTC). `dailyStoreName`: producción `consultas-diarias`, otros
+     contextos `consultas-diarias-<contexto>`.
+   - `netlify/functions/ai.mjs`: usa lo anterior; 429 `{error, code:'daily-limit'}` al pasar el tope; 503 si
+     Blobs falla (decisión de Kike: cortar); `console.warn('AVISO A1: …')` si `context.ip` vacío.
+   - `.nvmrc` = `24`; `@netlify/blobs ^11.1.7` en `package.json`; `tests/a1.test.mjs` (nuevo).
+
+**Qué se comprobó (real).**
+- 27/27 pruebas (`node --test --experimental-test-module-mocks tests/a1.test.mjs`), Blobs y OpenAI simulados.
+- `aiService.ts` real (empaquetado con esbuild): el 429 de A1 da el mensaje amable «no está disponible…»;
+  el 429 vacío de Netlify sigue con «Has hecho varias consultas muy seguidas…».
+- `node --check`, empaquetado de la función con esbuild y `npm run build` OK; el build da el mismo
+  `index-BpikBkjs.js` que producción. CRLF en todos los archivos tocados.
+- Producción, con peticiones gratuitas (`{"action":"prueba-a1"}` → 400 antes de OpenAI): la función acepta
+  peticiones de un `Origin` ajeno; el límite por minuto deja pasar 5 y luego 429 (dos ráfagas).
+
+**Qué se descubrió.**
+- El límite de 3/min lo cuenta Netlify fuera de la función (sí vale entre ejecuciones), pero tarda hasta 10 s
+  en bloquear (documentado) y su ventana máxima es de 180 s → por eso hace falta Blobs para el tope diario.
+- Un `500` suelto de Netlify (`Request ID 01M64NEAJ2KQYNVXNYJYD2G7DX`, texto plano, no JSON de la función);
+  no se reprodujo en 16 peticiones. Causa sin ver (hace falta el panel de Netlify).
+- `package-lock.json` de `main` ya estaba desincronizado (`npm ci` falló por `@emnapi/*`); `npm install` lo
+  arregló en la rama: 30 paquetes añadidos, 0 quitados.
+- Ráfaga de 40 peticiones exactamente simultáneas (simulada): solo 5 cuentan y 35 darían 503. El tope nunca
+  se supera; mejora posible (espera aleatoria entre reintentos) no hecha.
+- Documentación de Netlify: `.nvmrc` gana a `NODE_VERSION` y al ajuste de la web; Node 24 es el valor por
+  defecto del build y el de respaldo de las funciones; `AWS_LAMBDA_JS_RUNTIME` (solo en la web de Netlify)
+  manda sobre todo. `context.ip` y `context.deploy.context` existen en funciones con `export default`.
+- El aviso «Diagnóstico orientativo» no está en producción (sigue solo en `mejoras-diseno-apple`).
+
+**Qué NO se hizo.** Sin commit, sin push, sin publicar y sin ninguna llamada real a OpenAI. Sin tocar la
+carpeta del proyecto (salvo estos documentos de cierre). `package.json.bak1` queda en el worktree, sin
+seguir en git.
+
+**Siguiente.** Kike revisa en Netlify `AWS_LAMBDA_JS_RUNTIME` y si Blobs gasta créditos de su plan. Después:
+commit + push de `a1-tope-diario` y vista previa (PR sin fusionar) con una `OPENAI_API_KEY` falsa solo para
+Deploy Previews, siguiendo `A1_RESULTADO.md`. El resto de hallazgos (A2-A5, M1-M6, B1-B6) siguen sin tocar.
