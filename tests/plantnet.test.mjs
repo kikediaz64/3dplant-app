@@ -17,8 +17,9 @@ const validBase64 = () => {
   return bytes.toString('base64');
 };
 const IMAGE = `data:image/jpeg;base64,${validBase64()}`;
-const SECRET = 'plantnet-key-secret-for-tests';
+const SECRET = crypto.randomUUID();
 const openAiCalls = [];
+let plantnetCalls;
 let plantnetResponse;
 let plantnetFailure;
 let plantnetDelay;
@@ -29,6 +30,14 @@ globalThis.fetch = async (url, init) => {
     return new Response(JSON.stringify({ choices: [{ message: { content: '{"speciesName":"Respuesta habitual"}' } }] }));
   }
   if (!String(url).startsWith('https://my-api.plantnet.org/')) throw new Error('URL inesperada');
+  plantnetCalls++;
+  assert.equal(init.method, 'POST');
+  assert.equal(url.searchParams.get('lang'), 'es');
+  assert.equal(url.searchParams.get('nb-results'), '3');
+  assert.equal(init.body.get('organs'), 'auto');
+  const image = init.body.get('images');
+  assert.equal(image.type, 'image/jpeg');
+  assert.deepEqual(Buffer.from(await image.arrayBuffer()), Buffer.from(validBase64(), 'base64'));
   if (plantnetFailure) throw plantnetFailure;
   if (plantnetDelay) {
     await new Promise((resolve, reject) => {
@@ -50,6 +59,7 @@ const candidate = (name, score, commonNames = []) => ({ species: { scientificNam
 describe('integración opcional con Pl@ntNet', () => {
   beforeEach(() => {
     stores.clear(); openAiCalls.length = 0;
+    plantnetCalls = 0;
     plantnetResponse = identifyResponse([]);
     plantnetFailure = null;
     plantnetDelay = false;
@@ -73,6 +83,9 @@ describe('integración opcional con Pl@ntNet', () => {
     ['sin clave', () => { delete process.env.PLANTNET_API_KEY; }],
     ['404', () => { plantnetResponse = new Response('{}', { status: 404 }); }],
     ['429', () => { plantnetResponse = new Response('{}', { status: 429 }); }],
+    ['JSON no válido', () => { plantnetResponse = new Response('invalid'); }],
+    ['estructura inesperada', () => { plantnetResponse = new Response('{"results":{}}'); }],
+    ['candidatos no válidos', () => { plantnetResponse = identifyResponse([null, { score: 0.9 }]); }],
     ['error de red', () => { plantnetFailure = new Error('red caída'); }],
     ['tiempo agotado', () => { plantnetDelay = true; }]
   ]) {
@@ -84,6 +97,7 @@ describe('integración opcional con Pl@ntNet', () => {
       assert.equal(openAiCalls.length, 1);
       assert.equal(openAiCalls[0].messages[0].content.length, 2);
       assert.equal(JSON.stringify(openAiCalls).includes(SECRET), false);
+      if (scenario[0] === 'sin clave') assert.equal(plantnetCalls, 0);
     });
   }
 
@@ -92,5 +106,27 @@ describe('integración opcional con Pl@ntNet', () => {
     const response = await post();
     assert.equal(response.status, 200);
     assert.equal(openAiCalls[0].messages[0].content.length, 2);
+  });
+
+  test('incluye como máximo tres candidatos y acepta el umbral de 0.2', async () => {
+    plantnetResponse = identifyResponse([
+      candidate('Rosa canina', 0.2), candidate('Rosa gallica', 0.1),
+      candidate('Rosa rubiginosa', 0.05), candidate('Rosa chinensis', 0.01)
+    ]);
+    await post();
+    const hint = openAiCalls[0].messages[0].content[0].text;
+    assert.match(hint, /Rosa canina \(20 %\)/);
+    assert.match(hint, /Rosa rubiginosa/);
+    assert.equal(hint.includes('Rosa chinensis'), false);
+  });
+
+  test('una cuota agotada impide llamar a Pl@ntNet y OpenAI', async () => {
+    for (let i = 0; i < 10; i++) {
+      plantnetResponse = identifyResponse([]);
+      assert.equal((await post()).status, 200);
+    }
+    assert.equal((await post()).status, 429);
+    assert.equal(plantnetCalls, 10);
+    assert.equal(openAiCalls.length, 10);
   });
 });

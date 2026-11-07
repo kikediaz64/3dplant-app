@@ -142,9 +142,8 @@ export default async (request, context) => {
     if (action === 'diagnose') {
       try {
         const candidates = await identifyPlant(diagnoseBase64);
-        const useful = candidates?.filter(candidate => candidate.score >= 0.2) ?? [];
-        if (useful.length) {
-          const hints = useful.map(candidate => {
+        if (candidates?.some(candidate => candidate.score >= 0.2)) {
+          const hints = candidates.map(candidate => {
             const commonNames = candidate.commonNames.length ? ` (${candidate.commonNames.join(', ')})` : '';
             return `${candidate.scientificName}${commonNames} (${Math.round(candidate.score * 100)} %)`;
           }).join(', ');
