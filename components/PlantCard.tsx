@@ -1,8 +1,8 @@
-
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plant } from '../types';
 import { getWateringStatus } from '../services/plantStorage';
+import { toxicityState } from '../services/careGuide';
 
 interface PlantCardProps {
   plant: Plant;
@@ -12,6 +12,7 @@ interface PlantCardProps {
 
 const PlantCard: React.FC<PlantCardProps> = ({ plant, onWater, onDelete }) => {
   const navigate = useNavigate();
+  const toxic = toxicityState(plant);
   const [justWatered, setJustWatered] = useState(false);
   useEffect(() => {
     if (!justWatered) return;
@@ -66,17 +67,14 @@ const PlantCard: React.FC<PlantCardProps> = ({ plant, onWater, onDelete }) => {
             <h3 className="text-xl font-bold text-text-main-light dark:text-text-main-dark leading-tight">{plant.name}</h3>
             <p className="text-sm text-text-sec-light dark:text-text-sec-dark font-medium">{plant.location}</p>
           </div>
-          {plant.isToxic && (
+          {toxic === true && (
             <div className="flex items-center gap-1 px-2 py-1 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-100 dark:border-red-900/30">
               <span className="material-symbols-outlined text-red-500 dark:text-red-400 text-[16px]">pets</span>
               <span className="text-[10px] font-bold text-red-600 dark:text-red-300 uppercase tracking-wide">Tóxica</span>
             </div>
           )}
-          {!plant.isToxic && (
-            <div className="flex items-center gap-1 px-2 py-1 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-100 dark:border-green-900/30">
-              <span className="material-symbols-outlined text-green-600 dark:text-green-400 text-[16px]">spa</span>
-              <span className="text-[10px] font-bold text-green-700 dark:text-green-300 uppercase tracking-wide">Segura</span>
-            </div>
+          {toxic === undefined && (
+            <p className="text-xs text-text-sec-light dark:text-text-sec-dark">Toxicidad: sin datos fiables</p>
           )}
         </div>
 

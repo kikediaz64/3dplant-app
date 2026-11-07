@@ -234,6 +234,15 @@ export const plantStorage = {
             // Una guía ausente o parcial no debe borrar cuidados de diagnósticos anteriores.
             const guideUpdates = Object.fromEntries(Object.entries(normalizeCareGuide(current.careGuide) || {})
                 .filter(([, value]) => Array.isArray(value) ? value.length > 0 : Boolean(value)));
+            const previousToxicity = normalizeCareGuide(plant.careGuide)?.toxicity;
+            const incomingToxicity = normalizeCareGuide(current.careGuide)?.toxicity;
+            if (previousToxicity && incomingToxicity) {
+                guideUpdates.toxicity = {
+                    pets: incomingToxicity.pets === 'desconocido' ? previousToxicity.pets : incomingToxicity.pets,
+                    people: incomingToxicity.people === 'desconocido' ? previousToxicity.people : incomingToxicity.people,
+                    note: incomingToxicity.note || previousToxicity.note,
+                };
+            }
             const detailUpdates = Object.fromEntries(Object.entries(current.careDetails || {})
                 .filter(([, value]) => typeof value === 'string' && value.trim())
                 .map(([key, value]) => [key, value.trim()]));

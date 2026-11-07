@@ -1,3 +1,4 @@
+import ToxicityNotice from '../components/ToxicityNotice';
 import { normalizeCareGuide, missingCareData, careText } from '../services/careGuide';
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -126,6 +127,8 @@ const PlantDetail: React.FC = () => {
 
             {/* Scrollable Content */}
             <div className="flex-1 overflow-y-auto px-5 py-4 pb-24">
+                <ToxicityNotice careGuide={guide} isToxic={plant.isToxic} />
+                <p className="mb-4 text-xs text-gray-500 dark:text-gray-400">Ante dudas sobre toxicidad, consulta a un veterinario o a un médico.</p>
                 {/* Historial de diagnósticos (las plantas de ejemplo no tienen) */}
                 {!isMockPlant(plant.id) && (
                     <div className="bg-gray-50 dark:bg-surface-dark rounded-xl p-4 mb-4">

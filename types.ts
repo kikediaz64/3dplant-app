@@ -5,6 +5,14 @@ export interface PlantDiagnosis {
   recommendations: string[];
 }
 
+export type ToxicityStatus = 'tóxica' | 'no tóxica' | 'desconocido';
+
+export interface PlantToxicity {
+  pets: ToxicityStatus;
+  people: ToxicityStatus;
+  note: string;
+}
+
 export interface CareGuide {
   origin?: string;
   soil?: string;
@@ -15,6 +23,7 @@ export interface CareGuide {
   temperature?: string;
   humidity?: string;
   commonPests?: string[];
+  toxicity?: PlantToxicity;
 }
 
 export type ZonaTipo = 'Interior' | 'Exterior';
@@ -28,7 +37,7 @@ export interface Plant {
   location: string;
   image: string;
   status: 'healthy' | 'warning' | 'sick';
-  isToxic: boolean;
+  isToxic?: boolean;
   needsWater: boolean;
   careDetails: {
     light: string;
