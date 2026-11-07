@@ -33,7 +33,7 @@ globalThis.fetch = async (url, init) => {
   plantnetCalls++;
   assert.equal(init.method, 'POST');
   assert.equal(url.searchParams.get('lang'), 'es');
-  assert.equal(url.searchParams.get('nb-results'), '3');
+  assert.equal(url.searchParams.get('nb-results'), '4');
   assert.equal(url.searchParams.get('include-related-images'), 'true');
   assert.equal(init.body.get('organs'), 'auto');
   const image = init.body.get('images');
@@ -76,10 +76,10 @@ describe('integración opcional con Pl@ntNet', () => {
     assert.equal(response.status, 200);
     const output = await response.json();
     assert.equal(output.text, '{"speciesName":"Respuesta habitual"}');
-    assert.equal(output.candidates.length, 1);
+    assert.equal(output.candidates.length, 2);
     assert.deepEqual(output.candidates[0], { scientificName: 'Monstera deliciosa', commonNames: ['costilla de Adán'], score: 0.85, imageUrl: 'https://images.test/monstera.jpg' });
     assert.match(openAiCalls[0].messages[0].content[0].text, /Monstera deliciosa \(costilla de Adán\) \(85 %\)/);
-    assert.match(openAiCalls[0].messages[0].content[0].text, /Philodendron bipinnatifidum.*10 %/);
+    assert.equal(openAiCalls[0].messages[0].content[0].text.includes('Philodendron'), false);
     assert.equal(JSON.stringify(openAiCalls).includes(SECRET), false);
   });
 
@@ -113,24 +113,33 @@ describe('integración opcional con Pl@ntNet', () => {
     });
   }
 
-  test('no añade candidatos con score inferior a 0.2', async () => {
-    plantnetResponse = identifyResponse([candidate('Rosa canina', 0.19, ['escaramujo'])]);
+  test('con score entre 0.05 y 0.2 devuelve la alternativa pero no la pista a la IA', async () => {
+    plantnetResponse = identifyResponse([candidate('Rosa canina', 0.07, ['escaramujo'])]);
+    const response = await post();
+    assert.equal(response.status, 200);
+    assert.equal(openAiCalls[0].messages[0].content.length, 2);
+    assert.deepEqual((await response.json()).candidates.map(c => c.scientificName), ['Rosa canina']);
+  });
+
+  test('no devuelve candidatos con score inferior a 0.05', async () => {
+    plantnetResponse = identifyResponse([candidate('Rosa canina', 0.03, ['escaramujo'])]);
     const response = await post();
     assert.equal(response.status, 200);
     assert.equal(openAiCalls[0].messages[0].content.length, 2);
     assert.equal((await response.json()).candidates, undefined);
   });
 
-  test('incluye como máximo tres candidatos y acepta el umbral de 0.2', async () => {
+  test('la pista a la IA solo incluye candidatos con score >= 0.2', async () => {
     plantnetResponse = identifyResponse([
       candidate('Rosa canina', 0.2), candidate('Rosa gallica', 0.1),
       candidate('Rosa rubiginosa', 0.05), candidate('Rosa chinensis', 0.01)
     ]);
-    await post();
+    const output = await (await post()).json();
     const hint = openAiCalls[0].messages[0].content[0].text;
     assert.match(hint, /Rosa canina \(20 %\)/);
-    assert.match(hint, /Rosa rubiginosa/);
-    assert.equal(hint.includes('Rosa chinensis'), false);
+    assert.equal(hint.includes('Rosa gallica'), false);
+    assert.equal(hint.includes('Rosa rubiginosa'), false);
+    assert.equal(output.candidates.length, 3);
   });
 
   test('una cuota agotada impide llamar a Pl@ntNet y OpenAI', async () => {

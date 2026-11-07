@@ -3,6 +3,8 @@ import { getStore } from '@netlify/blobs';
 import { validateImage, consumeDailyQuota, dailyStoreName } from '../lib/limites.mjs';
 import { identifyPlant } from '../lib/plantnet.mjs';
 
+// Debe coincidir con MIN_ALTERNATIVE_SCORE de services/diagnosisCandidates.ts.
+const MIN_ALTERNATIVE_SCORE = 0.05;
 const MODEL = 'gpt-4o-mini';
 const ENDPOINT = 'https://api.openai.com/v1/chat/completions';
 
@@ -178,9 +180,9 @@ export default async (request, context) => {
     } else if (action === 'diagnose') {
       try {
         const candidates = await identifyPlant(diagnoseBase64);
-        diagnoseCandidates = candidates?.filter(candidate => candidate.score >= 0.2);
+        diagnoseCandidates = candidates?.filter(candidate => candidate.score >= MIN_ALTERNATIVE_SCORE);
         if (candidates?.some(candidate => candidate.score >= 0.2)) {
-          const hints = candidates.map(candidate => {
+          const hints = candidates.filter(candidate => candidate.score >= 0.2).map(candidate => {
             const commonNames = candidate.commonNames.length ? ` (${candidate.commonNames.join(', ')})` : '';
             return `${candidate.scientificName}${commonNames} (${Math.round(candidate.score * 100)} %)`;
           }).join(', ');

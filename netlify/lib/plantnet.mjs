@@ -1,14 +1,14 @@
 const ENDPOINT = 'https://my-api.plantnet.org/v2/identify/all';
 const TIMEOUT_MS = 5000;
 
-/** Returns up to three Pl@ntNet candidates, or null when identification is unavailable. */
+/** Returns up to four Pl@ntNet candidates, or null when identification is unavailable. */
 export async function identifyPlant(base64, apiKey = process.env.PLANTNET_API_KEY) {
   if (!apiKey || typeof base64 !== 'string') return null;
 
   const url = new URL(ENDPOINT);
   url.searchParams.set('api-key', apiKey);
   url.searchParams.set('lang', 'es');
-  url.searchParams.set('nb-results', '3');
+  url.searchParams.set('nb-results', '4');
   url.searchParams.set('include-related-images', 'true');
 
   const form = new FormData();
@@ -22,7 +22,7 @@ export async function identifyPlant(base64, apiKey = process.env.PLANTNET_API_KE
     if (!response.ok) return null;
     const data = await response.json();
     if (!Array.isArray(data?.results)) return null;
-    return data.results.slice(0, 3).flatMap(result => {
+    return data.results.slice(0, 4).flatMap(result => {
       const scientificName = result?.species?.scientificNameWithoutAuthor;
       const score = result?.score;
       if (typeof scientificName !== 'string' || !scientificName.trim() || !Number.isFinite(score)) return [];

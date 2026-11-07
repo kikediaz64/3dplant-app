@@ -120,7 +120,7 @@ test('las plantas de ejemplo no muestran cuidados inventados en las tarjetas', a
 const { otherCandidates } = await import('../services/diagnosisCandidates.ts');
 test('las alternativas excluyen la especie actual, duplicados y scores bajos', () => {
   const candidate = (scientificName, score = 0.5) => ({ scientificName, score, commonNames: [], imageUrl: null });
-  const result = { scientificName: 'Rosa canina', candidates: [candidate('ROSA CANINA'), candidate('Rosa gallica', 0.03), candidate('Rosa alba', 0.2), candidate('rosa alba'), candidate('Rosa rubiginosa')] };
+  const result = { scientificName: 'Rosa canina', candidates: [candidate('ROSA CANINA'), candidate('Rosa gallica', 0.03), candidate('Rosa alba', 0.07), candidate('rosa alba'), candidate('Rosa rubiginosa')] };
   assert.deepEqual(otherCandidates(result).map(c => c.scientificName), ['Rosa alba', 'Rosa rubiginosa']);
   assert.deepEqual(otherCandidates({ scientificName: 'Rosa' }), []);
 });
