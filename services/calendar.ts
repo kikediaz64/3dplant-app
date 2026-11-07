@@ -2,9 +2,26 @@ export type CalendarReminderKind = 'riego' | 'abono';
 
 const escapeText = (value: string): string => value
   .replace(/\\/g, '\\\\')
-  .replace(/\r?\n/g, '\\n')
+  .replace(/\r\n|\r|\n/g, '\\n')
   .replace(/,/g, '\\,')
   .replace(/;/g, '\\;');
+
+// RFC 5545 limits physical lines to 75 octets; never split a UTF-8 character.
+const foldLine = (line: string): string => {
+  const encoder = new TextEncoder();
+  let result = '';
+  let octets = 0;
+  for (const character of line) {
+    const size = encoder.encode(character).length;
+    if (octets + size > 75) {
+      result += '\r\n ';
+      octets = 1;
+    }
+    result += character;
+    octets += size;
+  }
+  return result;
+};
 
 const formatUtc = (date: Date): string => date.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}Z$/, 'Z');
 
@@ -29,17 +46,20 @@ export function createRecurringReminderIcs({
     'BEGIN:VEVENT', `UID:${uid}`, `DTSTAMP:${formatUtc(new Date())}`, `DTSTART:${formatUtc(start)}`,
     `DTEND:${formatUtc(end)}`, `RRULE:FREQ=DAILY;INTERVAL=${intervalDays}`, `SUMMARY:${escapeText(summary)}`,
     'END:VEVENT', 'END:VCALENDAR', ''
-  ].join('\r\n');
+  ].map(foldLine).join('\r\n');
 }
 
 export function fertilizerIntervalDays(value?: string): number | undefined {
-  if (!value) return undefined;
+  if (typeof value !== 'string' || !value.trim()) return undefined;
   const text = value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-  const every = text.match(/(?:cada|cada\s+)\s*(\d+)\s*(dias?|semanas?|mes(?:es)?)/);
+  // Ranges, alternatives and negations do not describe one reliable interval.
+  if (/\b(?:no|nunca|sin|o)\b|\d\s*(?:[-–—/,.]|a\b|o\b)\s*\d/.test(text)) return undefined;
+  const every = text.match(/\bcada\s+(\d+)\s*(dias?|semanas?|mes(?:es)?)\b/);
   if (every) {
     const amount = Number(every[1]);
     const unit = every[2];
-    return amount * (unit.startsWith('semana') ? 7 : unit.startsWith('mes') ? 30 : 1);
+    const days = amount * (unit.startsWith('semana') ? 7 : unit.startsWith('mes') ? 30 : 1);
+    return Number.isSafeInteger(days) && days > 0 ? days : undefined;
   }
   if (/\bsemanal(?:mente)?\b/.test(text)) return 7;
   if (/\bquincenal(?:mente)?\b/.test(text)) return 15;
@@ -53,6 +73,9 @@ export function downloadCalendarReminder(ics: string, filename: string): void {
   const link = document.createElement('a');
   link.href = url;
   link.download = filename;
+  document.body.appendChild(link);
   link.click();
-  URL.revokeObjectURL(url);
+  link.remove();
+  // Give the browser time to start reading the download before releasing it.
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
