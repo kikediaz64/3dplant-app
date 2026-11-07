@@ -94,7 +94,7 @@ export default async (request, context) => {
         ],
         response_format: { type: 'json_object' },
         temperature: 0.2,
-        max_tokens: 1200
+        max_tokens: 2000
       };
     } else if (action === 'ask') {
       const { question } = body;
@@ -190,6 +190,9 @@ export default async (request, context) => {
     }
 
     const data = await res.json();
+    if (data?.choices?.[0]?.finish_reason === 'length') {
+      return json({ error: 'La respuesta de la IA llegó incompleta. Vuelve a intentarlo.', code: 'truncated' }, 502);
+    }
     const text = data?.choices?.[0]?.message?.content ?? '';
     return new Response(JSON.stringify({ text }), { status: 200, headers: { 'Content-Type': 'application/json' } });
   } catch (error) {
