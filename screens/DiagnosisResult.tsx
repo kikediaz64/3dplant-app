@@ -406,10 +406,10 @@ const DiagnosisResult: React.FC = () => {
                   </>
                 )}
                 {result.healthStatus === 'Saludable' && result.urgency && <p className="mt-1 text-xs font-semibold">Urgencia: {result.urgency}</p>}
-                <div className="mt-4 border-t border-current/15 pt-3">
+                <div className="mt-4 border-t border-current pt-3">
                   <h3 className="text-sm font-bold">Qué hacer ahora</h3>
                   {result.actionPlan.slice(0, 3).length ? (
-                    <ol className="mt-2 space-y-2">
+                    <ol className="mt-2 space-y-2 list-decimal pl-5">
                       {result.actionPlan.slice(0, 3).map((action, idx) => (
                         <li key={idx} className="text-sm leading-relaxed">
                           <span className="font-bold">{action.title}</span>
@@ -477,7 +477,6 @@ const DiagnosisResult: React.FC = () => {
               ) : null}
             </div>
           ) : null}
-
         </div>
       </div>
 
