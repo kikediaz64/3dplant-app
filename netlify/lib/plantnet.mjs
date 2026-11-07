@@ -1,0 +1,38 @@
+const ENDPOINT = 'https://my-api.plantnet.org/v2/identify/all';
+const TIMEOUT_MS = 5000;
+
+/** Returns up to three Pl@ntNet candidates, or null when identification is unavailable. */
+export async function identifyPlant(base64, apiKey = process.env.PLANTNET_API_KEY) {
+  if (!apiKey || typeof base64 !== 'string') return null;
+
+  const url = new URL(ENDPOINT);
+  url.searchParams.set('api-key', apiKey);
+  url.searchParams.set('lang', 'es');
+  url.searchParams.set('nb-results', '3');
+
+  const form = new FormData();
+  form.append('images', new Blob([Buffer.from(base64, 'base64')], { type: 'image/jpeg' }), 'plant.jpg');
+  form.append('organs', 'auto');
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
+  try {
+    const response = await fetch(url, { method: 'POST', body: form, signal: controller.signal });
+    if (!response.ok) return null;
+    const data = await response.json();
+    if (!Array.isArray(data?.results)) return null;
+    return data.results.slice(0, 3).flatMap(result => {
+      const scientificName = result?.species?.scientificNameWithoutAuthor;
+      const score = result?.score;
+      if (typeof scientificName !== 'string' || !scientificName.trim() || !Number.isFinite(score)) return [];
+      const commonNames = Array.isArray(result.species.commonNames)
+        ? result.species.commonNames.filter(name => typeof name === 'string')
+        : [];
+      return [{ scientificName: scientificName.trim(), commonNames, score }];
+    });
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
