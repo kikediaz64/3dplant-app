@@ -25,6 +25,30 @@ const foldLine = (line: string): string => {
 
 const formatUtc = (date: Date): string => date.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}Z$/, 'Z');
 
+const pad = (value: number): string => String(value).padStart(2, '0');
+
+// Floating local time (no Z): 09:00 stays 09:00 in the user's calendar.
+const formatLocal = (date: Date): string => `${date.getFullYear()}${pad(date.getMonth() + 1)}${pad(date.getDate())}T${pad(date.getHours())}${pad(date.getMinutes())}${pad(date.getSeconds())}`;
+
+const atNineLocal = (date: Date): Date => new Date(date.getFullYear(), date.getMonth(), date.getDate(), 9, 0, 0, 0);
+
+export function nextReminderStart({ lastWateredAt, intervalDays, now = new Date() }: {
+  lastWateredAt?: string;
+  intervalDays: number;
+  now?: Date;
+}): Date {
+  const tomorrow = atNineLocal(new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1));
+  if (!lastWateredAt || !Number.isInteger(intervalDays) || intervalDays <= 0) return tomorrow;
+  const last = new Date(lastWateredAt);
+  if (Number.isNaN(last.getTime())) return tomorrow;
+  const next = atNineLocal(new Date(last.getFullYear(), last.getMonth(), last.getDate() + intervalDays));
+  return next.getTime() >= tomorrow.getTime() ? next : tomorrow;
+}
+
+export function isIOS(userAgent: string = '', platform: string = '', maxTouchPoints: number = 0): boolean {
+  return /iPad|iPhone|iPod/.test(userAgent) || (platform === 'MacIntel' && maxTouchPoints > 1);
+}
+
 export function createRecurringReminderIcs({
   plantName,
   kind,
@@ -43,8 +67,9 @@ export function createRecurringReminderIcs({
   const summary = kind === 'riego' ? `Regar ${plantName}` : `Abonar ${plantName}`;
   return [
     'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//3dPlant//Recordatorios//ES', 'CALSCALE:GREGORIAN',
-    'BEGIN:VEVENT', `UID:${uid}`, `DTSTAMP:${formatUtc(new Date())}`, `DTSTART:${formatUtc(start)}`,
-    `DTEND:${formatUtc(end)}`, `RRULE:FREQ=DAILY;INTERVAL=${intervalDays}`, `SUMMARY:${escapeText(summary)}`,
+    'BEGIN:VEVENT', `UID:${uid}`, `DTSTAMP:${formatUtc(new Date())}`, `DTSTART:${formatLocal(start)}`,
+    `DTEND:${formatLocal(end)}`, `RRULE:FREQ=DAILY;INTERVAL=${intervalDays}`, `SUMMARY:${escapeText(summary)}`,
+    'BEGIN:VALARM', 'ACTION:DISPLAY', `DESCRIPTION:${escapeText(summary)}`, 'TRIGGER:PT0M', 'END:VALARM',
     'END:VEVENT', 'END:VCALENDAR', ''
   ].map(foldLine).join('\r\n');
 }
@@ -68,6 +93,11 @@ export function fertilizerIntervalDays(value?: string): number | undefined {
 }
 
 export function downloadCalendarReminder(ics: string, filename: string): void {
+  if (isIOS(navigator.userAgent, navigator.platform, navigator.maxTouchPoints)) {
+    // iOS Safari saves downloads to Files; opening the data URL offers "Add to Calendar".
+    window.location.href = 'data:text/calendar;charset=utf-8,' + encodeURIComponent(ics);
+    return;
+  }
   const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');

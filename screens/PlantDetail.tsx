@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { plantStorage, getWateringStatus, getDiagnosisHistory, formatLastWateredAt } from '../services/plantStorage';
 import { MOCK_PLANTS, isMockPlant } from '../constants';
-import { createRecurringReminderIcs, downloadCalendarReminder, fertilizerIntervalDays } from '../services/calendar';
+import { createRecurringReminderIcs, downloadCalendarReminder, fertilizerIntervalDays, nextReminderStart } from '../services/calendar';
 
 // Fecha y hora legibles para el historial; si la fecha no es válida, no muestra nada.
 const formatEntryDate = (iso: string) => {
@@ -88,7 +88,8 @@ const PlantDetail: React.FC = () => {
     const guide = normalizeCareGuide(plant.careGuide);
     const fertilizerDays = fertilizerIntervalDays(guide?.fertilizer);
     const exportReminder = (kind: 'riego' | 'abono', intervalDays: number) => {
-        const ics = createRecurringReminderIcs({ plantName: plant.name, kind, intervalDays });
+        const start = nextReminderStart({ lastWateredAt: kind === 'riego' ? plant.lastWateredAt : undefined, intervalDays, now: new Date() });
+        const ics = createRecurringReminderIcs({ plantName: plant.name, kind, intervalDays, start });
         const safeName = plant.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9-_]+/g, '-').replace(/^-|-$/g, '') || 'planta';
         downloadCalendarReminder(ics, `${kind}-${safeName}.ics`);
     };
