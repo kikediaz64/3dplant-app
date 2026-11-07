@@ -34,6 +34,7 @@ globalThis.fetch = async (url, init) => {
   assert.equal(init.method, 'POST');
   assert.equal(url.searchParams.get('lang'), 'es');
   assert.equal(url.searchParams.get('nb-results'), '3');
+  assert.equal(url.searchParams.get('include-related-images'), 'true');
   assert.equal(init.body.get('organs'), 'auto');
   const image = init.body.get('images');
   assert.equal(image.type, 'image/jpeg');
@@ -54,7 +55,7 @@ const post = () => handler(new Request('https://example.test/api/ai', {
   body: JSON.stringify({ action: 'diagnose', imageBase64: IMAGE })
 }), { ip: '1.2.3.4', deploy: { context: 'production' } });
 const identifyResponse = results => new Response(JSON.stringify({ results }), { status: 200 });
-const candidate = (name, score, commonNames = []) => ({ species: { scientificNameWithoutAuthor: name, commonNames }, score });
+const candidate = (name, score, commonNames = [], images) => ({ species: { scientificNameWithoutAuthor: name, commonNames }, score, ...(images ? { images } : {}) });
 
 describe('integración opcional con Pl@ntNet', () => {
   beforeEach(() => {
@@ -68,15 +69,23 @@ describe('integración opcional con Pl@ntNet', () => {
 
   test('añade nombres comunes y porcentajes cuando hay resultados útiles', async () => {
     plantnetResponse = identifyResponse([
-      candidate('Monstera deliciosa', 0.85, ['costilla de Adán']),
+      candidate('Monstera deliciosa', 0.85, ['costilla de Adán'], [{ url: { m: 'https://images.test/monstera.jpg' } }]),
       candidate('Philodendron bipinnatifidum', 0.1, ['filodendro'])
     ]);
     const response = await post();
     assert.equal(response.status, 200);
-    assert.equal((await response.json()).text, '{"speciesName":"Respuesta habitual"}');
+    const output = await response.json();
+    assert.equal(output.text, '{"speciesName":"Respuesta habitual"}');
+    assert.deepEqual(output.candidates[0], { scientificName: 'Monstera deliciosa', commonNames: ['costilla de Adán'], score: 0.85, imageUrl: 'https://images.test/monstera.jpg' });
     assert.match(openAiCalls[0].messages[0].content[0].text, /Monstera deliciosa \(costilla de Adán\) \(85 %\)/);
     assert.match(openAiCalls[0].messages[0].content[0].text, /Philodendron bipinnatifidum.*10 %/);
     assert.equal(JSON.stringify(openAiCalls).includes(SECRET), false);
+  });
+
+  test('devuelve candidatas sin foto con imageUrl null', async () => {
+    plantnetResponse = identifyResponse([candidate('Rosa canina', 0.42, ['escaramujo'])]);
+    const output = await (await post()).json();
+    assert.deepEqual(output.candidates, [{ scientificName: 'Rosa canina', commonNames: ['escaramujo'], score: 0.42, imageUrl: null }]);
   });
 
   for (const scenario of [
@@ -93,7 +102,9 @@ describe('integración opcional con Pl@ntNet', () => {
       scenario[1]();
       const response = await post();
       assert.equal(response.status, 200);
-      assert.equal((await response.json()).text, '{"speciesName":"Respuesta habitual"}');
+      const output = await response.json();
+      assert.equal(output.text, '{"speciesName":"Respuesta habitual"}');
+      assert.equal(output.candidates, undefined);
       assert.equal(openAiCalls.length, 1);
       assert.equal(openAiCalls[0].messages[0].content.length, 2);
       assert.equal(JSON.stringify(openAiCalls).includes(SECRET), false);

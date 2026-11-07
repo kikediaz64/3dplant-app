@@ -9,6 +9,7 @@ export async function identifyPlant(base64, apiKey = process.env.PLANTNET_API_KE
   url.searchParams.set('api-key', apiKey);
   url.searchParams.set('lang', 'es');
   url.searchParams.set('nb-results', '3');
+  url.searchParams.set('include-related-images', 'true');
 
   const form = new FormData();
   form.append('images', new Blob([Buffer.from(base64, 'base64')], { type: 'image/jpeg' }), 'plant.jpg');
@@ -28,7 +29,13 @@ export async function identifyPlant(base64, apiKey = process.env.PLANTNET_API_KE
       const commonNames = Array.isArray(result.species.commonNames)
         ? result.species.commonNames.filter(name => typeof name === 'string')
         : [];
-      return [{ scientificName: scientificName.trim(), commonNames, score }];
+      const relatedImage = Array.isArray(result.images) ? result.images[0] : null;
+      const imageUrl = typeof relatedImage?.url === 'string'
+        ? relatedImage.url
+        : relatedImage?.url && typeof relatedImage.url === 'object'
+          ? relatedImage.url.m || relatedImage.url.o || relatedImage.url.s || null
+          : null;
+      return [{ scientificName: scientificName.trim(), commonNames, score, imageUrl: typeof imageUrl === 'string' ? imageUrl : null }];
     });
   } catch {
     return null;

@@ -55,7 +55,14 @@ function toArray<T>(value: unknown, fromString: (s: string) => T): T[] {
   return [];
 }
 
-async function callAI(body: Record<string, unknown>): Promise<string> {
+interface PlantCandidate {
+  scientificName: string;
+  commonNames: string[];
+  score: number;
+  imageUrl: string | null;
+}
+
+async function callAI(body: Record<string, unknown>): Promise<{ text: string; candidates?: PlantCandidate[] }> {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 60000);
 
@@ -82,7 +89,7 @@ async function callAI(body: Record<string, unknown>): Promise<string> {
     }
 
     const data = await res.json();
-    return data.text ?? '';
+    return { text: data.text ?? '', candidates: Array.isArray(data.candidates) ? data.candidates : undefined };
   } catch (error) {
     if (error instanceof AIUserError) throw error;
     if (error instanceof Error && error.name === 'AbortError') {
@@ -95,7 +102,8 @@ async function callAI(body: Record<string, unknown>): Promise<string> {
 }
 
 export const diagnosePlant = async (base64Image: string): Promise<DiagnosisResult> => {
-  const text = await callAI({ action: 'diagnose', imageBase64: base64Image });
+  const response = await callAI({ action: 'diagnose', imageBase64: base64Image });
+  const text = response.text;
   let parsed: any;
   try {
     parsed = JSON.parse(extractJson(text));
@@ -109,6 +117,7 @@ export const diagnosePlant = async (base64Image: string): Promise<DiagnosisResul
   }
   return {
     ...parsed,
+    candidates: response.candidates,
     confidence: normalizeConfidence(parsed.confidence),
     severity: normalizeSeverity(parsed.severity),
     actionPlan: toArray(parsed.actionPlan, s => ({ title: 'Recomendación', description: s, icon: 'task_alt' })),
@@ -119,6 +128,6 @@ export const diagnosePlant = async (base64Image: string): Promise<DiagnosisResul
 };
 
 export const askPlantExpert = async (question: string, plantContext?: string): Promise<string> => {
-  const text = await callAI({ action: 'ask', question, plantContext });
+  const { text } = await callAI({ action: 'ask', question, plantContext });
   return text || 'No pude generar una respuesta. Inténtalo de nuevo.';
 };

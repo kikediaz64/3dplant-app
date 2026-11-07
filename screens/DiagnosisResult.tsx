@@ -228,6 +228,14 @@ const DiagnosisResult: React.FC = () => {
     setCompletedActions(newActions);
   };
 
+  const selectCandidate = (candidate: NonNullable<IDiagnosisResult['candidates']>[number]) => {
+    setResult(current => current ? {
+      ...current,
+      speciesName: candidate.commonNames[0] || candidate.scientificName,
+      scientificName: candidate.scientificName
+    } : current);
+  };
+
   const handleSavePlant = async () => {
     if (!result || savingRef.current) return;
     savingRef.current = true;
@@ -367,6 +375,28 @@ const DiagnosisResult: React.FC = () => {
               </div>
               <h1 className="text-2xl font-bold text-gray-900 dark:text-white leading-tight">{result.speciesName}</h1>
               <p className="text-gray-500 dark:text-gray-400 text-sm font-medium mt-0.5 italic">{result.scientificName}</p>
+              {(() => {
+                const otherCandidates = (result.candidates || [])
+                  .filter(candidate => candidate.scientificName.toLowerCase() !== result.scientificName?.toLowerCase())
+                  .slice(0, 3);
+                if (!otherCandidates.length) return null;
+                return (
+                  <div className="mt-3">
+                    <p className="text-xs font-bold text-gray-600 dark:text-gray-300 mb-2">¿No es esta? Otras posibles</p>
+                    <div className="flex gap-2 overflow-x-auto pb-1">
+                      {otherCandidates.map(candidate => (
+                        <button key={candidate.scientificName} type="button" onClick={() => selectCandidate(candidate)}
+                          className="w-28 shrink-0 overflow-hidden rounded-lg border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 text-left active:scale-95">
+                          {candidate.imageUrl ? <img src={candidate.imageUrl} alt="" className="h-16 w-full object-cover" loading="lazy" />
+                            : <div className="h-16 w-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center"><span className="material-symbols-outlined text-gray-400">local_florist</span></div>}
+                          <span className="block px-2 pt-1.5 text-xs font-semibold text-gray-900 dark:text-white line-clamp-2">{candidate.commonNames[0] || candidate.scientificName}</span>
+                          <span className="block px-2 pb-2 pt-0.5 text-[10px] text-gray-500 dark:text-gray-400">{Math.round(candidate.score * 100)} % Pl@ntNet</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
               {result.family && <p className="text-gray-400 dark:text-gray-500 text-xs mt-0.5">Familia: {result.family}</p>}
             </div>
             <div className="text-center shrink-0">

@@ -74,6 +74,7 @@ export default async (request, context) => {
 
     let payload;
     let diagnoseBase64;
+    let diagnoseCandidates;
     if (action === 'diagnose') {
       const image = validateImage(body.imageBase64);
       if (!image.ok) {
@@ -145,6 +146,7 @@ export default async (request, context) => {
     if (action === 'diagnose') {
       try {
         const candidates = await identifyPlant(diagnoseBase64);
+        diagnoseCandidates = candidates;
         if (candidates?.some(candidate => candidate.score >= 0.2)) {
           const hints = candidates.map(candidate => {
             const commonNames = candidate.commonNames.length ? ` (${candidate.commonNames.join(', ')})` : '';
@@ -194,7 +196,7 @@ export default async (request, context) => {
       return json({ error: 'La respuesta de la IA llegó incompleta. Vuelve a intentarlo.', code: 'truncated' }, 502);
     }
     const text = data?.choices?.[0]?.message?.content ?? '';
-    return new Response(JSON.stringify({ text }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    return new Response(JSON.stringify({ text, ...(diagnoseCandidates?.length ? { candidates: diagnoseCandidates } : {}) }), { status: 200, headers: { 'Content-Type': 'application/json' } });
   } catch (error) {
     return new Response(JSON.stringify({ error: error?.message || 'Error' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
   }
