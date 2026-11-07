@@ -1,5 +1,4 @@
 import { diagnosisCare } from '../services/careGuide';
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { diagnosePlant, AIUserError, type AIUserErrorKind } from '../services/aiService';

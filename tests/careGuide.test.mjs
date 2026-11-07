@@ -78,3 +78,41 @@ test('campos malformados de IA o de plantas importadas no rompen el detalle', ()
   assert.match(renderDetail(plant.id), /Sin datos para esta planta/);
   assert.deepEqual(diagnosisCare({ commonPests: [null, 42, ' Cochinilla ', ''] }).careGuide.commonPests, ['Cochinilla']);
 });
+
+test('un reescaneo sin guía o con campos vacíos conserva los cuidados anteriores', () => {
+  store.clear();
+  const guide = { origin: 'Sudamérica', watering: 'Regar al secarse la superficie', light: 'Sol directo', temperature: '20-28°C', humidity: 'Ventilación adecuada', commonPests: ['Mosca blanca'] };
+  const plant = plantStorage.savePlant({ ...base, ...diagnosisCare(guide) });
+  const entry = { id: 'rescan', date: new Date().toISOString(), image: '', problems: [], recommendations: [] };
+  for (const incoming of [undefined, {}, { watering: ' ', light: null, temperature: 42, commonPests: [] }]) {
+    plantStorage.addDiagnosis(plant.id, entry, { status: 'healthy', image: 'nueva.jpg', ...diagnosisCare(incoming) });
+    const saved = plantStorage.getSavedPlants()[0];
+    assert.deepEqual(saved.careGuide, guide);
+    assert.deepEqual(saved.careDetails, diagnosisCare(guide).careDetails);
+    assert.equal(saved.image, 'nueva.jpg');
+  }
+  plantStorage.addDiagnosis(plant.id, entry, { status: 'healthy', image: '', ...diagnosisCare({ watering: 'Riego actualizado', commonPests: ['Pulgón'] }) });
+  const saved = plantStorage.getSavedPlants()[0];
+  assert.deepEqual(saved.careGuide, { ...guide, watering: 'Riego actualizado', commonPests: ['Pulgón'] });
+  assert.deepEqual(saved.careDetails, { ...diagnosisCare(guide).careDetails, water: 'Riego actualizado' });
+  assert.match(renderDetail(plant.id), /Riego actualizado/);
+});
+
+test('remedios muestra avisos generales sin pedir un diagnóstico que no aporta remedios', () => {
+  store.clear();
+  const plant = plantStorage.savePlant({ ...base, ...diagnosisCare(undefined) });
+  const remedies = renderDetail(plant.id).split('Remedios caseros</h3>')[1];
+  assert.ok(remedies);
+  assert.doesNotMatch(remedies, /Sin datos para esta planta|leche|bicarbonato/);
+  assert.match(remedies, /Muchos remedios virales son mitos/);
+});
+
+test('las plantas de ejemplo no muestran cuidados inventados en las tarjetas', async () => {
+  const { MOCK_PLANTS } = await import('../constants.tsx');
+  for (const plant of MOCK_PLANTS) {
+    assert.deepEqual(plant.careDetails, { light: '', water: '', temp: '', humidity: '' });
+    const card = renderToStaticMarkup(React.createElement(MemoryRouter, null, React.createElement(PlantCard, { plant })));
+    assert.doesNotMatch(card, /Media|20°C|18-24°C/);
+    assert.match(card, /Riego: Sin datos/);
+  }
+});

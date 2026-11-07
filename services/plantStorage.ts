@@ -1,5 +1,6 @@
 
 import { Plant, DiagnosisEntry } from '../types';
+import { normalizeCareGuide } from './careGuide';
 
 export interface SavedPlant extends Plant {
     scannedAt: string;
@@ -218,9 +219,20 @@ export const plantStorage = {
             // Si era una planta antigua, su diagnóstico previo pasa a ser una entrada real.
             const history = [entry, ...getDiagnosisHistory(plant)].slice(0, MAX_DIAGNOSIS_HISTORY);
 
+            // Una guía ausente o parcial no debe borrar cuidados de diagnósticos anteriores.
+            const guideUpdates = Object.fromEntries(Object.entries(normalizeCareGuide(current.careGuide) || {})
+                .filter(([, value]) => Array.isArray(value) ? value.length > 0 : Boolean(value)));
+            const detailUpdates = Object.fromEntries(Object.entries(current.careDetails || {})
+                .filter(([, value]) => typeof value === 'string' && value.trim())
+                .map(([key, value]) => [key, value.trim()]));
+
             plants[index] = {
                 ...plant,
                 ...current,
+                careGuide: Object.keys(guideUpdates).length
+                    ? { ...normalizeCareGuide(plant.careGuide), ...guideUpdates }
+                    : plant.careGuide,
+                careDetails: { ...plant.careDetails, ...detailUpdates },
                 diagnosisHistory: history,
                 lastUpdated: new Date().toISOString(),
             };

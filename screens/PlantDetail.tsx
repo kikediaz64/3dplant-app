@@ -1,5 +1,4 @@
 import { normalizeCareGuide, missingCareData, careText } from '../services/careGuide';
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { plantStorage, getWateringStatus, getDiagnosisHistory } from '../services/plantStorage';
@@ -285,7 +284,6 @@ const PlantDetail: React.FC = () => {
                         <span className="text-xl">🏡</span>
                         <h3 className="text-base font-bold text-gray-900 dark:text-white">Remedios caseros</h3>
                     </div>
-                    <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">{missingCareData}</p>
                     <ul className="text-sm text-gray-600 dark:text-gray-300 list-disc list-inside space-y-1 mt-2">
                         <li>Cáscara de huevo y posos de café: consulta si son adecuados para esta especie antes de añadirlos al sustrato.</li>
                         <li>Agua oxigenada y vinagre: no aplicarlos sin comprobar su uso y dosis para esta planta.</li>
