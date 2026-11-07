@@ -49,6 +49,7 @@ interface DiagnosisErrorProps {
 // arranca sola. Solo el rate limit tiene una espera real; la cuota agotada no (depende del saldo).
 const DiagnosisError: React.FC<DiagnosisErrorProps> = ({ message, kind, onRetry, onNewPhoto, onHome }) => {
   const isRateLimit = kind === 'rate-limit';
+  const isDailyLimit = kind === 'daily-limit';
   // Se cuenta contra una hora objetivo (no restando de 1 en 1) para que no se desfase
   // si el navegador frena el temporizador con la pestaña en segundo plano.
   const [endAt] = useState(() => Date.now() + RETRY_WAIT_SECONDS * 1000);
@@ -74,7 +75,7 @@ const DiagnosisError: React.FC<DiagnosisErrorProps> = ({ message, kind, onRetry,
       <h2 className="text-2xl font-bold mb-4 text-white">¡Oops!</h2>
       <p className="text-text-sec-dark font-medium mb-8 max-w-md">{message}</p>
       <div className="flex gap-3">
-        {kind ? (
+        {isDailyLimit ? null : kind ? (
           <button
             onClick={onRetry}
             disabled={waiting}
@@ -94,7 +95,7 @@ const DiagnosisError: React.FC<DiagnosisErrorProps> = ({ message, kind, onRetry,
           onClick={onHome}
           className="px-6 py-3 rounded-xl bg-gray-700 hover:bg-gray-600 text-white font-bold transition-colors active:scale-95"
         >
-          Volver al inicio
+          {isDailyLimit ? 'Volver' : 'Volver al inicio'}
         </button>
       </div>
     </div>

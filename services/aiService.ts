@@ -4,7 +4,7 @@ import { DiagnosisResult } from "../types";
 const FUNCTION_URL = '/api/ai';
 
 // Error con un mensaje ya listo para enseñar al usuario tal cual (sin prefijos técnicos).
-export type AIUserErrorKind = 'rate-limit' | 'unavailable';
+export type AIUserErrorKind = 'rate-limit' | 'daily-limit' | 'unavailable';
 
 export class AIUserError extends Error {
   kind: AIUserErrorKind;
@@ -15,6 +15,7 @@ export class AIUserError extends Error {
 }
 
 const RATE_LIMIT_MESSAGE = 'Has hecho varias consultas muy seguidas. Espera un minuto y vuelve a intentarlo.';
+const DAILY_LIMIT_MESSAGE = 'Has llegado al límite de diagnósticos de hoy. Vuelve mañana.';
 const UNAVAILABLE_MESSAGE = 'El servicio de diagnóstico no está disponible en este momento. Inténtalo más tarde.';
 const BAD_RESPONSE_MESSAGE = 'La IA devolvió una respuesta que no se pudo entender. Inténtalo de nuevo.';
 
@@ -104,8 +105,10 @@ async function callAI(body: Record<string, unknown>): Promise<{ text: string; ca
     if (!res.ok) {
       const err = await res.json().catch(() => null);
       if (res.status === 429) {
-        // Con cuerpo JSON: el 429 lo generó ai.mjs por cuota/saldo de OpenAI (detalle solo a consola).
-        // Sin cuerpo: es el rate limit de Netlify (demasiadas consultas seguidas).
+        if (err?.code === 'daily-limit') {
+          throw new AIUserError(DAILY_LIMIT_MESSAGE, 'daily-limit');
+        }
+        // Sin cuerpo: rate limit de Netlify. JSON con error pero sin código: cuota/saldo de OpenAI.
         if (err?.error) {
           console.error('IA no disponible (cuota o saldo de OpenAI):', err.error);
           throw new AIUserError(UNAVAILABLE_MESSAGE, 'unavailable');
