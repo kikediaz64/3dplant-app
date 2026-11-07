@@ -2,8 +2,8 @@ const ENDPOINT = 'https://my-api.plantnet.org/v2/identify/all';
 const TIMEOUT_MS = 5000;
 
 /** Returns up to four Pl@ntNet candidates, or null when identification is unavailable. */
-export async function identifyPlant(base64, apiKey = process.env.PLANTNET_API_KEY) {
-  if (!apiKey || typeof base64 !== 'string') return null;
+export async function identifyPlant(images, apiKey = process.env.PLANTNET_API_KEY) {
+  if (!apiKey || !(typeof images === 'string' || (Array.isArray(images) && images.length > 0 && images.length <= 3))) return null;
 
   const url = new URL(ENDPOINT);
   url.searchParams.set('api-key', apiKey);
@@ -12,8 +12,10 @@ export async function identifyPlant(base64, apiKey = process.env.PLANTNET_API_KE
   url.searchParams.set('include-related-images', 'true');
 
   const form = new FormData();
-  form.append('images', new Blob([Buffer.from(base64, 'base64')], { type: 'image/jpeg' }), 'plant.jpg');
-  form.append('organs', 'auto');
+  for (const [index, base64] of (Array.isArray(images) ? images : [images]).entries()) {
+    form.append('images', new Blob([Buffer.from(base64, 'base64')], { type: 'image/jpeg' }), `plant-${index + 1}.jpg`);
+    form.append('organs', 'auto');
+  }
 
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);

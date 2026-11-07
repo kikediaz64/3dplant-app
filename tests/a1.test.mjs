@@ -244,6 +244,22 @@ describe('ai.mjs con Blobs y OpenAI simulados', async () => {
     assert.equal(prod().count('/diagnose/global'), 1);
   });
 
+  test('acepta tres imágenes y las incluye todas en OpenAI contando una consulta', async () => {
+    const imagesBase64 = [JPEG_DATA_URL, JPEG_DATA_URL, JPEG_DATA_URL];
+    const res = await post({ action: 'diagnose', imagesBase64 });
+    assert.equal(res.status, 200);
+    const content = openAICalls[0].messages[0].content;
+    assert.equal(content.filter(part => part.type === 'image_url').length, 3);
+    assert.equal(prod().count('/diagnose/global'), 1);
+  });
+
+  test('rechaza más de tres imágenes o una imagen inválida dentro del array antes de contar', async () => {
+    assert.equal((await post({ action: 'diagnose', imagesBase64: [JPEG_DATA_URL, JPEG_DATA_URL, JPEG_DATA_URL, JPEG_DATA_URL] })).status, 400);
+    assert.equal((await post({ action: 'diagnose', imagesBase64: [JPEG_DATA_URL, 'bad'] })).status, 400);
+    assert.equal(openAICalls.length, 0);
+    assert.equal(stores.size, 0);
+  });
+
   test('vista previa y producción no comparten cupo', async () => {
     const preview = { ip: '9.9.9.9', deploy: { context: 'deploy-preview' } };
     // Gasta el cupo diario de la IP en la vista previa...

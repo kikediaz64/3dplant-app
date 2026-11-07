@@ -165,6 +165,7 @@ const DiagnosisResult: React.FC = () => {
   const [result, setResult] = useState<IDiagnosisResult | null>(null);
   const [completedActions, setCompletedActions] = useState<boolean[]>([]);
   const [image, setImage] = useState<string>('');
+  const [images, setImages] = useState<string[]>([]);
   const [saved, setSaved] = useState(false);
   const [savedAsNew, setSavedAsNew] = useState(false);
   // Evita guardar dos veces con toques seguidos. El ref frena al instante; el estado es solo visual.
@@ -179,12 +180,16 @@ const DiagnosisResult: React.FC = () => {
   const [loadingMsgIdx, setLoadingMsgIdx] = useState(0);
 
   useEffect(() => {
-    const savedImage = localStorage.getItem('capturedPlantImage');
+    let savedImages: string[] = [];
+    try { const parsed = JSON.parse(localStorage.getItem('capturedPlantImages') || 'null'); if (Array.isArray(parsed) && parsed.every(item => typeof item === 'string')) savedImages = parsed; } catch { /* compatibilidad con el almacenamiento anterior */ }
+    const savedImage = savedImages[0] || localStorage.getItem('capturedPlantImage');
     console.log('Saved image exists:', !!savedImage);
 
     if (savedImage) {
       setImage(savedImage);
-      handleDiagnosis(savedImage);
+      const allImages = savedImages.length ? savedImages : [savedImage];
+      setImages(allImages);
+      handleDiagnosis(allImages);
     } else {
       console.error('No image found in localStorage');
       setError('No se encontró ninguna imagen. Por favor, toma una foto nuevamente.');
@@ -199,7 +204,7 @@ const DiagnosisResult: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleDiagnosis = async (img: string) => {
+  const handleDiagnosis = async (img: string | string[]) => {
     try {
       console.log('Starting diagnosis...');
       const diagnosis = await diagnosePlant(img);
@@ -223,7 +228,7 @@ const DiagnosisResult: React.FC = () => {
     setError(null);
     setErrorKind(null);
     setLoading(true);
-    handleDiagnosis(image);
+    handleDiagnosis(images.length ? images : image);
   };
 
   const toggleAction = (index: number) => {
@@ -240,7 +245,7 @@ const DiagnosisResult: React.FC = () => {
     setRediagnosing(name);
     setCandidateError(null);
     try {
-      const newDiagnosis = await diagnosePlant(image, { scientificName: candidate.scientificName, commonName: candidate.commonNames[0] });
+      const newDiagnosis = await diagnosePlant(images.length ? images : image, { scientificName: candidate.scientificName, commonName: candidate.commonNames[0] });
       setResult({ ...newDiagnosis, candidates: previousResult.candidates });
       setCompletedActions(new Array(newDiagnosis.actionPlan.length).fill(false));
     } catch (err) {
@@ -315,6 +320,7 @@ const DiagnosisResult: React.FC = () => {
       }
       // Limpia la imagen temporal capturada para no acumular peso en el navegador.
       localStorage.removeItem('capturedPlantImage');
+      localStorage.removeItem('capturedPlantImages');
       setSaved(true);
       // Si era un reescaneo con la planta ya borrada, más tiempo para leer el aviso.
       setTimeout(() => {

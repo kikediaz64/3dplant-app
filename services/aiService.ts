@@ -102,12 +102,12 @@ async function callAI(body: Record<string, unknown>): Promise<{ text: string; ca
 }
 
 export const diagnosePlant = async (
-  base64Image: string,
+  base64Image: string | string[],
   confirmedSpecies?: { scientificName: string; commonName?: string }
 ): Promise<DiagnosisResult> => {
   const response = await callAI({
     action: 'diagnose',
-    imageBase64: base64Image,
+    ...(Array.isArray(base64Image) ? { imagesBase64: base64Image } : { imageBase64: base64Image }),
     ...(confirmedSpecies ? { confirmedSpecies } : {})
   });
   const text = response.text;

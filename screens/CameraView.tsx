@@ -18,6 +18,39 @@ const CameraView: React.FC = () => {
   const [showTip, setShowTip] = useState(false);
   const [cameraActive, setCameraActive] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
+  const [photos, setPhotos] = useState<string[]>([]);
+
+  const assessPhoto = async (dataUrl: string): Promise<string | null> => {
+    const img = new Image(); img.src = dataUrl;
+    try { await img.decode(); } catch { return null; }
+    const canvas = document.createElement('canvas'); canvas.width = 64; canvas.height = 64;
+    const ctx = canvas.getContext('2d'); if (!ctx) return null;
+    ctx.drawImage(img, 0, 0, 64, 64);
+    const pixels = ctx.getImageData(0, 0, 64, 64).data;
+    const gray = new Float32Array(64 * 64); let sum = 0;
+    for (let i = 0; i < gray.length; i++) { gray[i] = .299 * pixels[i * 4] + .587 * pixels[i * 4 + 1] + .114 * pixels[i * 4 + 2]; sum += gray[i]; }
+    if (sum / gray.length < 45) return 'Esta foto está muy oscura, ¿repetir?';
+    let edges = 0, count = 0;
+    for (let y = 1; y < 63; y++) for (let x = 1; x < 63; x++) { const i = y * 64 + x; const lap = gray[i - 1] + gray[i + 1] + gray[i - 64] + gray[i + 64] - 4 * gray[i]; edges += lap * lap; count++; }
+    return edges / count < 35 ? 'Esta foto está muy borrosa, ¿repetir?' : null;
+  };
+
+  const addPhoto = (dataUrl: string) => {
+    setPhotos(current => {
+      if (current.length >= 3) { alert('Puedes añadir hasta 3 fotos.'); return current; }
+      return [...current, dataUrl];
+    });
+  };
+
+  const continueWithPhotos = async () => {
+    if (!photos.length) return;
+    for (const photo of photos) { const warning = await assessPhoto(photo); if (warning && !window.confirm(warning + ' Puedes continuar igualmente.')) return; }
+    try {
+      localStorage.setItem('capturedPlantImages', JSON.stringify(photos));
+      localStorage.setItem('capturedPlantImage', photos[0]);
+    } catch { alert('No hay espacio suficiente para guardar las fotos. Borra datos del navegador e intenta de nuevo.'); return; }
+    navigate(resultPath);
+  };
 
   const startCamera = useCallback(async () => {
     const requestId = ++requestRef.current;
@@ -97,13 +130,7 @@ const CameraView: React.FC = () => {
       const dataUrl = resizeToDataUrl(img, img.naturalWidth, img.naturalHeight);
       URL.revokeObjectURL(objectUrl);
       if (dataUrl) {
-        try {
-          localStorage.setItem('capturedPlantImage', dataUrl);
-        } catch (e) {
-          alert('No hay espacio suficiente para guardar la foto. Borra datos del navegador e intenta de nuevo.');
-          return;
-        }
-        navigate(resultPath);
+        addPhoto(dataUrl);
       } else {
         alert('Error al procesar la imagen. Intenta de nuevo.');
       }
@@ -123,13 +150,7 @@ const CameraView: React.FC = () => {
     if (!video || !video.videoWidth) return;
     const dataUrl = resizeToDataUrl(video, video.videoWidth, video.videoHeight);
     if (!dataUrl) return;
-    try {
-      localStorage.setItem('capturedPlantImage', dataUrl);
-    } catch (e) {
-      alert('No hay espacio suficiente para guardar la foto. Borra datos del navegador e intenta de nuevo.');
-      return;
-    }
-    navigate(resultPath);
+    addPhoto(dataUrl);
   };
 
   return (
@@ -227,6 +248,10 @@ const CameraView: React.FC = () => {
               Alinea la hoja para un diagnóstico preciso
             </p>
           </div>
+          <div className="mt-3 flex gap-2 items-center">
+            {photos.map((photo, index) => <div key={index} className="relative"><img src={photo} alt={`Foto ${index + 1}`} className="w-14 h-14 rounded-lg object-cover"/><button aria-label={`Quitar foto ${index + 1}`} onClick={() => setPhotos(items => items.filter((_, i) => i !== index))} className="absolute -top-2 -right-2 rounded-full bg-red-600 px-1">×</button></div>)}
+            <span className="text-xs text-white/70">{photos.length}/3 fotos</span>
+          </div>
         </main>
 
         {showTip && (
@@ -269,6 +294,7 @@ const CameraView: React.FC = () => {
               <span className="material-symbols-outlined text-[24px]" style={{ fontVariationSettings: "'FILL' 1" }}>lightbulb</span>
             </button>
           </div>
+          {photos.length > 0 && <button onClick={continueWithPhotos} className="block mx-auto mt-3 px-6 py-3 rounded-xl bg-primary text-black font-bold">Diagnosticar ({photos.length} fotos)</button>}
         </footer>
       </div>
     </div>

@@ -92,21 +92,23 @@ export default async (request, context) => {
     const { action } = body;
 
     let payload;
-    let diagnoseBase64;
+    let diagnoseBase64 = [];
     let diagnoseCandidates;
     let confirmedSpecies;
     if (action === 'diagnose') {
-      const image = validateImage(body.imageBase64);
-      if (!image.ok) {
-        return json({ error: image.error }, image.status);
-      }
+      const rawImages = body.imagesBase64 ?? body.imageBase64;
+      const imageInputs = Array.isArray(rawImages) ? rawImages : [rawImages];
+      if (imageInputs.length < 1 || imageInputs.length > 3) return json({ error: 'Se admiten de 1 a 3 imágenes.' }, 400);
+      const images = imageInputs.map(validateImage);
+      const invalidImage = images.find(image => !image.ok);
+      if (invalidImage) return json({ error: invalidImage.error }, invalidImage.status);
       if (body.confirmedSpecies !== undefined) {
         confirmedSpecies = parseConfirmedSpecies(body.confirmedSpecies);
         if (!confirmedSpecies) {
           return json({ error: 'Petición no válida.' }, 400);
         }
       }
-      const base64 = image.base64;
+      const base64 = images.map(image => image.base64);
       diagnoseBase64 = base64;
       payload = {
         model: MODEL,
@@ -115,7 +117,7 @@ export default async (request, context) => {
             role: 'user',
             content: [
               { type: 'text', text: DIAGNOSE_PROMPT },
-              { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${base64}`, detail: 'high' } }
+              ...base64.map(image => ({ type: 'image_url', image_url: { url: `data:image/jpeg;base64,${image}`, detail: 'high' } }))
             ]
           }
         ],
