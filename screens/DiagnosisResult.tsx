@@ -384,6 +384,44 @@ const DiagnosisResult: React.FC = () => {
           <p role="note" className="text-sm text-gray-600 dark:text-gray-300 leading-snug">
             Diagnóstico orientativo generado por IA: puede contener errores. Si la planta no coincide, repite la foto. Ante dudas sobre toxicidad, consulta a un veterinario o a un médico.
           </p>
+          {(() => {
+            const statusClasses = result.healthStatus === 'Saludable'
+              ? 'border-green-200 bg-green-50 text-green-900 dark:border-green-900/40 dark:bg-green-900/20 dark:text-green-200'
+              : result.healthStatus === 'Enferma'
+                ? 'border-red-200 bg-red-50 text-red-900 dark:border-red-900/40 dark:bg-red-900/20 dark:text-red-200'
+                : 'border-orange-200 bg-orange-50 text-orange-900 dark:border-orange-900/40 dark:bg-orange-900/20 dark:text-orange-200';
+            return (
+              <div className={`mt-4 rounded-xl border p-4 ${statusClasses}`}>
+                <h2 className="text-base font-bold">¿Qué le pasa?</h2>
+                {result.healthStatus === 'Saludable' ? (
+                  <p className="mt-1 text-sm font-semibold">No vemos problemas importantes</p>
+                ) : (
+                  <>
+                    <p className="mt-1 text-sm font-bold">{result.problemName}</p>
+                    <p className="mt-1 text-sm leading-relaxed">{result.impact}</p>
+                    <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs font-semibold">
+                      <span>Impacto: {result.severity === 'low' ? 'Bajo' : result.severity === 'moderate' ? 'Moderado' : 'Crítico'}</span>
+                      {result.urgency && <span>Urgencia: {result.urgency}</span>}
+                    </div>
+                  </>
+                )}
+                {result.healthStatus === 'Saludable' && result.urgency && <p className="mt-1 text-xs font-semibold">Urgencia: {result.urgency}</p>}
+                <div className="mt-4 border-t border-current/15 pt-3">
+                  <h3 className="text-sm font-bold">Qué hacer ahora</h3>
+                  {result.actionPlan.slice(0, 3).length ? (
+                    <ol className="mt-2 space-y-2">
+                      {result.actionPlan.slice(0, 3).map((action, idx) => (
+                        <li key={idx} className="text-sm leading-relaxed">
+                          <span className="font-bold">{action.title}</span>
+                          <span className="block text-xs leading-relaxed opacity-90">{action.description}</span>
+                        </li>
+                      ))}
+                    </ol>
+                  ) : <p className="mt-1 text-sm">No hay acciones recomendadas.</p>}
+                </div>
+              </div>
+            );
+          })()}
           {/* Estado rico */}
           <div className="flex gap-2 mt-4 flex-wrap">
             {result.hydration && (
@@ -440,12 +478,6 @@ const DiagnosisResult: React.FC = () => {
             </div>
           ) : null}
 
-          {/* Problema principal */}
-          <div className="mt-4 pt-4 border-t border-gray-100 dark:border-white/5">
-            <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Problema detectado</p>
-            <p className="text-base font-bold text-gray-900 dark:text-white">{result.problemName}</p>
-            <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">{result.impact}</p>
-          </div>
         </div>
       </div>
 
