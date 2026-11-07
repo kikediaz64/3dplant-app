@@ -1,6 +1,7 @@
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { assessPhoto } from '../services/photoQuality.mjs';
 import { getDailyTip } from '../constants/dailyTips';
 
 const CameraView: React.FC = () => {
@@ -18,6 +19,30 @@ const CameraView: React.FC = () => {
   const [showTip, setShowTip] = useState(false);
   const [cameraActive, setCameraActive] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
+  const [photos, setPhotos] = useState<string[]>([]);
+
+  const photosRef = useRef<string[]>([]);
+  const updatePhotos = (next: string[]) => {
+    photosRef.current = next;
+    setPhotos(next);
+  };
+  const addPhoto = (dataUrl: string) => {
+    if (photosRef.current.length >= 3) {
+      alert('Puedes añadir hasta 3 fotos.');
+      return;
+    }
+    updatePhotos([...photosRef.current, dataUrl]);
+  };
+
+  const continueWithPhotos = async () => {
+    if (!photos.length) return;
+    for (const photo of photos) { const warning = await assessPhoto(photo); if (warning && !window.confirm(warning + ' Puedes continuar igualmente.')) return; }
+    try {
+      localStorage.setItem('capturedPlantImages', JSON.stringify(photos));
+      localStorage.removeItem('capturedPlantImage');
+    } catch { alert('No hay espacio suficiente para guardar las fotos. Borra datos del navegador e intenta de nuevo.'); return; }
+    navigate(resultPath);
+  };
 
   const startCamera = useCallback(async () => {
     const requestId = ++requestRef.current;
@@ -70,7 +95,7 @@ const CameraView: React.FC = () => {
     }
   }, [cameraActive]);
 
-  // Reduce la imagen a un tamaño razonable antes de enviarla a Gemini.
+  // Reduce la imagen a un tamaño razonable antes de enviarla al diagnóstico.
   // Las fotos del celular son enormes (varios MB) y eso hace que la IA tarde o falle.
   const resizeToDataUrl = (source: CanvasImageSource, srcWidth: number, srcHeight: number): string => {
     const MAX_DIM = 1024;
@@ -97,13 +122,7 @@ const CameraView: React.FC = () => {
       const dataUrl = resizeToDataUrl(img, img.naturalWidth, img.naturalHeight);
       URL.revokeObjectURL(objectUrl);
       if (dataUrl) {
-        try {
-          localStorage.setItem('capturedPlantImage', dataUrl);
-        } catch (e) {
-          alert('No hay espacio suficiente para guardar la foto. Borra datos del navegador e intenta de nuevo.');
-          return;
-        }
-        navigate(resultPath);
+        addPhoto(dataUrl);
       } else {
         alert('Error al procesar la imagen. Intenta de nuevo.');
       }
@@ -123,13 +142,7 @@ const CameraView: React.FC = () => {
     if (!video || !video.videoWidth) return;
     const dataUrl = resizeToDataUrl(video, video.videoWidth, video.videoHeight);
     if (!dataUrl) return;
-    try {
-      localStorage.setItem('capturedPlantImage', dataUrl);
-    } catch (e) {
-      alert('No hay espacio suficiente para guardar la foto. Borra datos del navegador e intenta de nuevo.');
-      return;
-    }
-    navigate(resultPath);
+    addPhoto(dataUrl);
   };
 
   return (
@@ -227,6 +240,10 @@ const CameraView: React.FC = () => {
               Alinea la hoja para un diagnóstico preciso
             </p>
           </div>
+          <div className="mt-3 flex gap-2 items-center">
+            {photos.map((photo, index) => <div key={index} className="relative"><img src={photo} alt={`Foto ${index + 1}`} className="w-14 h-14 rounded-lg object-cover"/><button aria-label={`Quitar foto ${index + 1}`} onClick={() => updatePhotos(photosRef.current.filter((_, i) => i !== index))} className="absolute -top-2 -right-2 rounded-full bg-red-600 px-1">×</button></div>)}
+            <span className="text-xs text-white/70">{photos.length}/3 fotos</span>
+          </div>
         </main>
 
         {showTip && (
@@ -269,6 +286,7 @@ const CameraView: React.FC = () => {
               <span className="material-symbols-outlined text-[24px]" style={{ fontVariationSettings: "'FILL' 1" }}>lightbulb</span>
             </button>
           </div>
+          {photos.length > 0 && <button onClick={continueWithPhotos} className="block mx-auto mt-3 px-6 py-3 rounded-xl bg-primary text-black font-bold">Diagnosticar ({photos.length} fotos)</button>}
         </footer>
       </div>
     </div>

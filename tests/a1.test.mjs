@@ -244,6 +244,45 @@ describe('ai.mjs con Blobs y OpenAI simulados', async () => {
     assert.equal(prod().count('/diagnose/global'), 1);
   });
 
+  test('acepta un array de una imagen', async () => {
+    assert.equal((await post({ action: 'diagnose', imagesBase64: [JPEG_DATA_URL] })).status, 200);
+    assert.equal(openAICalls[0].messages[0].content[1].image_url.url, JPEG_DATA_URL);
+    assert.equal(prod().count('/diagnose/global'), 1);
+  });
+
+  test('rechaza array vacío y tipo incorrecto sin consumir cuota', async () => {
+    for (const imagesBase64 of [[], JPEG_DATA_URL]) {
+      assert.equal((await post({ action: 'diagnose', imagesBase64 })).status, 400);
+    }
+    assert.equal(stores.size, 0);
+    assert.equal(openAICalls.length, 0);
+  });
+
+  test('rechaza exceso de tamaño agregado antes de consumir cuota', async () => {
+    const large = Buffer.alloc(800_000, 7);
+    large.set([0xff, 0xd8, 0xff, 0xe0]);
+    const image = large.toString('base64');
+    assert.equal((await post({ action: 'diagnose', imagesBase64: [image, image, image] })).status, 413);
+    assert.equal(stores.size, 0);
+    assert.equal(openAICalls.length, 0);
+  });
+
+  test('acepta tres imágenes y las incluye todas en OpenAI contando una consulta', async () => {
+    const imagesBase64 = [JPEG_DATA_URL, JPEG_DATA_URL, JPEG_DATA_URL];
+    const res = await post({ action: 'diagnose', imagesBase64 });
+    assert.equal(res.status, 200);
+    const content = openAICalls[0].messages[0].content;
+    assert.equal(content.filter(part => part.type === 'image_url').length, 3);
+    assert.equal(prod().count('/diagnose/global'), 1);
+  });
+
+  test('rechaza más de tres imágenes o una imagen inválida dentro del array antes de contar', async () => {
+    assert.equal((await post({ action: 'diagnose', imagesBase64: [JPEG_DATA_URL, JPEG_DATA_URL, JPEG_DATA_URL, JPEG_DATA_URL] })).status, 400);
+    assert.equal((await post({ action: 'diagnose', imagesBase64: [JPEG_DATA_URL, 'bad'] })).status, 400);
+    assert.equal(openAICalls.length, 0);
+    assert.equal(stores.size, 0);
+  });
+
   test('vista previa y producción no comparten cupo', async () => {
     const preview = { ip: '9.9.9.9', deploy: { context: 'deploy-preview' } };
     // Gasta el cupo diario de la IP en la vista previa...

@@ -20,6 +20,7 @@ const IMAGE = `data:image/jpeg;base64,${validBase64()}`;
 const SECRET = crypto.randomUUID();
 const openAiCalls = [];
 let plantnetCalls;
+let receivedImages;
 let plantnetResponse;
 let plantnetFailure;
 let plantnetDelay;
@@ -36,6 +37,7 @@ globalThis.fetch = async (url, init) => {
   assert.equal(url.searchParams.get('nb-results'), '4');
   assert.equal(url.searchParams.get('include-related-images'), 'true');
   assert.equal(init.body.get('organs'), 'auto');
+  receivedImages = init.body.getAll('images');
   const image = init.body.get('images');
   assert.equal(image.type, 'image/jpeg');
   assert.deepEqual(Buffer.from(await image.arrayBuffer()), Buffer.from(validBase64(), 'base64'));
@@ -65,6 +67,51 @@ describe('integración opcional con Pl@ntNet', () => {
     plantnetFailure = null;
     plantnetDelay = false;
     process.env.PLANTNET_API_KEY = SECRET;
+  });
+
+  test('envía las tres fotos completas a ambos proveedores y cuenta una consulta', async () => {
+    const response = await handler(new Request('https://example.test/api/ai', {
+      method: 'POST', body: JSON.stringify({ action: 'diagnose', imagesBase64: [IMAGE, IMAGE, IMAGE] })
+    }), { ip: '1.2.3.4', deploy: { context: 'production' } });
+    assert.equal(response.status, 200);
+    assert.equal(receivedImages.length, 3);
+    for (const image of receivedImages) assert.deepEqual(Buffer.from(await image.arrayBuffer()), Buffer.from(validBase64(), 'base64'));
+    assert.equal(openAiCalls[0].messages[0].content.filter(part => part.type === 'image_url').length, 3);
+    assert.equal([...stores.entries()].find(([key]) => key.endsWith('/global'))[1].count, 1);
+  });
+
+  test('los 5 s de Pl@ntNet dejan solo 19 s para OpenAI, incluida la lectura del cuerpo', async () => {
+    const realFetch = globalThis.fetch;
+    const realTimeout = globalThis.setTimeout;
+    const realClear = globalThis.clearTimeout;
+    const timers = new Map();
+    let clock = 0;
+    const dateMock = mock.method(Date, 'now', () => clock);
+    const timerMock = mock.method(globalThis, 'setTimeout', (fn, ms) => {
+      const id = realTimeout(fn, ms);
+      timers.set(id, ms);
+      return id;
+    });
+    const clearMock = mock.method(globalThis, 'clearTimeout', id => { timers.delete(id); realClear(id); });
+    globalThis.fetch = async (url, init) => {
+      if (String(url).startsWith('https://my-api.plantnet.org/')) {
+        clock += 5000;
+        return identifyResponse([]);
+      }
+      assert.equal([...timers.values()].includes(19000), true);
+      return { ok: true, async json() {
+        assert.equal([...timers.values()].includes(19000), true);
+        return { choices: [{ message: { content: '{}' } }] };
+      } };
+    };
+    try {
+      assert.equal((await post()).status, 200);
+      assert.equal(timers.size, 0);
+    } finally {
+      globalThis.fetch = realFetch;
+      dateMock.mock.restore(); timerMock.mock.restore(); clearMock.mock.restore();
+      for (const id of timers.keys()) realClear(id);
+    }
   });
 
   test('añade nombres comunes y porcentajes cuando hay resultados útiles', async () => {
