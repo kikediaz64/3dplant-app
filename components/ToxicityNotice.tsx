@@ -6,7 +6,9 @@ export default function ToxicityNotice(props: { careGuide?: unknown; isToxic?: b
   const toxic = toxicityState(props);
   if (toxic === false) return null;
   const messages: string[] = [];
-  if (toxicity) {
+  if (toxicity && toxic === true && toxicity.pets !== 'tóxica' && toxicity.people !== 'tóxica') {
+    messages.push('⚠️ Puede ser tóxica para mascotas o personas');
+  } else if (toxicity) {
     if (toxicity.pets === 'tóxica') messages.push('⚠️ Tóxica para mascotas');
     if (toxicity.people === 'tóxica') messages.push('⚠️ Tóxica para personas');
     if (toxicity.pets === 'desconocido' && toxicity.people === 'desconocido') {

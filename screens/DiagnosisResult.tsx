@@ -390,7 +390,6 @@ const DiagnosisResult: React.FC = () => {
                   <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>verified</span>
                   {result.confidence}% Coincidencia
                 </span>
-
               </div>
               <h1 className="text-2xl font-bold text-gray-900 dark:text-white leading-tight">{result.speciesName}</h1>
               <p className="text-gray-500 dark:text-gray-400 text-sm font-medium mt-0.5 italic">{result.scientificName}</p>

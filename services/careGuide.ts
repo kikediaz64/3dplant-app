@@ -46,10 +46,11 @@ export function diagnosisCare(value: unknown): Pick<Plant, 'careGuide' | 'careDe
   };
 }
 
-// La guía detallada manda; un false antiguo puede ser un valor por defecto sin datos.
+// Avisa si cualquier fuente dice tóxica; un false antiguo puede ser un valor por defecto sin datos.
 export function toxicityState(plant: { careGuide?: unknown; isToxic?: boolean }): boolean | undefined {
   const toxicity = normalizeCareGuide(plant.careGuide)?.toxicity;
-  if (!toxicity) return plant.isToxic === true ? true : undefined;
+  if (plant.isToxic === true) return true;
+  if (!toxicity) return undefined;
   if (toxicity.pets === 'tóxica' || toxicity.people === 'tóxica') return true;
   if (toxicity.pets === 'no tóxica' && toxicity.people === 'no tóxica') return false;
   return undefined;

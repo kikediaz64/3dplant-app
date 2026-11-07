@@ -181,18 +181,27 @@ test('el reescaneo conserva cada dato conocido de toxicidad y permite actualizar
   assert.doesNotMatch(renderDetail(plant.id), /Tóxica para/);
 });
 
-test('el aviso compartido muestra notas, delimita la incertidumbre y prioriza la guía sobre isToxic', async () => {
+test('el aviso compartido muestra notas, delimita la incertidumbre y avisa si cualquier fuente dice tóxica', async () => {
   const { default: ToxicityNotice } = await import('../components/ToxicityNotice.tsx');
   const { toxicityState } = await import('../services/careGuide.ts');
-  const props = { isToxic: true, careGuide: { toxicity: { pets: 'no tóxica', people: 'desconocido', note: 'Consultar antes de ingerir.' } } };
+  const props = { isToxic: false, careGuide: { toxicity: { pets: 'no tóxica', people: 'desconocido', note: 'Consultar antes de ingerir.' } } };
   const html = renderToStaticMarkup(React.createElement(ToxicityNotice, props));
   assert.match(html, /Toxicidad para personas: sin datos fiables/);
   assert.match(html, /Consultar antes de ingerir/);
   assert.doesNotMatch(html, /⚠️|Toxicidad: sin datos fiables/);
   assert.equal(toxicityState(props), undefined);
-  assert.equal(toxicityState({ isToxic: true }), true);
   assert.equal(toxicityState({ isToxic: false, careGuide: { toxicity: { pets: 'tóxica' } } }), true);
-  assert.equal(toxicityState({ isToxic: true, careGuide: { toxicity: { pets: 'no tóxica', people: 'no tóxica' } } }), false);
+  const unknown = { pets: 'desconocido', people: 'desconocido' };
+  const safe = { pets: 'no tóxica', people: 'no tóxica' };
+  assert.equal(toxicityState({ isToxic: true, careGuide: { toxicity: unknown } }), true);
+  assert.equal(toxicityState({ isToxic: true, careGuide: { toxicity: safe } }), true);
+  assert.equal(toxicityState({ isToxic: false, careGuide: { toxicity: safe } }), false);
+  assert.equal(toxicityState({ isToxic: false }), undefined);
+  assert.equal(toxicityState({ isToxic: true }), true);
+  const warned = renderToStaticMarkup(React.createElement(ToxicityNotice, { isToxic: true, careGuide: { toxicity: { ...unknown, note: 'Nota.' } } }));
+  assert.match(warned, /⚠️ Puede ser tóxica para mascotas o personas/);
+  assert.match(warned, /Nota\./);
+  assert.doesNotMatch(warned, /sin datos fiables/);
   const card = renderToStaticMarkup(React.createElement(MemoryRouter, null, React.createElement(PlantCard, { plant: { ...base, ...diagnosisCare(undefined), ...props } })));
   assert.doesNotMatch(card, /Segura|>Tóxica</);
 });
