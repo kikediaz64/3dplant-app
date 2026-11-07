@@ -20,7 +20,12 @@ export function normalizeCareGuide(value: unknown): CareGuide | undefined {
     : undefined;
   if (toxicity) {
     const normalizeStatus = (status: unknown): ToxicityStatus =>
-      status === 'tóxica' || status === 'no tóxica' ? status : 'desconocido';
+      {
+      const text = typeof status === 'string'
+        ? status.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ').replace(/[.!]$/, '').trim()
+        : '';
+      return text === 'toxica' ? 'tóxica' : text === 'no toxica' ? 'no tóxica' : 'desconocido';
+    };
     const cleanToxicity: PlantToxicity = {
       pets: normalizeStatus(toxicity.pets),
       people: normalizeStatus(toxicity.people),
@@ -40,4 +45,13 @@ export function diagnosisCare(value: unknown): Pick<Plant, 'careGuide' | 'careDe
       temp: careGuide?.temperature || '', humidity: careGuide?.humidity || ''
     }
   };
+}
+
+// La guía detallada manda; isToxic solo respalda registros antiguos sin ese campo.
+export function toxicityState(plant: { careGuide?: unknown; isToxic?: boolean }): boolean | undefined {
+  const toxicity = normalizeCareGuide(plant.careGuide)?.toxicity;
+  if (!toxicity) return plant.isToxic;
+  if (toxicity.pets === 'tóxica' || toxicity.people === 'tóxica') return true;
+  if (toxicity.pets === 'no tóxica' && toxicity.people === 'no tóxica') return false;
+  return undefined;
 }

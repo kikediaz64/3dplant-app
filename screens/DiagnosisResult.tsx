@@ -1,5 +1,6 @@
+import ToxicityNotice from '../components/ToxicityNotice';
 import { otherCandidates } from '../services/diagnosisCandidates';
-import { diagnosisCare } from '../services/careGuide';
+import { diagnosisCare, toxicityState } from '../services/careGuide';
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { diagnosePlant, AIUserError, type AIUserErrorKind } from '../services/aiService';
@@ -297,7 +298,7 @@ const DiagnosisResult: React.FC = () => {
         image: compressedImage,
         status,
         location: 'Mi Jardín',
-        isToxic: result.isToxic ?? false,
+        isToxic: toxicityState(result) ?? false,
         needsWater: result.hydration === 'Sedienta' || result.actionPlan?.some(a => a.title?.toLowerCase().includes('agua')) || false,
         nextWatering: 'En 3 días',
         wateringFrequencyDays: result.hydration === 'Sedienta' ? 2 : result.hydration === 'Encharcada' ? 5 : 3,
@@ -381,6 +382,7 @@ const DiagnosisResult: React.FC = () => {
       {/* Summary Card */}
       <div className="relative -mt-16 px-4 z-10">
         <div className="bg-white dark:bg-surface-dark rounded-2xl p-5 shadow-lg border border-gray-100 dark:border-white/5">
+          <ToxicityNotice careGuide={result.careGuide} isToxic={result.isToxic} />
           <div className="flex justify-between items-start mb-2">
             <div className="min-w-0 pr-3">
               <div className="flex items-center gap-2 mb-1 flex-wrap">
@@ -388,12 +390,7 @@ const DiagnosisResult: React.FC = () => {
                   <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>verified</span>
                   {result.confidence}% Coincidencia
                 </span>
-                {result.isToxic && (
-                  <span className="bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 text-xs font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
-                    <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>pets</span>
-                    Tóxica
-                  </span>
-                )}
+
               </div>
               <h1 className="text-2xl font-bold text-gray-900 dark:text-white leading-tight">{result.speciesName}</h1>
               <p className="text-gray-500 dark:text-gray-400 text-sm font-medium mt-0.5 italic">{result.scientificName}</p>

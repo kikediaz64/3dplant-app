@@ -1,3 +1,4 @@
+import ToxicityNotice from '../components/ToxicityNotice';
 import { normalizeCareGuide, missingCareData, careText } from '../services/careGuide';
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -126,17 +127,7 @@ const PlantDetail: React.FC = () => {
 
             {/* Scrollable Content */}
             <div className="flex-1 overflow-y-auto px-5 py-4 pb-24">
-                {guide?.toxicity && (guide.toxicity.pets === 'tóxica' || guide.toxicity.people === 'tóxica' || guide.toxicity.pets === 'desconocido' || guide.toxicity.people === 'desconocido') && (
-                    <div role="status" className={`rounded-xl border p-4 mb-4 ${guide.toxicity.pets === 'tóxica' || guide.toxicity.people === 'tóxica' ? 'border-amber-300 bg-amber-50 text-amber-950 dark:border-amber-800 dark:bg-amber-900/30 dark:text-amber-100' : 'border-gray-200 bg-gray-50 text-gray-700 dark:border-white/10 dark:bg-surface-dark dark:text-gray-300'}`}>
-                        <p className="font-bold">
-                            {guide.toxicity.pets === 'tóxica' && <>⚠️ Tóxica para mascotas</>}
-                            {guide.toxicity.pets === 'tóxica' && guide.toxicity.people === 'tóxica' && ' · '}
-                            {guide.toxicity.people === 'tóxica' && <>⚠️ Tóxica para personas</>}
-                            {guide.toxicity.pets !== 'tóxica' && guide.toxicity.people !== 'tóxica' && 'Toxicidad: sin datos fiables'}
-                        </p>
-                        {guide.toxicity.note && <p className="mt-1 text-sm">{guide.toxicity.note}</p>}
-                    </div>
-                )}
+                <ToxicityNotice careGuide={guide} isToxic={plant.isToxic} />
                 {/* Historial de diagnósticos (las plantas de ejemplo no tienen) */}
                 {!isMockPlant(plant.id) && (
                     <div className="bg-gray-50 dark:bg-surface-dark rounded-xl p-4 mb-4">

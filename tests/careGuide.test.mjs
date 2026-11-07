@@ -152,3 +152,47 @@ test('las alternativas excluyen la especie actual, duplicados y scores bajos', (
   assert.deepEqual(otherCandidates({ scientificName: 'Rosa' }), []);
 });
 
+
+test('acepta variantes de escritura sin convertir valores extraños en datos fiables', () => {
+  for (const value of ['Tóxica', 'toxica', ' Tóxica. ']) {
+    assert.equal(diagnosisCare({ toxicity: { pets: value } }).careGuide.toxicity.pets, 'tóxica');
+  }
+  assert.equal(diagnosisCare({ toxicity: { people: ' NO   TOXICA. ' } }).careGuide.toxicity.people, 'no tóxica');
+  for (const value of [true, [], {}, 'quizá tóxica', 'no']) {
+    assert.equal(diagnosisCare({ toxicity: { pets: value } }).careGuide.toxicity.pets, 'desconocido');
+  }
+});
+
+test('el reescaneo conserva cada dato conocido de toxicidad y permite actualizarlo', () => {
+  store.clear();
+  const previous = { pets: 'tóxica', people: 'no tóxica', note: 'Evitar ingestión.' };
+  const plant = plantStorage.savePlant({ ...base, ...diagnosisCare({ toxicity: previous }) });
+  const entry = { id: 'rescan', date: new Date().toISOString(), image: '', problems: [], recommendations: [] };
+  const rescan = toxicity => plantStorage.addDiagnosis(plant.id, entry, { status: 'healthy', image: '', ...diagnosisCare({ toxicity }) });
+  for (const incoming of [undefined, {}, { pets: 'desconocido', people: 'desconocido', note: '' }]) {
+    rescan(incoming);
+    assert.deepEqual(plantStorage.getSavedPlants()[0].careGuide.toxicity, previous);
+    assert.match(renderDetail(plant.id), /Tóxica para mascotas/);
+    assert.match(renderDetail(plant.id), /Evitar ingestión/);
+  }
+  rescan({ pets: 'desconocido', people: 'tóxica', note: 'Nueva nota.' });
+  assert.deepEqual(plantStorage.getSavedPlants()[0].careGuide.toxicity, { ...previous, people: 'tóxica', note: 'Nueva nota.' });
+  rescan({ pets: 'no tóxica', people: 'no tóxica' });
+  assert.doesNotMatch(renderDetail(plant.id), /Tóxica para/);
+});
+
+test('el aviso compartido muestra notas, delimita la incertidumbre y prioriza la guía sobre isToxic', async () => {
+  const { default: ToxicityNotice } = await import('../components/ToxicityNotice.tsx');
+  const { toxicityState } = await import('../services/careGuide.ts');
+  const props = { isToxic: true, careGuide: { toxicity: { pets: 'no tóxica', people: 'desconocido', note: 'Consultar antes de ingerir.' } } };
+  const html = renderToStaticMarkup(React.createElement(ToxicityNotice, props));
+  assert.match(html, /Toxicidad para personas: sin datos fiables/);
+  assert.match(html, /Consultar antes de ingerir/);
+  assert.doesNotMatch(html, /⚠️|Toxicidad: sin datos fiables/);
+  assert.equal(toxicityState(props), undefined);
+  assert.equal(toxicityState({ isToxic: true }), true);
+  assert.equal(toxicityState({ isToxic: false, careGuide: { toxicity: { pets: 'tóxica' } } }), true);
+  assert.equal(toxicityState({ isToxic: true, careGuide: { toxicity: { pets: 'no tóxica', people: 'no tóxica' } } }), false);
+  const card = renderToStaticMarkup(React.createElement(MemoryRouter, null, React.createElement(PlantCard, { plant: { ...base, ...diagnosisCare(undefined), ...props } })));
+  assert.doesNotMatch(card, /Segura|>Tóxica</);
+});
