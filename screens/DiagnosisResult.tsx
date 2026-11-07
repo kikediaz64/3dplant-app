@@ -1,4 +1,4 @@
-
+import { diagnosisCare } from '../services/careGuide';
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { diagnosePlant, AIUserError, type AIUserErrorKind } from '../services/aiService';
@@ -273,12 +273,7 @@ const DiagnosisResult: React.FC = () => {
         nextWatering: 'En 3 días',
         wateringFrequencyDays: result.hydration === 'Sedienta' ? 2 : result.hydration === 'Encharcada' ? 5 : 3,
         lastWateredAt: new Date().toISOString(),
-        careDetails: {
-          light: result.luz || 'Media',
-          water: 'Media',
-          temp: '18-24°C',
-          humidity: 'Media'
-        },
+        ...diagnosisCare(result.careGuide),
         zona: result.zona,
         luz: result.luz,
         tipo: result.tipo,
@@ -288,7 +283,7 @@ const DiagnosisResult: React.FC = () => {
 
       if (target) {
         // No toca riego, nombre ni ubicación (lo garantiza addDiagnosis).
-        plantStorage.addDiagnosis(target, entry, { diagnosis, status, image: compressedImage });
+        plantStorage.addDiagnosis(target, entry, { diagnosis, status, image: compressedImage, careGuide: plantData.careGuide, careDetails: plantData.careDetails });
       } else {
         console.log('Saving plant:', plantData);
         plantStorage.savePlant(plantData);

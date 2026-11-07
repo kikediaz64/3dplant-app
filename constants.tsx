@@ -15,10 +15,10 @@ export const MOCK_PLANTS: Plant[] = [
     isToxic: true,
     needsWater: false,
     careDetails: {
-      light: 'Indirecta',
-      water: 'Media',
-      temp: '20°C',
-      humidity: 'Alta'
+      light: '',
+      water: '',
+      temp: '',
+      humidity: ''
     },
     nextWatering: 'En 4 días',
     wateringFrequencyDays: 4,
@@ -37,10 +37,10 @@ export const MOCK_PLANTS: Plant[] = [
     isToxic: false,
     needsWater: true,
     careDetails: {
-      light: 'Baja luz',
-      water: 'Baja',
-      temp: '15-30°C',
-      humidity: 'Baja'
+      light: '',
+      water: '',
+      temp: '',
+      humidity: ''
     },
     nextWatering: 'Riego hoy',
     wateringFrequencyDays: 7,
@@ -59,10 +59,10 @@ export const MOCK_PLANTS: Plant[] = [
     isToxic: true,
     needsWater: false,
     careDetails: {
-      light: 'Mucha luz',
-      water: 'Cada 7 días',
-      temp: '18-24°C',
-      humidity: 'Media'
+      light: '',
+      water: '',
+      temp: '',
+      humidity: ''
     },
     nextWatering: 'En 6 días',
     wateringFrequencyDays: 7,
