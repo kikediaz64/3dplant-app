@@ -14,6 +14,7 @@ export interface WateringStatus {
 
 // Calcula el estado de riego según la frecuencia y el último riego.
 export function getWateringStatus(plant: Plant): WateringStatus {
+    if (plant.speciesReviewPending) return { needsWater: false, nextWatering: 'Pendiente de revisión' };
     const frequencyDays = plant.wateringFrequencyDays ?? 3;
     const lastWateredAt = plant.lastWateredAt ? new Date(plant.lastWateredAt).getTime() : null;
 

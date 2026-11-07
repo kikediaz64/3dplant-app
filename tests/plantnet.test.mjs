@@ -76,6 +76,7 @@ describe('integración opcional con Pl@ntNet', () => {
     assert.equal(response.status, 200);
     const output = await response.json();
     assert.equal(output.text, '{"speciesName":"Respuesta habitual"}');
+    assert.equal(output.candidates.length, 1);
     assert.deepEqual(output.candidates[0], { scientificName: 'Monstera deliciosa', commonNames: ['costilla de Adán'], score: 0.85, imageUrl: 'https://images.test/monstera.jpg' });
     assert.match(openAiCalls[0].messages[0].content[0].text, /Monstera deliciosa \(costilla de Adán\) \(85 %\)/);
     assert.match(openAiCalls[0].messages[0].content[0].text, /Philodendron bipinnatifidum.*10 %/);
@@ -117,6 +118,7 @@ describe('integración opcional con Pl@ntNet', () => {
     const response = await post();
     assert.equal(response.status, 200);
     assert.equal(openAiCalls[0].messages[0].content.length, 2);
+    assert.equal((await response.json()).candidates, undefined);
   });
 
   test('incluye como máximo tres candidatos y acepta el umbral de 0.2', async () => {

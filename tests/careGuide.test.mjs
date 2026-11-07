@@ -116,3 +116,29 @@ test('las plantas de ejemplo no muestran cuidados inventados en las tarjetas', a
     assert.match(card, /Riego: Sin datos/);
   }
 });
+
+const { otherCandidates, selectSpecies, pendingSpeciesData } = await import('../services/diagnosisCandidates.ts');
+test('las alternativas excluyen la especie actual, duplicados y scores bajos', () => {
+  const candidate = (scientificName, score = 0.5) => ({ scientificName, score, commonNames: [], imageUrl: null });
+  const result = { scientificName: 'Rosa canina', candidates: [candidate('ROSA CANINA'), candidate('Rosa gallica', 0.03), candidate('Rosa alba', 0.2), candidate('rosa alba'), candidate('Rosa rubiginosa')] };
+  assert.deepEqual(otherCandidates(result).map(c => c.scientificName), ['Rosa alba', 'Rosa rubiginosa']);
+  assert.deepEqual(otherCandidates({ scientificName: 'Rosa' }), []);
+});
+
+test('elegir otra especie elimina el diagnóstico anterior y persiste como pendiente', () => {
+  const original = { scientificName: 'Rosa', isToxic: false, careGuide: { watering: 'Cada día' }, hydration: 'Sedienta', zona: 'Interior', actionPlan: [{ title: 'Regar' }] };
+  const selected = selectSpecies(original, { scientificName: 'Nerium oleander', commonNames: ['Adelfa'], score: 0.4 });
+  assert.equal(selected.speciesName, 'Adelfa');
+  assert.equal(selected.scientificName, 'Nerium oleander');
+  for (const key of ['isToxic', 'careGuide', 'hydration', 'zona']) assert.equal(selected[key], undefined);
+  assert.deepEqual(selected.actionPlan, []);
+  const saved = plantStorage.savePlant({ ...base, name: selected.speciesName, scientificName: selected.scientificName, ...pendingSpeciesData() });
+  const recovered = plantStorage.getSavedPlants().find(p => p.id === saved.id);
+  assert.equal(recovered.speciesReviewPending, true);
+  assert.equal(recovered.isToxic, undefined);
+  assert.equal(recovered.lastWateredAt, undefined);
+  assert.equal(recovered.careGuide, undefined);
+  const html = renderDetail(saved.id);
+  assert.match(html, /Toxicidad y cuidados sin confirmar/);
+  assert.doesNotMatch(html, /Cada día/);
+});

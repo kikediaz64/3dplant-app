@@ -1,3 +1,4 @@
+import { otherCandidates, selectSpecies, pendingSpeciesData, pendingSpeciesMessage } from '../services/diagnosisCandidates';
 import { diagnosisCare } from '../services/careGuide';
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -229,11 +230,7 @@ const DiagnosisResult: React.FC = () => {
   };
 
   const selectCandidate = (candidate: NonNullable<IDiagnosisResult['candidates']>[number]) => {
-    setResult(current => current ? {
-      ...current,
-      speciesName: candidate.commonNames[0] || candidate.scientificName,
-      scientificName: candidate.scientificName
-    } : current);
+    setResult(current => current ? selectSpecies(current, candidate) : current);
   };
 
   const handleSavePlant = async () => {
@@ -268,7 +265,7 @@ const DiagnosisResult: React.FC = () => {
       };
 
       // Reescaneo solo si la planta sigue existiendo; si no, se guarda como planta nueva.
-      const target = plantId && plantStorage.getSavedPlants().some(p => p.id === plantId) ? plantId : null;
+      const target = !result.speciesReviewPending && plantId && plantStorage.getSavedPlants().some(p => p.id === plantId) ? plantId : null;
 
       const plantData = {
         name: result.speciesName || 'Planta desconocida',
@@ -286,7 +283,8 @@ const DiagnosisResult: React.FC = () => {
         luz: result.luz,
         tipo: result.tipo,
         diagnosis,
-        diagnosisHistory: [entry]
+        diagnosisHistory: [entry],
+        ...(result.speciesReviewPending ? pendingSpeciesData() : {})
       };
 
       if (target) {
@@ -317,7 +315,7 @@ const DiagnosisResult: React.FC = () => {
   const saveLabel = saved
     ? (savedAsNew ? 'Guardada como planta nueva (la original ya no existe)' : plantId ? 'Añadido al historial' : 'Guardada en Mi Jardín')
     : saving ? 'Guardando…'
-    : (plantId ? 'Añadir al historial' : 'Guardar en Mi Jardín');
+    : (plantId && !result?.speciesReviewPending ? 'Añadir al historial' : 'Guardar en Mi Jardín');
 
   if (loading) {
     return <LoadingView message={loadingMessages[loadingMsgIdx]} />;
@@ -376,16 +374,14 @@ const DiagnosisResult: React.FC = () => {
               <h1 className="text-2xl font-bold text-gray-900 dark:text-white leading-tight">{result.speciesName}</h1>
               <p className="text-gray-500 dark:text-gray-400 text-sm font-medium mt-0.5 italic">{result.scientificName}</p>
               {(() => {
-                const otherCandidates = (result.candidates || [])
-                  .filter(candidate => candidate.scientificName.toLowerCase() !== result.scientificName?.toLowerCase())
-                  .slice(0, 3);
-                if (!otherCandidates.length) return null;
+                const alternatives = otherCandidates(result);
+                if (!alternatives.length) return null;
                 return (
                   <div className="mt-3">
                     <p className="text-xs font-bold text-gray-600 dark:text-gray-300 mb-2">¿No es esta? Otras posibles</p>
                     <div className="flex gap-2 overflow-x-auto pb-1">
-                      {otherCandidates.map(candidate => (
-                        <button key={candidate.scientificName} type="button" onClick={() => selectCandidate(candidate)}
+                      {alternatives.map(candidate => (
+                        <button disabled={saving || saved} key={candidate.scientificName} type="button" onClick={() => selectCandidate(candidate)}
                           className="w-28 shrink-0 overflow-hidden rounded-lg border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 text-left active:scale-95">
                           {candidate.imageUrl ? <img src={candidate.imageUrl} alt="" className="h-16 w-full object-cover" loading="lazy" />
                             : <div className="h-16 w-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center"><span className="material-symbols-outlined text-gray-400">local_florist</span></div>}
@@ -409,7 +405,8 @@ const DiagnosisResult: React.FC = () => {
           <p role="note" className="text-sm text-gray-600 dark:text-gray-300 leading-snug">
             Diagnóstico orientativo generado por IA: puede contener errores. Si la planta no coincide, repite la foto. Ante dudas sobre toxicidad, consulta a un veterinario o a un médico.
           </p>
-          {(() => {
+          {result.speciesReviewPending && <p role="status" className="mt-4 text-sm">{pendingSpeciesMessage}</p>}
+          {!result.speciesReviewPending && (() => {
             const statusClasses = result.healthStatus === 'Saludable'
               ? 'border-green-200 bg-green-50 text-green-900 dark:border-green-900/40 dark:bg-green-900/20 dark:text-green-200'
               : result.healthStatus === 'Enferma'
@@ -448,7 +445,7 @@ const DiagnosisResult: React.FC = () => {
             );
           })()}
           {/* Estado rico */}
-          <div className="flex gap-2 mt-4 flex-wrap">
+          {!result.speciesReviewPending && <div className="flex gap-2 mt-4 flex-wrap">
             {result.hydration && (
               <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/5">
                 <span className="material-symbols-outlined text-blue-500" style={{ fontSize: '16px' }}>water_drop</span>
@@ -477,6 +474,7 @@ const DiagnosisResult: React.FC = () => {
             </div>
           </div>
 
+          }
           {/* Síntomas y plagas */}
           {(result.symptoms?.length || result.pests?.length) ? (
             <div className="mt-4 space-y-3">
@@ -506,7 +504,7 @@ const DiagnosisResult: React.FC = () => {
       </div>
 
       {/* Action Plan */}
-      <div className="px-4 mt-6">
+      {!result.speciesReviewPending && <><div className="px-4 mt-6">
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-lg font-bold text-gray-900 dark:text-white">Plan de Acción Inmediato</h3>
           <span className="text-xs font-medium text-primary cursor-pointer">Ver guía completa</span>
@@ -533,7 +531,8 @@ const DiagnosisResult: React.FC = () => {
       </div>
 
       {/* Root Causes */}
-      <RootCausesList causes={result.rootCauses} />
+      <RootCausesList causes={result.rootCauses} /></>
+      }
 
       {/* Sticky Bottom Bar */}
       <div className="fixed bottom-0 w-full bg-background-light dark:bg-background-dark border-t border-gray-200 dark:border-white/10 p-4 pb-6 z-50">

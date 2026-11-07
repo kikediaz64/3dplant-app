@@ -113,6 +113,7 @@ const PlantDetail: React.FC = () => {
                 {/* Plant Name */}
                 <div className="absolute bottom-4 left-0 right-0 px-6 text-center">
                     <h1 className="text-2xl font-bold text-white drop-shadow-lg">{plant.name}</h1>
+                    {plant.speciesReviewPending && <p role="status" className="text-sm text-white">Especie pendiente de revisión. Toxicidad y cuidados sin confirmar.</p>}
                     <p className="text-sm text-white/90 mt-1">{plant.location}</p>
                 </div>
             </div>
