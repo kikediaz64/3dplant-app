@@ -37,7 +37,7 @@ export interface Plant {
   location: string;
   image: string;
   status: 'healthy' | 'warning' | 'sick';
-  isToxic: boolean;
+  isToxic?: boolean;
   needsWater: boolean;
   careDetails: {
     light: string;

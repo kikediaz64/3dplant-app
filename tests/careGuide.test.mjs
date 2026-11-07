@@ -196,3 +196,32 @@ test('el aviso compartido muestra notas, delimita la incertidumbre y prioriza la
   const card = renderToStaticMarkup(React.createElement(MemoryRouter, null, React.createElement(PlantCard, { plant: { ...base, ...diagnosisCare(undefined), ...props } })));
   assert.doesNotMatch(card, /Segura|>Tóxica</);
 });
+
+test('las plantas antiguas con false por defecto no se presentan como seguras', async () => {
+  const { toxicityState } = await import('../services/careGuide.ts');
+  const { default: ToxicityNotice } = await import('../components/ToxicityNotice.tsx');
+  for (const careGuide of [undefined, {}, { toxicity: null }, { toxicity: [] }]) {
+    store.clear();
+    const plant = plantStorage.savePlant({ ...base, ...diagnosisCare(careGuide) });
+    assert.equal(toxicityState(plant), undefined);
+    const notice = renderToStaticMarkup(React.createElement(ToxicityNotice, plant));
+    const card = renderToStaticMarkup(React.createElement(MemoryRouter, null, React.createElement(PlantCard, { plant })));
+    for (const html of [renderDetail(plant.id), notice, card]) {
+      assert.match(html, /Toxicidad: sin datos fiables/);
+      assert.doesNotMatch(html, /Segura|⚠️/);
+    }
+    assert.match(renderDetail(plant.id), /consulta a un veterinario o a un médico/);
+  }
+  assert.equal(toxicityState({}), undefined);
+});
+
+test('un primer reescaneo sin datos fiables guarda la incertidumbre', () => {
+  store.clear();
+  const plant = plantStorage.savePlant({ ...base, ...diagnosisCare(undefined) });
+  plantStorage.addDiagnosis(plant.id,
+    { id: 'rescan', date: new Date().toISOString(), image: '', problems: [], recommendations: [] },
+    { status: 'healthy', image: '', ...diagnosisCare({ toxicity: { pets: 'desconocido', people: 'desconocido' } }) });
+  assert.deepEqual(plantStorage.getSavedPlants()[0].careGuide.toxicity,
+    { pets: 'desconocido', people: 'desconocido', note: '' });
+  assert.match(renderDetail(plant.id), /Toxicidad: sin datos fiables/);
+});

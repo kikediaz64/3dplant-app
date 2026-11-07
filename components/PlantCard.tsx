@@ -1,9 +1,8 @@
-import { toxicityState } from '../services/careGuide';
-
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plant } from '../types';
 import { getWateringStatus } from '../services/plantStorage';
+import { toxicityState } from '../services/careGuide';
 
 interface PlantCardProps {
   plant: Plant;
@@ -74,11 +73,8 @@ const PlantCard: React.FC<PlantCardProps> = ({ plant, onWater, onDelete }) => {
               <span className="text-[10px] font-bold text-red-600 dark:text-red-300 uppercase tracking-wide">Tóxica</span>
             </div>
           )}
-          {toxic === false && (
-            <div className="flex items-center gap-1 px-2 py-1 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-100 dark:border-green-900/30">
-              <span className="material-symbols-outlined text-green-600 dark:text-green-400 text-[16px]">spa</span>
-              <span className="text-[10px] font-bold text-green-700 dark:text-green-300 uppercase tracking-wide">Segura</span>
-            </div>
+          {toxic === undefined && (
+            <p className="text-xs text-text-sec-light dark:text-text-sec-dark">Toxicidad: sin datos fiables</p>
           )}
         </div>
 

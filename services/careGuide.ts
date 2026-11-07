@@ -19,8 +19,7 @@ export function normalizeCareGuide(value: unknown): CareGuide | undefined {
     ? source.toxicity as Record<string, unknown>
     : undefined;
   if (toxicity) {
-    const normalizeStatus = (status: unknown): ToxicityStatus =>
-      {
+    const normalizeStatus = (status: unknown): ToxicityStatus => {
       const text = typeof status === 'string'
         ? status.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ').replace(/[.!]$/, '').trim()
         : '';
@@ -47,10 +46,10 @@ export function diagnosisCare(value: unknown): Pick<Plant, 'careGuide' | 'careDe
   };
 }
 
-// La guía detallada manda; isToxic solo respalda registros antiguos sin ese campo.
+// La guía detallada manda; un false antiguo puede ser un valor por defecto sin datos.
 export function toxicityState(plant: { careGuide?: unknown; isToxic?: boolean }): boolean | undefined {
   const toxicity = normalizeCareGuide(plant.careGuide)?.toxicity;
-  if (!toxicity) return plant.isToxic;
+  if (!toxicity) return plant.isToxic === true ? true : undefined;
   if (toxicity.pets === 'tóxica' || toxicity.people === 'tóxica') return true;
   if (toxicity.pets === 'no tóxica' && toxicity.people === 'no tóxica') return false;
   return undefined;

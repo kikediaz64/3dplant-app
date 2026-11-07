@@ -298,7 +298,7 @@ const DiagnosisResult: React.FC = () => {
         image: compressedImage,
         status,
         location: 'Mi Jardín',
-        isToxic: toxicityState(result) ?? false,
+        isToxic: toxicityState(result),
         needsWater: result.hydration === 'Sedienta' || result.actionPlan?.some(a => a.title?.toLowerCase().includes('agua')) || false,
         nextWatering: 'En 3 días',
         wateringFrequencyDays: result.hydration === 'Sedienta' ? 2 : result.hydration === 'Encharcada' ? 5 : 3,
