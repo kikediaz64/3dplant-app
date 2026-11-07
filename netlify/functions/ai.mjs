@@ -13,6 +13,23 @@ const MAX_CONTEXT_CHARS = 1000;
 const json = (data, status = 200) =>
   new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } });
 
+const SPECIES_NAME_PATTERN = /^[\p{L}\p{M}0-9 .\-'×()]+$/u;
+
+// Devuelve { scientificName, commonName? } saneado o null si la entrada no es válida.
+function parseConfirmedSpecies(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  const { scientificName, commonName } = value;
+  if (typeof scientificName !== 'string') return null;
+  const scientific = scientificName.trim();
+  if (scientific.length < 1 || scientific.length > 100 || !SPECIES_NAME_PATTERN.test(scientific)) return null;
+  if (commonName === undefined) return { scientificName: scientific };
+  if (typeof commonName !== 'string') return null;
+  const common = commonName.trim();
+  // Un nombre común raro (comas, barras…) se descarta; no debe impedir el diagnóstico.
+  const usable = common.length > 0 && common.length <= 100 && SPECIES_NAME_PATTERN.test(common);
+  return usable ? {scientificName: scientific, commonName: common } : { scientificName: scientific };
+}
+
 const DIAGNOSE_PROMPT = `Eres un botánico y fitopatólogo experto. Analiza la imagen de la planta y devuelve ÚNICAMENTE un objeto JSON válido (sin markdown, sin texto adicional) con exactamente estas claves:
 
 - "speciesName": string (nombre común de la planta)
@@ -75,10 +92,17 @@ export default async (request, context) => {
     let payload;
     let diagnoseBase64;
     let diagnoseCandidates;
+    let confirmedSpecies;
     if (action === 'diagnose') {
       const image = validateImage(body.imageBase64);
       if (!image.ok) {
         return json({ error: image.error }, image.status);
+      }
+      if (body.confirmedSpecies !== undefined) {
+        confirmedSpecies = parseConfirmedSpecies(body.confirmedSpecies);
+        if (!confirmedSpecies) {
+          return json({ error: 'Petición no válida.' }, 400);
+        }
       }
       const base64 = image.base64;
       diagnoseBase64 = base64;
@@ -143,7 +167,15 @@ export default async (request, context) => {
     }
 
     const openAiStartedAt = Date.now();
-    if (action === 'diagnose') {
+    if (action === 'diagnose' && confirmedSpecies) {
+      const names = confirmedSpecies.commonName
+        ? `${confirmedSpecies.scientificName} (${confirmedSpecies.commonName})`
+        : confirmedSpecies.scientificName;
+      payload.messages[0].content.unshift({
+        type: 'text',
+        text: `El usuario ha confirmado que la especie es ${names}. Usa exactamente esos valores en speciesName y scientificName y haz el diagnóstico, el plan y careGuide para esa especie.`
+      });
+    } else if (action === 'diagnose') {
       try {
         const candidates = await identifyPlant(diagnoseBase64);
         diagnoseCandidates = candidates?.filter(candidate => candidate.score >= 0.2);

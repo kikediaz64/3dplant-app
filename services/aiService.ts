@@ -101,8 +101,15 @@ async function callAI(body: Record<string, unknown>): Promise<{ text: string; ca
   }
 }
 
-export const diagnosePlant = async (base64Image: string): Promise<DiagnosisResult> => {
-  const response = await callAI({ action: 'diagnose', imageBase64: base64Image });
+export const diagnosePlant = async (
+  base64Image: string,
+  confirmedSpecies?: { scientificName: string; commonName?: string }
+): Promise<DiagnosisResult> => {
+  const response = await callAI({
+    action: 'diagnose',
+    imageBase64: base64Image,
+    ...(confirmedSpecies ? { confirmedSpecies } : {})
+  });
   const text = response.text;
   let parsed: any;
   try {

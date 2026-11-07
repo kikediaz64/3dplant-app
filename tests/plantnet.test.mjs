@@ -142,4 +142,56 @@ describe('integración opcional con Pl@ntNet', () => {
     assert.equal(plantnetCalls, 10);
     assert.equal(openAiCalls.length, 10);
   });
+
+  const postWith = confirmedSpecies => handler(new Request('https://example.test/api/ai', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'diagnose', imageBase64: IMAGE, confirmedSpecies })
+  }), { ip: '1.2.3.4', deploy: { context: 'production' } });
+
+  test('con especie confirmada no llama a Pl@ntNet, lo indica a la IA y no devuelve candidatos', async () => {
+    plantnetResponse = identifyResponse([candidate('Rosa canina', 0.9, ['Rosal'])]);
+    const response = await postWith({ scientificName: ' Nerium oleander ', commonName: 'Adelfa' });
+    assert.equal(response.status, 200);
+    assert.equal(plantnetCalls, 0);
+    assert.equal(openAiCalls.length, 1);
+    const content = openAiCalls[0].messages[0].content;
+    assert.equal(content[0].type, 'text');
+    assert.match(content[0].text, /^El usuario ha confirmado que la especie es Nerium oleander \(Adelfa\)\. Usa exactamente esos valores en speciesName y scientificName/);
+    assert.equal(content.length, 3);
+    assert.equal((await response.json()).candidates, undefined);
+  });
+
+  test('con especie confirmada sin nombre común omite el paréntesis', async () => {
+    await postWith({ scientificName: 'Ficus × carica' });
+    assert.match(openAiCalls[0].messages[0].content[0].text, /es Ficus × carica\. Usa exactamente/);
+  });
+
+  test('un nombre común con caracteres no admitidos se descarta sin fallar', async () => {
+    for (const commonName of ['Costilla de Adán, monstera', 'b'.repeat(101), 'Ro\nsal']) {
+      openAiCalls.length = 0;
+      const response = await postWith({ scientificName: 'Monstera deliciosa', commonName });
+      assert.equal(response.status, 200);
+      assert.match(openAiCalls[0].messages[0].content[0].text, /es Monstera deliciosa\. Usa exactamente/);
+    }
+  });
+
+  test('una especie confirmada no válida devuelve 400 sin gastar cuota ni llamar a nadie', async () => {
+    const invalid = [
+      { scientificName: 'a'.repeat(101) }, { scientificName: '' }, { scientificName: 42 },
+      { scientificName: 'Rosa', commonName: 5 }, { scientificName: 'Rosa', commonName: {} },
+      { scientificName: 'Rosa <b>' }, { scientificName: 'Rosa\ncanina' },
+      'Rosa canina', ['Rosa'], null
+    ];
+    for (let i = 0; i < 3; i++) {
+      for (const value of invalid) {
+        const response = await postWith(value);
+        assert.equal(response.status, 400, JSON.stringify(value));
+        assert.deepEqual(await response.json(), { error: 'Petición no válida.' });
+      }
+    }
+    assert.equal(plantnetCalls, 0);
+    assert.equal(openAiCalls.length, 0);
+    for (let i = 0; i < 10; i++) assert.equal((await postWith({ scientificName: 'Rosa canina' })).status, 200);
+    assert.equal((await postWith({ scientificName: 'Rosa canina' })).status, 429);
+  });
 });

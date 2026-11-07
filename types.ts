@@ -28,8 +28,7 @@ export interface Plant {
   location: string;
   image: string;
   status: 'healthy' | 'warning' | 'sick';
-  isToxic?: boolean;
-  speciesReviewPending?: boolean;
+  isToxic: boolean;
   needsWater: boolean;
   careDetails: {
     light: string;
@@ -70,7 +69,6 @@ export interface DiagnosisEntry {
 }
 
 export interface DiagnosisResult {
-  speciesReviewPending?: boolean;
   speciesName: string;
   scientificName: string;
   family?: string;
