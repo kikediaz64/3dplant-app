@@ -74,22 +74,22 @@ const PlantCard: React.FC<PlantCardProps> = ({ plant, onWater, onDelete }) => {
           )}
         </div>
 
-        <div className="grid grid-cols-4 gap-2 py-2 border-y border-gray-100 dark:border-white/5">
-          <div className="flex flex-col items-center justify-center gap-1 text-center">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 py-2 border-y border-gray-100 dark:border-white/5">
+          <div className="flex flex-col items-start justify-start gap-1 min-w-0">
             <span className="material-symbols-outlined text-text-sec-light dark:text-text-sec-dark text-[20px]">wb_sunny</span>
-            <span className="text-[10px] font-medium text-text-sec-light dark:text-text-sec-dark">{plant.careDetails.light}</span>
+            <span className="text-sm break-words font-medium text-text-sec-light dark:text-text-sec-dark">Luz: {plant.careDetails.light || 'Sin datos'}</span>
           </div>
-          <div className="flex flex-col items-center justify-center gap-1 text-center">
+          <div className="flex flex-col items-start justify-start gap-1 min-w-0">
             <span className="material-symbols-outlined text-text-sec-light dark:text-text-sec-dark text-[20px]">water_drop</span>
-            <span className="text-[10px] font-medium text-text-sec-light dark:text-text-sec-dark">{plant.careDetails.water}</span>
+            <span className="text-sm break-words font-medium text-text-sec-light dark:text-text-sec-dark">Riego: {plant.careDetails.water || 'Sin datos'}</span>
           </div>
-          <div className="flex flex-col items-center justify-center gap-1 text-center">
+          <div className="flex flex-col items-start justify-start gap-1 min-w-0">
             <span className="material-symbols-outlined text-text-sec-light dark:text-text-sec-dark text-[20px]">thermometer</span>
-            <span className="text-[10px] font-medium text-text-sec-light dark:text-text-sec-dark">{plant.careDetails.temp}</span>
+            <span className="text-sm break-words font-medium text-text-sec-light dark:text-text-sec-dark">Temperatura: {plant.careDetails.temp || 'Sin datos'}</span>
           </div>
-          <div className="flex flex-col items-center justify-center gap-1 text-center">
+          <div className="flex flex-col items-start justify-start gap-1 min-w-0">
             <span className="material-symbols-outlined text-text-sec-light dark:text-text-sec-dark text-[20px]">humidity_percentage</span>
-            <span className="text-[10px] font-medium text-text-sec-light dark:text-text-sec-dark">{plant.careDetails.humidity}</span>
+            <span className="text-sm break-words font-medium text-text-sec-light dark:text-text-sec-dark">Humedad: {plant.careDetails.humidity || 'Sin datos'}</span>
           </div>
         </div>
 

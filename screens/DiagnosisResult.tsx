@@ -1,3 +1,4 @@
+import { diagnosisCare } from '../services/careGuide';
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -273,13 +274,7 @@ const DiagnosisResult: React.FC = () => {
         nextWatering: 'En 3 días',
         wateringFrequencyDays: result.hydration === 'Sedienta' ? 2 : result.hydration === 'Encharcada' ? 5 : 3,
         lastWateredAt: new Date().toISOString(),
-        careDetails: {
-          light: result.careGuide?.light || '',
-          water: result.careGuide?.watering || '',
-          temp: result.careGuide?.temperature || '',
-          humidity: result.careGuide?.humidity || ''
-        },
-        careGuide: result.careGuide,
+        ...diagnosisCare(result.careGuide),
         zona: result.zona,
         luz: result.luz,
         tipo: result.tipo,
@@ -289,7 +284,7 @@ const DiagnosisResult: React.FC = () => {
 
       if (target) {
         // No toca riego, nombre ni ubicación (lo garantiza addDiagnosis).
-        plantStorage.addDiagnosis(target, entry, { diagnosis, status, image: compressedImage, careGuide: result.careGuide, careDetails: plantData.careDetails });
+        plantStorage.addDiagnosis(target, entry, { diagnosis, status, image: compressedImage, careGuide: plantData.careGuide, careDetails: plantData.careDetails });
       } else {
         console.log('Saving plant:', plantData);
         plantStorage.savePlant(plantData);

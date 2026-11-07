@@ -10,8 +10,8 @@ function buildPlantContext(p: Plant): string {
   const parts = [
     `${p.name}${p.scientificName ? ` (${p.scientificName})` : ''}`,
     p.tipo ? `tipo ${p.tipo}` : '',
-    p.luz ? `luz ${p.luz}` : `luz ${p.careDetails.light}`,
-    `riego ${p.careDetails.water}`,
+    p.luz ? `luz ${p.luz}` : `luz ${p.careDetails.light || 'sin datos'}`,
+    `riego ${p.careDetails.water || 'sin datos'}`,
     p.zona ? `zona ${p.zona}` : '',
     p.status === 'healthy' ? 'estado saludable' : p.status === 'sick' ? 'estado enferma' : 'estado con aviso'
   ].filter(Boolean);

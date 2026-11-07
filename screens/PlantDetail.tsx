@@ -1,3 +1,4 @@
+import { normalizeCareGuide, missingCareData, careText } from '../services/careGuide';
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -76,9 +77,7 @@ const PlantDetail: React.FC = () => {
         navigate('/');
     };
 
-    const missingCareData = 'Sin datos para esta planta: haz un diagnóstico nuevo para verlos';
-    const guide = plant.careGuide;
-    const careText = (value?: string) => value?.trim() || missingCareData;
+    const guide = normalizeCareGuide(plant.careGuide);
 
     return (
         <div className="relative flex h-screen w-full flex-col overflow-hidden bg-background-light dark:bg-background-dark">
@@ -234,6 +233,8 @@ const PlantDetail: React.FC = () => {
                     <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
                         {careText(guide?.watering)}
                     </p>
+                    <p className="text-sm font-medium mt-2">Próximo riego: {watering.nextWatering}
+                    </p>
                 </div>
 
                 {/* Requisitos de luz */}
@@ -284,6 +285,11 @@ const PlantDetail: React.FC = () => {
                         <span className="text-xl">🏡</span>
                         <h3 className="text-base font-bold text-gray-900 dark:text-white">Remedios caseros</h3>
                     </div>
+                    <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">{missingCareData}</p>
+                    <ul className="text-sm text-gray-600 dark:text-gray-300 list-disc list-inside space-y-1 mt-2">
+                        <li>Cáscara de huevo y posos de café: consulta si son adecuados para esta especie antes de añadirlos al sustrato.</li>
+                        <li>Agua oxigenada y vinagre: no aplicarlos sin comprobar su uso y dosis para esta planta.</li>
+                    </ul>
                     <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">Muchos remedios virales son mitos o pueden dañar las plantas. Consulta antes de aplicar cualquier remedio.</p>
                 </div>
 
