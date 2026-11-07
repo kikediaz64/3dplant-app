@@ -51,6 +51,11 @@ const PlantDetail: React.FC = () => {
         problems: [],
         recommendations: []
     };
+    const diagnosisTone = plant.status === 'sick'
+        ? { box: 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-900/30', title: 'text-red-900 dark:text-red-300', text: 'text-red-800 dark:text-red-200', icon: '🔴' }
+        : plant.status === 'warning'
+            ? { box: 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-900/30', title: 'text-orange-900 dark:text-orange-300', text: 'text-orange-800 dark:text-orange-200', icon: '⚠️' }
+            : { box: 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-900/30', title: 'text-green-900 dark:text-green-300', text: 'text-green-800 dark:text-green-200', icon: '✅' };
 
     const watering = getWateringStatus(plant);
     const history = getDiagnosisHistory(plant);
@@ -153,6 +158,30 @@ const PlantDetail: React.FC = () => {
                                 ))}
                             </ul>
                         )}
+                    </div>
+                )}
+
+                {/* Diagnóstico y recomendaciones primero, justo después del historial (o al inicio si no hay). */}
+                {detailedInfo.problems && detailedInfo.problems.length > 0 && (
+                    <div className={`rounded-xl border p-4 mb-4 ${diagnosisTone.box}`}>
+                        <div className="flex items-center gap-2 mb-2">
+                            <span className="text-xl">{diagnosisTone.icon}</span>
+                            <h3 className={`text-base font-bold ${diagnosisTone.title}`}>Problemas detectados</h3>
+                        </div>
+                        <ul className={`text-sm leading-relaxed list-disc list-inside ${diagnosisTone.text}`}>
+                            {detailedInfo.problems.map((problem, idx) => <li key={idx}>{problem}</li>)}
+                        </ul>
+                    </div>
+                )}
+                {detailedInfo.recommendations && detailedInfo.recommendations.length > 0 && (
+                    <div className={`rounded-xl border p-4 mb-4 ${diagnosisTone.box}`}>
+                        <div className="flex items-center gap-2 mb-2">
+                            <span className="text-xl">{diagnosisTone.icon}</span>
+                            <h3 className={`text-base font-bold ${diagnosisTone.title}`}>Recomendaciones</h3>
+                        </div>
+                        <ul className={`text-sm leading-relaxed list-disc list-inside ${diagnosisTone.text}`}>
+                            {detailedInfo.recommendations.map((rec, idx) => <li key={idx}>{rec}</li>)}
+                        </ul>
                     </div>
                 )}
 
@@ -284,35 +313,6 @@ const PlantDetail: React.FC = () => {
                     <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">Muchos remedios virales son mitos o dañinos: úsalos con moderación y prueba primero en una hoja.</p>
                 </div>
 
-                {/* Diagnóstico (si existe) */}
-                {detailedInfo.problems && detailedInfo.problems.length > 0 && (
-                    <div className="bg-orange-50 dark:bg-orange-900/20 rounded-xl p-4 mb-4 border border-orange-200 dark:border-orange-900/30">
-                        <div className="flex items-center gap-2 mb-2">
-                            <span className="text-xl">⚠️</span>
-                            <h3 className="text-base font-bold text-orange-900 dark:text-orange-300">Problemas detectados</h3>
-                        </div>
-                        <ul className="text-sm text-orange-800 dark:text-orange-200 leading-relaxed list-disc list-inside">
-                            {detailedInfo.problems.map((problem, idx) => (
-                                <li key={idx}>{problem}</li>
-                            ))}
-                        </ul>
-                    </div>
-                )}
-
-                {/* Recomendaciones (si existen) */}
-                {detailedInfo.recommendations && detailedInfo.recommendations.length > 0 && (
-                    <div className="bg-green-50 dark:bg-green-900/20 rounded-xl p-4 mb-4 border border-green-200 dark:border-green-900/30">
-                        <div className="flex items-center gap-2 mb-2">
-                            <span className="text-xl">✅</span>
-                            <h3 className="text-base font-bold text-green-900 dark:text-green-300">Recomendaciones</h3>
-                        </div>
-                        <ul className="text-sm text-green-800 dark:text-green-200 leading-relaxed list-disc list-inside">
-                            {detailedInfo.recommendations.map((rec, idx) => (
-                                <li key={idx}>{rec}</li>
-                            ))}
-                        </ul>
-                    </div>
-                )}
             </div>
 
             {/* Bottom Action Buttons */}
