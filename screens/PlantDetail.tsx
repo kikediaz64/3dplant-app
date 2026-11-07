@@ -76,6 +76,10 @@ const PlantDetail: React.FC = () => {
         navigate('/');
     };
 
+    const missingCareData = 'Sin datos para esta planta: haz un diagnóstico nuevo para verlos';
+    const guide = plant.careGuide;
+    const careText = (value?: string) => value?.trim() || missingCareData;
+
     return (
         <div className="relative flex h-screen w-full flex-col overflow-hidden bg-background-light dark:bg-background-dark">
             {/* Hero Image with Overlay */}
@@ -191,9 +195,7 @@ const PlantDetail: React.FC = () => {
                         <span className="text-xl">🕐</span>
                         <h3 className="text-base font-bold text-gray-900 dark:text-white">Historia</h3>
                     </div>
-                    <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
-                        {plant.scientificName ? `${plant.name} (${plant.scientificName}) es una planta apreciada por su belleza y facilidad de cuidado. Originaria de regiones tropicales, se ha adaptado bien a ambientes de interior.` : 'Información de historia no disponible.'}
-                    </p>
+                    <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">{careText(guide?.origin)}</p>
                 </div>
 
                 {/* Tipo de suelo */}
@@ -202,9 +204,7 @@ const PlantDetail: React.FC = () => {
                         <span className="text-xl">🌱</span>
                         <h3 className="text-base font-bold text-gray-900 dark:text-white">Tipo de suelo</h3>
                     </div>
-                    <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
-                        Requiere un sustrato bien drenado con buen contenido de materia orgánica. Se recomienda una mezcla de tierra para macetas, perlita y turba en proporciones iguales para asegurar un drenaje óptimo.
-                    </p>
+                    <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">{careText(guide?.soil)}</p>
                 </div>
 
                 {/* Abono / Fertilización */}
@@ -213,9 +213,7 @@ const PlantDetail: React.FC = () => {
                         <span className="text-xl">🌿</span>
                         <h3 className="text-base font-bold text-gray-900 dark:text-white">Abono / Fertilización</h3>
                     </div>
-                    <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
-                        Aplica fertilizante líquido equilibrado cada 2-4 semanas durante primavera y verano. Usa abono orgánico (humus de lombriz o compost) para mejorar el suelo. Evita fertilizar en exceso: las puntas quemadas suelen indicar exceso de sales.
-                    </p>
+                    <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">{careText(guide?.fertilizer)}</p>
                 </div>
 
                 {/* Cuidado estacional */}
@@ -224,10 +222,7 @@ const PlantDetail: React.FC = () => {
                         <span className="text-xl">📅</span>
                         <h3 className="text-base font-bold text-gray-900 dark:text-white">Cuidado estacional</h3>
                     </div>
-                    <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
-                        <strong>Primavera/Verano:</strong> Período de crecimiento activo. Aumenta el riego y fertiliza mensualmente.<br /><br />
-                        <strong>Otoño/Invierno:</strong> Reduce el riego y suspende la fertilización. La planta entra en reposo.
-                    </p>
+                    <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">{careText(guide?.seasonal)}</p>
                 </div>
 
                 {/* Necesidades de riego */}
@@ -237,9 +232,7 @@ const PlantDetail: React.FC = () => {
                         <h3 className="text-base font-bold text-gray-900 dark:text-white">Necesidades de riego</h3>
                     </div>
                     <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
-                        Frecuencia: {plant.careDetails.water}<br />
-                        Próximo riego: <strong>{watering.nextWatering}</strong><br />
-                        Regar cuando los primeros 2-3 cm de tierra estén secos al tacto. Evitar el encharcamiento. El agua no debe acumularse en la base de la planta.
+                        {careText(guide?.watering)}
                     </p>
                 </div>
 
@@ -250,8 +243,7 @@ const PlantDetail: React.FC = () => {
                         <h3 className="text-base font-bold text-gray-900 dark:text-white">Requisitos de luz</h3>
                     </div>
                     <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
-                        Intensidad: {plant.careDetails.light}<br />
-                        Prefiere luz indirecta brillante. Evitar la exposición directa al sol durante las horas más intensas del día, ya que puede quemar las hojas.
+                        {careText(guide?.light)}
                     </p>
                 </div>
 
@@ -262,8 +254,7 @@ const PlantDetail: React.FC = () => {
                         <h3 className="text-base font-bold text-gray-900 dark:text-white">Temperatura</h3>
                     </div>
                     <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
-                        Rango ideal: {plant.careDetails.temp}<br />
-                        Evitar temperaturas por debajo de 10°C y corrientes de aire frío. Mantener alejada de calefactores y aires acondicionados.
+                        {careText(guide?.temperature)}
                     </p>
                 </div>
 
@@ -274,8 +265,7 @@ const PlantDetail: React.FC = () => {
                         <h3 className="text-base font-bold text-gray-900 dark:text-white">Humedad</h3>
                     </div>
                     <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
-                        Nivel: {plant.careDetails.humidity}<br />
-                        Beneficia de pulverizaciones regulares en ambientes secos. Considera usar un humidificador o bandeja con guijarros y agua.
+                        {careText(guide?.humidity)}
                     </p>
                 </div>
 
@@ -285,15 +275,7 @@ const PlantDetail: React.FC = () => {
                         <span className="text-xl">🐛</span>
                         <h3 className="text-base font-bold text-gray-900 dark:text-white">Plagas e insecticidas</h3>
                     </div>
-                    <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
-                        Revisa el envés de las hojas cada semana. Aísla la planta enferma para evitar contagios.
-                    </p>
-                    <ul className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed mt-2 list-disc list-inside space-y-1">
-                        <li><strong>Jabón potásico:</strong> 15–20 ml por litro (tratamiento) o 10 ml/L (prevención). Pulverizar toda la planta cada 7 días.</li>
-                        <li><strong>Aceite de neem:</strong> 3–5 ml por litro + 2–3 gotas de jabón suave. Aplicar al atardecer, cada 7–14 días.</li>
-                        <li><strong>Mosca del sustrato:</strong> reduce el riego y coloca trampas amarillas.</li>
-                    </ul>
-                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">Prueba siempre en 1–2 hojas y espera 24 h antes de aplicar a toda la planta.</p>
+                    {guide?.commonPests?.length ? <ul className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed list-disc list-inside space-y-1">{guide.commonPests.map((pest, idx) => <li key={idx}>{pest}</li>)}</ul> : <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">{missingCareData}</p>}
                 </div>
 
                 {/* Remedios caseros */}
@@ -302,15 +284,7 @@ const PlantDetail: React.FC = () => {
                         <span className="text-xl">🏡</span>
                         <h3 className="text-base font-bold text-gray-900 dark:text-white">Remedios caseros</h3>
                     </div>
-                    <ul className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed list-disc list-inside space-y-1">
-                        <li><strong>Cáscara de huevo</strong> (triturada): aporta calcio. Mezclar con el sustrato.</li>
-                        <li><strong>Café</strong> (posos secos): aporta nitrógeno y acidifica un poco. Usar con moderación.</li>
-                        <li><strong>Bicarbonato</strong>: fungicida suave. 1 cucharadita por litro de agua, pulverizar.</li>
-                        <li><strong>Agua oxigenada</strong> (3%): oxigena raíces. 1 parte por 4 de agua al regar.</li>
-                        <li><strong>Vinagre</strong>: acidifica el agua. Solo MUY diluido (1 cucharada por 4 L) y con cuidado.</li>
-                        <li><strong>Leche</strong>: fungicida suave (1 parte por 9 de agua), pero puede favorecer hongos si se abusa.</li>
-                    </ul>
-                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">Muchos remedios virales son mitos o dañinos: úsalos con moderación y prueba primero en una hoja.</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">Muchos remedios virales son mitos o pueden dañar las plantas. Consulta antes de aplicar cualquier remedio.</p>
                 </div>
 
             </div>

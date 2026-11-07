@@ -5,6 +5,18 @@ export interface PlantDiagnosis {
   recommendations: string[];
 }
 
+export interface CareGuide {
+  origin?: string;
+  soil?: string;
+  fertilizer?: string;
+  seasonal?: string;
+  watering?: string;
+  light?: string;
+  temperature?: string;
+  humidity?: string;
+  commonPests?: string[];
+}
+
 export type ZonaTipo = 'Interior' | 'Exterior';
 export type LuzTipo = 'Sol pleno' | 'Semisombra' | 'Sombra';
 export type PlantTipo = 'Aromática' | 'Floral' | 'Frutal' | 'Vegetal' | 'Ornamental';
@@ -24,6 +36,7 @@ export interface Plant {
     temp: string;
     humidity: string;
   };
+  careGuide?: CareGuide;
   nextWatering: string;
   wateringFrequencyDays?: number;
   lastWateredAt?: string;
@@ -78,6 +91,7 @@ export interface DiagnosisResult {
     description: string;
     image?: string;
   }[];
+  careGuide?: CareGuide;
   zona?: ZonaTipo;
   luz?: LuzTipo;
   tipo?: PlantTipo;

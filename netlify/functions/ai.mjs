@@ -18,7 +18,7 @@ const DIAGNOSE_PROMPT = `Eres un botánico y fitopatólogo experto. Analiza la i
 - "speciesName": string (nombre común de la planta)
 - "scientificName": string (nombre científico)
 - "family": string (familia botánica)
-- "problemName": string (problema principal detectado, ej. "Deficiencia de potasio")
+- "problemName": string (problema principal detectado; si no se observa ninguno, "Sin problemas visibles")
 - "confidence": number (0 a 1)
 - "impact": string (cómo afecta esto a la planta)
 - "isContagious": boolean
@@ -34,8 +34,11 @@ const DIAGNOSE_PROMPT = `Eres un botánico y fitopatólogo experto. Analiza la i
 - "zona": string ("Interior" o "Exterior")
 - "luz": string ("Sol pleno", "Semisombra" o "Sombra")
 - "tipo": string ("Aromática", "Floral", "Frutal", "Vegetal" u "Ornamental")
-- "actionPlan": array de objetos { "title": string, "description": string, "icon": string (nombre de icono Material Symbols) } con 3 a 5 acciones inmediatas
-- "rootCauses": array de objetos { "title": string, "description": string } con 2 a 4 causas
+- "actionPlan": array de objetos { "title": string, "description": string, "icon": string (nombre de icono Material Symbols) }; con problema, 3 a 5 acciones inmediatas; si está sana, 1 a 3 consejos de mantenimiento
+- "rootCauses": array de objetos { "title": string, "description": string }; con problema, 2 a 4 causas plausibles; si está sana, puede ser []
+- "careGuide": objeto con datos breves (1-2 frases cada uno) y específicos de la especie identificada: "origin" (origen), "soil" (suelo), "fertilizer" (abono), "seasonal" (cuidado estacional), "watering" (frecuencia y cómo regar), "light" (luz), "temperature" (rango en °C), "humidity" (humedad) y "commonPests" (array de plagas comunes)
+
+No inventes síntomas ni problemas si la planta parece sana. En ese caso usa "healthStatus": "Saludable", "problemName": "Sin problemas visibles" y recomendaciones de mantenimiento. Si no conoces con seguridad un dato de careGuide, usa una cadena vacía o un array vacío en vez de inventarlo.
 
 Responde todo en español.`;
 

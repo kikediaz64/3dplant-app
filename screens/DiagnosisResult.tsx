@@ -274,11 +274,12 @@ const DiagnosisResult: React.FC = () => {
         wateringFrequencyDays: result.hydration === 'Sedienta' ? 2 : result.hydration === 'Encharcada' ? 5 : 3,
         lastWateredAt: new Date().toISOString(),
         careDetails: {
-          light: result.luz || 'Media',
-          water: 'Media',
-          temp: '18-24°C',
-          humidity: 'Media'
+          light: result.careGuide?.light || '',
+          water: result.careGuide?.watering || '',
+          temp: result.careGuide?.temperature || '',
+          humidity: result.careGuide?.humidity || ''
         },
+        careGuide: result.careGuide,
         zona: result.zona,
         luz: result.luz,
         tipo: result.tipo,
@@ -288,7 +289,7 @@ const DiagnosisResult: React.FC = () => {
 
       if (target) {
         // No toca riego, nombre ni ubicación (lo garantiza addDiagnosis).
-        plantStorage.addDiagnosis(target, entry, { diagnosis, status, image: compressedImage });
+        plantStorage.addDiagnosis(target, entry, { diagnosis, status, image: compressedImage, careGuide: result.careGuide, careDetails: plantData.careDetails });
       } else {
         console.log('Saving plant:', plantData);
         plantStorage.savePlant(plantData);

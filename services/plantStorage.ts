@@ -205,7 +205,7 @@ export const plantStorage = {
     addDiagnosis(
         id: string,
         entry: DiagnosisEntry,
-        current: Pick<SavedPlant, 'diagnosis' | 'status' | 'image'>
+        current: Pick<SavedPlant, 'diagnosis' | 'status' | 'image'> & Partial<Pick<SavedPlant, 'careGuide' | 'careDetails'>>
     ): void {
         try {
             const plants = this.getSavedPlants();
