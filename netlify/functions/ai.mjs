@@ -71,6 +71,8 @@ Reglas obligatorias:
 - Si no estás seguro de algo, dilo en lugar de inventar.`;
 
 export default async (request, context) => {
+  const startedAt = Date.now();
+  let timeoutId;
   if (request.method === 'GET') {
     return json({ ok: true });
   }
@@ -96,6 +98,7 @@ export default async (request, context) => {
     let diagnoseCandidates;
     let confirmedSpecies;
     if (action === 'diagnose') {
+      if (body.imagesBase64 !== undefined && !Array.isArray(body.imagesBase64)) return json({ error: 'imagesBase64 debe ser un array.' }, 400);
       const rawImages = body.imagesBase64 ?? body.imageBase64;
       const imageInputs = Array.isArray(rawImages) ? rawImages : [rawImages];
       if (imageInputs.length < 1 || imageInputs.length > 3) return json({ error: 'Se admiten de 1 a 3 imágenes.' }, 400);
@@ -107,6 +110,9 @@ export default async (request, context) => {
         if (!confirmedSpecies) {
           return json({ error: 'Petición no válida.' }, 400);
         }
+      }
+      if (imageInputs.reduce((total, image) => total + image.length, 0) > 3_000_000) {
+        return json({ error: 'Las fotos son demasiado grandes en conjunto. Reduce su tamaño e inténtalo de nuevo.' }, 413);
       }
       const base64 = images.map(image => image.base64);
       diagnoseBase64 = base64;
@@ -170,7 +176,6 @@ export default async (request, context) => {
       return json({ error: 'Se ha alcanzado el límite de consultas de hoy. Vuelve a intentarlo mañana.', code: 'daily-limit' }, 429);
     }
 
-    const openAiStartedAt = Date.now();
     if (action === 'diagnose' && confirmedSpecies) {
       const names = confirmedSpecies.commonName
         ? `${confirmedSpecies.scientificName} (${confirmedSpecies.commonName})`
@@ -199,19 +204,15 @@ export default async (request, context) => {
     }
 
     const controller = new AbortController();
-    const remainingMs = Math.max(0, 24000 - (Date.now() - openAiStartedAt));
-    const timeoutId = setTimeout(() => controller.abort(), remainingMs);
-    let res;
-    try {
-      res = await fetch(ENDPOINT, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${API_KEY}` },
-        body: JSON.stringify(payload),
-        signal: controller.signal
-      });
-    } finally {
-      clearTimeout(timeoutId);
-    }
+    const remainingMs = Math.max(0, 24000 - (Date.now() - startedAt));
+    if (remainingMs === 0) return json({ error: 'Se ha agotado el tiempo del diagnóstico. Inténtalo de nuevo.' }, 504);
+    timeoutId = setTimeout(() => controller.abort(), remainingMs);
+    const res = await fetch(ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${API_KEY}` },
+      body: JSON.stringify(payload),
+      signal: controller.signal
+    });
 
     if (!res.ok) {
       let errText = '';
@@ -234,7 +235,10 @@ export default async (request, context) => {
     const text = data?.choices?.[0]?.message?.content ?? '';
     return new Response(JSON.stringify({ text, ...(diagnoseCandidates?.length ? { candidates: diagnoseCandidates } : {}) }), { status: 200, headers: { 'Content-Type': 'application/json' } });
   } catch (error) {
+    if (error?.name === 'AbortError') return json({ error: 'Se ha agotado el tiempo del diagnóstico. Inténtalo de nuevo.' }, 504);
     return new Response(JSON.stringify({ error: error?.message || 'Error' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+  } finally {
+    clearTimeout(timeoutId);
   }
 };
 
