@@ -532,8 +532,8 @@ const DiagnosisResult: React.FC = () => {
         <div className="flex flex-col gap-3">
           {result.actionPlan.map((action, idx) => (
             <div key={idx} className="flex items-start gap-3 p-4 rounded-xl bg-white dark:bg-surface-dark border border-gray-100 dark:border-white/5 shadow-sm">
-              <div className="mt-0.5 rounded-full bg-primary/20 text-primary p-1.5 shrink-0 flex items-center justify-center">
-                <span className="material-symbols-outlined block" style={{ fontSize: '20px' }}>{action.icon}</span>
+              <div className="mt-0.5 size-9 overflow-hidden rounded-full bg-primary/20 text-primary shrink-0 flex items-center justify-center">
+                <span className="material-symbols-outlined block w-5 overflow-hidden text-center" style={{ fontSize: '20px' }}>{action.icon}</span>
               </div>
               <div className="flex-1">
                 <p className="text-sm font-bold text-gray-900 dark:text-white">{action.title}</p>
