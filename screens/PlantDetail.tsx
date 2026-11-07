@@ -5,7 +5,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { plantStorage, getWateringStatus, getDiagnosisHistory, formatLastWateredAt } from '../services/plantStorage';
 import { MOCK_PLANTS, isMockPlant } from '../constants';
 import { createRecurringReminderIcs, downloadCalendarReminder, fertilizerIntervalDays, nextReminderStart } from '../services/calendar';
-import { getHealthTrend } from '../services/healthTrend';
+import { getHealthTrend, isValidScore } from '../services/healthTrend';
 
 // Fecha y hora legibles para el historial; si la fecha no es válida, no muestra nada.
 const formatEntryDate = (iso: string) => {
@@ -66,9 +66,14 @@ const PlantDetail: React.FC = () => {
 
     const watering = getWateringStatus(plant);
     const history = getDiagnosisHistory(plant);
-    const scoredHistory = history.filter(entry => Number.isFinite(entry.healthScore) && entry.healthScore! >= 0 && entry.healthScore! <= 100);
+    const scoredHistory = history.filter(entry => isValidScore(entry.healthScore));
     const healthTrend = getHealthTrend(history.map(entry => entry.healthScore));
-    const chartPoints = [...scoredHistory].reverse();
+    const chartWidth = Math.max(160, scoredHistory.length * 48);
+    const chartPoints = [...scoredHistory].reverse().map((entry, index) => ({
+        ...entry,
+        x: scoredHistory.length === 1 ? chartWidth / 2 : 12 + index * ((chartWidth - 24) / (scoredHistory.length - 1)),
+        y: 56 - (entry.healthScore! / 100) * 48,
+    }));
 
     const handleWater = () => {
         if (justWatered) return;
@@ -167,14 +172,11 @@ const PlantDetail: React.FC = () => {
                                         <p className="text-xs font-semibold text-gray-600 dark:text-gray-300">Evolución de salud</p>
                                         <span className={`text-xs font-bold ${healthTrend === 'Mejorando' ? 'text-green-700 dark:text-green-300' : healthTrend === 'Empeorando' ? 'text-red-700 dark:text-red-300' : 'text-gray-600 dark:text-gray-300'}`}>{healthTrend}</span>
                                     </div>
-                                    <svg viewBox={`0 0 ${Math.max(160, chartPoints.length * 48)} 64`} className="h-16 w-full" role="img" aria-label={`Evolución de puntuación: ${healthTrend}`} preserveAspectRatio="none">
-                                        <polyline fill="none" stroke="currentColor" strokeWidth="2.5" className="text-primary" points={chartPoints.map((entry, index) => `${chartPoints.length === 1 ? 80 : 12 + index * ((Math.max(160, chartPoints.length * 48) - 24) / (chartPoints.length - 1))},${56 - (entry.healthScore! / 100) * 48}`).join(' ')} />
-                                        {chartPoints.map((entry, index) => {
-                                            const width = Math.max(160, chartPoints.length * 48);
-                                            const x = chartPoints.length === 1 ? 80 : 12 + index * ((width - 24) / (chartPoints.length - 1));
-                                            const y = 56 - (entry.healthScore! / 100) * 48;
-                                            return <g key={entry.id}><circle cx={x} cy={y} r="3.5" fill="currentColor" className="text-primary" /><text x={x} y={Math.max(9, y - 7)} textAnchor="middle" fontSize="8" fill="currentColor" className="text-gray-600 dark:text-gray-300">{entry.healthScore}</text></g>;
-                                        })}
+                                    <svg viewBox={`0 0 ${chartWidth} 64`} className="w-full h-auto" role="img" aria-label={`Evolución de puntuación: ${healthTrend}`}>
+                                        <polyline fill="none" stroke="currentColor" strokeWidth="2.5" className="text-primary" points={chartPoints.map(({ x, y }) => `${x},${y}`).join(' ')} />
+                                        {chartPoints.map(entry => (
+                                            <g key={entry.id}><circle cx={entry.x} cy={entry.y} r="3.5" fill="currentColor" className="text-primary" /><text x={entry.x} y={Math.max(9, entry.y - 7)} textAnchor="middle" fontSize="8" fill="currentColor" className="text-gray-600 dark:text-gray-300">{entry.healthScore}</text></g>
+                                        ))}
                                     </svg>
                                 </div>
                             )}
@@ -193,7 +195,7 @@ const PlantDetail: React.FC = () => {
                                             </p>
                                         </div>
                                         <div className="shrink-0 text-right">
-                                            {Number.isFinite(entry.healthScore) && entry.healthScore! >= 0 && entry.healthScore! <= 100 ? <><span className="text-lg font-bold text-primary">{entry.healthScore}</span><span className="text-xs text-gray-400">/100</span></> : <span className="text-xs text-gray-400">Sin puntuación</span>}
+                                            {isValidScore(entry.healthScore) ? <><span className="text-lg font-bold text-primary">{entry.healthScore}</span><span className="text-xs text-gray-400">/100</span></> : <span className="text-xs text-gray-400">Sin puntuación</span>}
                                         </div>
                                     </li>
                                 ))}
