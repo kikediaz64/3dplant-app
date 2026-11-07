@@ -1,6 +1,7 @@
 // 3dPlant — Función serverless que conecta con la IA (OpenAI GPT-4o-mini).
 import { getStore } from '@netlify/blobs';
 import { validateImage, consumeDailyQuota, dailyStoreName } from '../lib/limites.mjs';
+import { identifyPlant } from '../lib/plantnet.mjs';
 
 const MODEL = 'gpt-4o-mini';
 const ENDPOINT = 'https://api.openai.com/v1/chat/completions';
@@ -69,12 +70,14 @@ export default async (request, context) => {
     const { action } = body;
 
     let payload;
+    let diagnoseBase64;
     if (action === 'diagnose') {
       const image = validateImage(body.imageBase64);
       if (!image.ok) {
         return json({ error: image.error }, image.status);
       }
       const base64 = image.base64;
+      diagnoseBase64 = base64;
       payload = {
         model: MODEL,
         messages: [
@@ -135,8 +138,28 @@ export default async (request, context) => {
       return json({ error: 'Se ha alcanzado el límite de consultas de hoy. Vuelve a intentarlo mañana.', code: 'daily-limit' }, 429);
     }
 
+    const openAiStartedAt = Date.now();
+    if (action === 'diagnose') {
+      try {
+        const candidates = await identifyPlant(diagnoseBase64);
+        if (candidates?.some(candidate => candidate.score >= 0.2)) {
+          const hints = candidates.map(candidate => {
+            const commonNames = candidate.commonNames.length ? ` (${candidate.commonNames.join(', ')})` : '';
+            return `${candidate.scientificName}${commonNames} (${Math.round(candidate.score * 100)} %)`;
+          }).join(', ');
+          payload.messages[0].content.unshift({
+            type: 'text',
+            text: `Pl@ntNet sugiere: ${hints}. Úsalo para speciesName/scientificName si encaja con lo que ves; si no, decide tú.`
+          });
+        }
+      } catch {
+        // La identificación es una pista opcional; un fallo no debe impedir el diagnóstico.
+      }
+    }
+
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 24000);
+    const remainingMs = Math.max(0, 24000 - (Date.now() - openAiStartedAt));
+    const timeoutId = setTimeout(() => controller.abort(), remainingMs);
     let res;
     try {
       res = await fetch(ENDPOINT, {
