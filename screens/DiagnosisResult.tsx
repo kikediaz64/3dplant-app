@@ -1,3 +1,4 @@
+import { otherCandidates } from '../services/diagnosisCandidates';
 import { diagnosisCare } from '../services/careGuide';
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -169,6 +170,9 @@ const DiagnosisResult: React.FC = () => {
   // Evita guardar dos veces con toques seguidos. El ref frena al instante; el estado es solo visual.
   const savingRef = useRef(false);
   const [saving, setSaving] = useState(false);
+  const rediagnosingRef = useRef(false);
+  const [rediagnosing, setRediagnosing] = useState<string | null>(null);
+  const [candidateError, setCandidateError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [errorKind, setErrorKind] = useState<AIUserErrorKind | null>(null);
 
@@ -226,6 +230,26 @@ const DiagnosisResult: React.FC = () => {
     const newActions = [...completedActions];
     newActions[index] = !newActions[index];
     setCompletedActions(newActions);
+  };
+
+  const selectCandidate = async (candidate: NonNullable<IDiagnosisResult['candidates']>[number]) => {
+    if (!result || !image || rediagnosingRef.current) return;
+    const previousResult = result;
+    const name = candidate.commonNames[0] || candidate.scientificName;
+    rediagnosingRef.current = true;
+    setRediagnosing(name);
+    setCandidateError(null);
+    try {
+      const newDiagnosis = await diagnosePlant(image, { scientificName: candidate.scientificName, commonName: candidate.commonNames[0] });
+      setResult({ ...newDiagnosis, candidates: previousResult.candidates });
+      setCompletedActions(new Array(newDiagnosis.actionPlan.length).fill(false));
+    } catch (err) {
+      console.error('Re-diagnosis error:', err);
+      setCandidateError(err instanceof AIUserError ? err.message : 'No se pudo repetir el diagnóstico. Inténtalo de nuevo.');
+    } finally {
+      rediagnosingRef.current = false;
+      setRediagnosing(null);
+    }
   };
 
   const handleSavePlant = async () => {
@@ -367,6 +391,28 @@ const DiagnosisResult: React.FC = () => {
               </div>
               <h1 className="text-2xl font-bold text-gray-900 dark:text-white leading-tight">{result.speciesName}</h1>
               <p className="text-gray-500 dark:text-gray-400 text-sm font-medium mt-0.5 italic">{result.scientificName}</p>
+              {(() => {
+                const alternatives = otherCandidates(result);
+                if (!alternatives.length) return null;
+                return (
+                  <div className="mt-3">
+                    <p className="text-xs font-bold text-gray-600 dark:text-gray-300 mb-2">¿No es esta? Otras posibles</p>
+                    <div className="flex gap-2 overflow-x-auto pb-1">
+                      {alternatives.map(candidate => (
+                        <button disabled={saving || saved || !!rediagnosing} key={candidate.scientificName} type="button" onClick={() => selectCandidate(candidate)}
+                          className="w-28 shrink-0 overflow-hidden rounded-lg border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 text-left active:scale-95">
+                          {candidate.imageUrl ? <img src={candidate.imageUrl} alt="" className="h-16 w-full object-cover" loading="lazy" />
+                            : <div className="h-16 w-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center"><span className="material-symbols-outlined text-gray-400">local_florist</span></div>}
+                          <span className="block px-2 pt-1.5 text-xs font-semibold text-gray-900 dark:text-white line-clamp-2">{candidate.commonNames[0] || candidate.scientificName}</span>
+                          <span className="block px-2 pb-2 pt-0.5 text-[10px] text-gray-500 dark:text-gray-400">{Math.round(candidate.score * 100)} % Pl@ntNet</span>
+                        </button>
+                      ))}
+                    </div>
+                    {rediagnosing && <p role="status" className="mt-2 text-xs text-gray-600 dark:text-gray-300">Repitiendo el diagnóstico con {rediagnosing}…</p>}
+                    {candidateError && <p role="alert" className="mt-2 text-xs text-red-600 dark:text-red-400">{candidateError}</p>}
+                  </div>
+                );
+              })()}
               {result.family && <p className="text-gray-400 dark:text-gray-500 text-xs mt-0.5">Familia: {result.family}</p>}
             </div>
             <div className="text-center shrink-0">

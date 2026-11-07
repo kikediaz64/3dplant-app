@@ -95,4 +95,10 @@ export interface DiagnosisResult {
   zona?: ZonaTipo;
   luz?: LuzTipo;
   tipo?: PlantTipo;
+  candidates?: {
+    scientificName: string;
+    commonNames: string[];
+    score: number;
+    imageUrl: string | null;
+  }[];
 }
