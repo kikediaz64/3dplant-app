@@ -53,7 +53,7 @@ const DIAGNOSE_PROMPT = `Eres un botánico y fitopatólogo experto. Analiza la i
 - "zona": string ("Interior" o "Exterior")
 - "luz": string ("Sol pleno", "Semisombra" o "Sombra")
 - "tipo": string ("Aromática", "Floral", "Frutal", "Vegetal" u "Ornamental")
-- "actionPlan": array de objetos { "title": string, "description": string, "icon": string (nombre de icono Material Symbols) }; con problema, 3 a 5 acciones inmediatas; si está sana, 1 a 3 consejos de mantenimiento
+- "actionPlan": array de objetos { "title": string, "description": string, "icon": string }; "icon" debe ser exactamente uno de: water_drop, wb_sunny, content_cut, compost, bug_report, pest_control, eco, spa, thermostat, humidity_percentage, local_florist, grass, potted_plant, healing, visibility, schedule, task_alt. Con problema, 3 a 5 acciones inmediatas; si está sana, 1 a 3 consejos de mantenimiento
 - "rootCauses": array de objetos { "title": string, "description": string }; con problema, 2 a 4 causas plausibles; si está sana, puede ser []
 - "careGuide": objeto con datos breves (1-2 frases cada uno) y específicos de la especie identificada: "origin" (origen), "soil" (suelo), "fertilizer" (abono), "seasonal" (cuidado estacional), "watering" (frecuencia y cómo regar), "light" (luz), "temperature" (rango en °C), "humidity" (humedad), "commonPests" (array de plagas comunes) y "toxicity": { "pets": "tóxica" | "no tóxica" | "desconocido", "people": "tóxica" | "no tóxica" | "desconocido", "note": string (frase corta) }. Para toxicidad, usa "desconocido" si no tienes certeza fiable; no la deduzcas ni inventes.
 

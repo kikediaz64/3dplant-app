@@ -18,6 +18,33 @@ const RATE_LIMIT_MESSAGE = 'Has hecho varias consultas muy seguidas. Espera un m
 const UNAVAILABLE_MESSAGE = 'El servicio de diagnóstico no está disponible en este momento. Inténtalo más tarde.';
 const BAD_RESPONSE_MESSAGE = 'La IA devolvió una respuesta que no se pudo entender. Inténtalo de nuevo.';
 
+const ACTION_PLAN_ICONS = new Set([
+  'water_drop', 'wb_sunny', 'content_cut', 'compost', 'bug_report', 'pest_control',
+  'eco', 'spa', 'thermostat', 'humidity_percentage', 'local_florist', 'grass',
+  'potted_plant', 'healing', 'visibility', 'schedule', 'task_alt'
+]);
+
+const ACTION_PLAN_ICON_SYNONYMS: Record<string, string> = {
+  scissors: 'content_cut', cut: 'content_cut', prune: 'content_cut', pruning: 'content_cut',
+  water: 'water_drop', sun: 'wb_sunny', light: 'wb_sunny', fertilizer: 'compost',
+  fertiliser: 'compost', bug: 'pest_control', pest: 'pest_control'
+};
+
+export function normalizeActionPlanIcon(value: unknown): string {
+  if (typeof value !== 'string') return 'task_alt';
+  const icon = value.trim().toLowerCase();
+  if (ACTION_PLAN_ICONS.has(icon)) return icon;
+  return ACTION_PLAN_ICON_SYNONYMS[icon] ?? 'task_alt';
+}
+
+function normalizeActionPlan(value: unknown) {
+  return toArray(value, s => ({ title: 'Recomendación', description: s, icon: 'task_alt' }))
+    .map((action: any) => ({
+      ...action,
+      icon: normalizeActionPlanIcon(action?.icon)
+    }));
+}
+
 function extractJson(text: string): string {
   let cleaned = (text || '').trim();
   cleaned = cleaned
@@ -127,7 +154,7 @@ export const diagnosePlant = async (
     candidates: response.candidates,
     confidence: normalizeConfidence(parsed.confidence),
     severity: normalizeSeverity(parsed.severity),
-    actionPlan: toArray(parsed.actionPlan, s => ({ title: 'Recomendación', description: s, icon: 'task_alt' })),
+    actionPlan: normalizeActionPlan(parsed.actionPlan),
     rootCauses: toArray(parsed.rootCauses, s => ({ title: 'Posible causa', description: s })),
     symptoms: toArray<string>(parsed.symptoms, s => s),
     pests: toArray<string>(parsed.pests, s => s)
