@@ -1,7 +1,7 @@
 import { normalizeCareGuide, missingCareData, careText } from '../services/careGuide';
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { plantStorage, getWateringStatus, getDiagnosisHistory } from '../services/plantStorage';
+import { plantStorage, getWateringStatus, getDiagnosisHistory, formatLastWateredAt } from '../services/plantStorage';
 import { MOCK_PLANTS, isMockPlant } from '../constants';
 
 // Fecha y hora legibles para el historial; si la fecha no es válida, no muestra nada.
@@ -25,6 +25,10 @@ const PlantDetail: React.FC = () => {
 
     // Fuerza un re-render periódico para que "Próximo riego" se actualice con el tiempo.
     const [, setTick] = useState(0);
+    const [justWatered, setJustWatered] = useState(false);
+    const [waterTimer, setWaterTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
+
+    useEffect(() => () => { if (waterTimer) clearTimeout(waterTimer); }, [waterTimer]);
 
     useEffect(() => {
         const refresh = () => setTick(t => t + 1);
@@ -61,9 +65,12 @@ const PlantDetail: React.FC = () => {
     const history = getDiagnosisHistory(plant);
 
     const handleWater = () => {
+        if (justWatered) return;
         const now = new Date().toISOString();
         plantStorage.updatePlant(plant.id, { lastWateredAt: now });
         setPlant(prev => prev ? { ...prev, lastWateredAt: now } : prev);
+        setJustWatered(true);
+        setWaterTimer(setTimeout(() => setJustWatered(false), 2000));
     };
 
     const handleDelete = () => {
@@ -234,6 +241,7 @@ const PlantDetail: React.FC = () => {
                     </p>
                     <p className="text-sm font-medium mt-2">Próximo riego: {watering.nextWatering}
                     </p>
+                    {formatLastWateredAt(plant.lastWateredAt) && <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Último riego: {formatLastWateredAt(plant.lastWateredAt)}</p>}
                 </div>
 
                 {/* Requisitos de luz */}
@@ -298,10 +306,11 @@ const PlantDetail: React.FC = () => {
                 <div className="flex gap-3 max-w-lg mx-auto">
                     <button
                         onClick={handleWater}
-                        className="flex-1 rounded-xl bg-primary hover:bg-green-400 text-black font-bold h-12 flex items-center justify-center gap-2 transition-colors active:scale-95 shadow-lg shadow-primary/20"
+                        disabled={justWatered}
+                        className="flex-1 rounded-xl bg-primary hover:bg-green-400 text-black font-bold h-12 flex items-center justify-center gap-2 transition-colors active:scale-95 shadow-lg shadow-primary/20 disabled:opacity-70 disabled:cursor-not-allowed"
                     >
-                        <span className="material-symbols-outlined">water_drop</span>
-                        Regar ahora
+                        <span className="material-symbols-outlined">{justWatered ? 'check' : 'water_drop'}</span>
+                        {justWatered ? 'Regada ✓' : 'Regar ahora'}
                     </button>
                     <button
                         onClick={() => navigate('/')}

@@ -12,6 +12,18 @@ export interface WateringStatus {
     nextWatering: string;
 }
 
+// Describe el último riego según días de calendario locales, no bloques de 24 horas.
+export function formatLastWateredAt(lastWateredAt?: string | null, now = new Date()): string | null {
+    if (!lastWateredAt) return null;
+    const watered = new Date(lastWateredAt);
+    if (Number.isNaN(watered.getTime())) return null;
+    const day = (date: Date) => Date.UTC(date.getFullYear(), date.getMonth(), date.getDate());
+    const elapsedDays = Math.round((day(now) - day(watered)) / 86400000);
+    if (elapsedDays <= 0) return 'hoy';
+    if (elapsedDays === 1) return 'ayer';
+    return `hace ${elapsedDays} días`;
+}
+
 // Calcula el estado de riego según la frecuencia y el último riego.
 export function getWateringStatus(plant: Plant): WateringStatus {
     const frequencyDays = plant.wateringFrequencyDays ?? 3;
