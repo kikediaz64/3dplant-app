@@ -55,7 +55,7 @@ const DIAGNOSE_PROMPT = `Eres un botánico y fitopatólogo experto. Analiza la i
 - "tipo": string ("Aromática", "Floral", "Frutal", "Vegetal" u "Ornamental")
 - "actionPlan": array de objetos { "title": string, "description": string, "icon": string (nombre de icono Material Symbols) }; con problema, 3 a 5 acciones inmediatas; si está sana, 1 a 3 consejos de mantenimiento
 - "rootCauses": array de objetos { "title": string, "description": string }; con problema, 2 a 4 causas plausibles; si está sana, puede ser []
-- "careGuide": objeto con datos breves (1-2 frases cada uno) y específicos de la especie identificada: "origin" (origen), "soil" (suelo), "fertilizer" (abono), "seasonal" (cuidado estacional), "watering" (frecuencia y cómo regar), "light" (luz), "temperature" (rango en °C), "humidity" (humedad) y "commonPests" (array de plagas comunes)
+- "careGuide": objeto con datos breves (1-2 frases cada uno) y específicos de la especie identificada: "origin" (origen), "soil" (suelo), "fertilizer" (abono), "seasonal" (cuidado estacional), "watering" (frecuencia y cómo regar), "light" (luz), "temperature" (rango en °C), "humidity" (humedad), "commonPests" (array de plagas comunes) y "toxicity": { "pets": "tóxica" | "no tóxica" | "desconocido", "people": "tóxica" | "no tóxica" | "desconocido", "note": string (frase corta) }. Para toxicidad, usa "desconocido" si no tienes certeza fiable; no la deduzcas ni inventes.
 
 No inventes síntomas ni problemas si la planta parece sana. En ese caso usa "healthStatus": "Saludable", "problemName": "Sin problemas visibles" y recomendaciones de mantenimiento. Si no conoces con seguridad un dato de careGuide, usa una cadena vacía o un array vacío en vez de inventarlo.
 

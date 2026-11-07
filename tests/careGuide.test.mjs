@@ -88,6 +88,24 @@ test('campos malformados de IA o de plantas importadas no rompen el detalle', ()
   assert.deepEqual(diagnosisCare({ commonPests: [null, 42, ' Cochinilla ', ''] }).careGuide.commonPests, ['Cochinilla']);
 });
 
+test('normaliza toxicidad desconocida o malformada y solo destaca la toxicidad confirmada', () => {
+  const clean = diagnosisCare({ toxicity: { pets: 'peligrosa', people: null, note: 42 } }).careGuide.toxicity;
+  assert.deepEqual(clean, { pets: 'desconocido', people: 'desconocido', note: '' });
+  assert.deepEqual(diagnosisCare({ toxicity: { pets: 'tóxica', people: 'no tóxica', note: 'Evitar ingestión.' } }).careGuide.toxicity,
+    { pets: 'tóxica', people: 'no tóxica', note: 'Evitar ingestión.' });
+  store.clear();
+  const unknownPlant = plantStorage.savePlant({ ...base, ...diagnosisCare({ toxicity: { pets: 'x', people: 'desconocido' } }) });
+  assert.match(renderDetail(unknownPlant.id), /Toxicidad: sin datos fiables/);
+  store.clear();
+  const toxicPlant = plantStorage.savePlant({ ...base, ...diagnosisCare({ toxicity: { pets: 'tóxica', people: 'no tóxica', note: '' } }) });
+  const toxicHtml = renderDetail(toxicPlant.id);
+  assert.match(toxicHtml, /Tóxica para mascotas/);
+  assert.doesNotMatch(toxicHtml, /Tóxica para personas/);
+  store.clear();
+  const safePlant = plantStorage.savePlant({ ...base, ...diagnosisCare({ toxicity: { pets: 'no tóxica', people: 'no tóxica', note: '' } }) });
+  assert.doesNotMatch(renderDetail(safePlant.id), /Tóxica para|Toxicidad: sin datos fiables/);
+});
+
 test('un reescaneo sin guía o con campos vacíos conserva los cuidados anteriores', () => {
   store.clear();
   const guide = { origin: 'Sudamérica', watering: 'Regar al secarse la superficie', light: 'Sol directo', temperature: '20-28°C', humidity: 'Ventilación adecuada', commonPests: ['Mosca blanca'] };

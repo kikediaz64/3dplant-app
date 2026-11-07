@@ -1,4 +1,4 @@
-import type { CareGuide, Plant } from '../types';
+import type { CareGuide, Plant, PlantToxicity, ToxicityStatus } from '../types';
 
 export const missingCareData = 'Sin datos para esta planta: haz un diagnóstico nuevo para verlos';
 export const careText = (value: unknown): string =>
@@ -15,6 +15,19 @@ export function normalizeCareGuide(value: unknown): CareGuide | undefined {
   guide.commonPests = Array.isArray(source.commonPests)
     ? source.commonPests.filter((p): p is string => typeof p === 'string').map(p => p.trim()).filter(Boolean)
     : [];
+  const toxicity = source.toxicity && typeof source.toxicity === 'object' && !Array.isArray(source.toxicity)
+    ? source.toxicity as Record<string, unknown>
+    : undefined;
+  if (toxicity) {
+    const normalizeStatus = (status: unknown): ToxicityStatus =>
+      status === 'tóxica' || status === 'no tóxica' ? status : 'desconocido';
+    const cleanToxicity: PlantToxicity = {
+      pets: normalizeStatus(toxicity.pets),
+      people: normalizeStatus(toxicity.people),
+      note: typeof toxicity.note === 'string' ? toxicity.note.trim() : ''
+    };
+    guide.toxicity = cleanToxicity;
+  }
   return guide;
 }
 
