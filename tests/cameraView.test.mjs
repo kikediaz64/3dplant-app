@@ -32,7 +32,7 @@ const { createRoot } = await import('react-dom/client');
 const { MemoryRouter, useLocation } = await import('react-router-dom');
 const { act } = React;
 
-let dom, root, container, alerts, confirmations, confirmResult, originals;
+let dom, root, container, alerts, confirmations, confirmResult, originals, pixelValue;
 const photoSources = () => [...container.querySelectorAll('img[alt^="Foto "]')].map(img => img.src);
 const button = text => [...container.querySelectorAll('button')].find(node => node.textContent === text);
 
@@ -45,6 +45,7 @@ beforeEach(async () => {
   alerts = [];
   confirmations = [];
   confirmResult = false;
+  pixelValue = () => 0;
   originals = new Map();
   const globals = {
     window: dom.window,
@@ -54,8 +55,8 @@ beforeEach(async () => {
     IS_REACT_ACT_ENVIRONMENT: true,
     alert: message => alerts.push(message),
     Image: class {
-      naturalWidth = 8;
-      naturalHeight = 8;
+      naturalWidth = 256;
+      naturalHeight = 256;
       set src(value) {
         this.source = value;
         queueMicrotask(() => this.onload?.());
@@ -69,11 +70,19 @@ beforeEach(async () => {
   }
   dom.window.confirm = message => { confirmations.push(message); return confirmResult; };
   // Solo se simulan las APIs de imagen que jsdom no implementa. assessPhoto
-  // sigue ejecutándose: los píxeles negros provocan su aviso real de foto oscura.
+  // sigue ejecutándose con píxeles oscuros o bordes difusos según el caso.
   dom.window.HTMLCanvasElement.prototype.getContext = function () {
     return {
       drawImage: image => { this.source = image.source; },
-      getImageData: () => ({ data: new Uint8ClampedArray(this.width * this.height * 4) }),
+      getImageData: () => {
+        const data = new Uint8ClampedArray(this.width * this.height * 4);
+        for (let y = 0; y < this.height; y++) for (let x = 0; x < this.width; x++) {
+          const i = (y * this.width + x) * 4;
+          data[i] = data[i + 1] = data[i + 2] = pixelValue(x, y);
+          data[i + 3] = 255;
+        }
+        return { data };
+      },
     };
   };
   dom.window.HTMLCanvasElement.prototype.toDataURL = function () {
@@ -149,25 +158,31 @@ test('quitar la miniatura intermedia elimina esa foto y deja añadir otra', asyn
   for (let i = 0; i < 3; i++) await click(container.querySelector('[aria-label="Quitar foto 1"]'));
   assert.deepEqual(photoSources(), []);
   assert.ok(container.textContent.includes('0/3 fotos'));
-  assert.equal(button('Diagnosticar (1 fotos)'), undefined);
+  assert.equal([...container.querySelectorAll('button')].some(node => node.textContent.startsWith('Diagnosticar')), false);
 });
 
-test('una foto oscura pide confirmación: cancelar conserva la pantalla y aceptar guarda y avanza', async () => {
-  await upload('oscura.jpg');
-  const photos = photoSources();
-  localStorage.setItem('capturedPlantImage', 'anterior');
-  await click(button('Diagnosticar (1 fotos)'));
-  const warning = 'Esta foto está muy oscura, ¿repetir? Puedes continuar igualmente.';
-  assert.deepEqual(confirmations, [warning]);
-  assert.equal(container.querySelector('output').textContent, '/scan');
-  assert.equal(localStorage.getItem('capturedPlantImages'), null);
-  assert.equal(localStorage.getItem('capturedPlantImage'), 'anterior');
-  assert.deepEqual(photoSources(), photos);
+for (const { kind, pixels, message } of [
+  { kind: 'oscura', pixels: () => 0, message: 'Esta foto está muy oscura, ¿repetir?' },
+  { kind: 'borrosa', pixels: x => 140 + 80 * Math.tanh((x - 128) / 12), message: 'Esta foto está muy borrosa, ¿repetir?' },
+]) {
+  test(`una foto ${kind} pide confirmación: cancelar conserva la pantalla y aceptar guarda y avanza`, async () => {
+    pixelValue = pixels;
+    await upload(`${kind}.jpg`);
+    const photos = photoSources();
+    localStorage.setItem('capturedPlantImage', 'anterior');
+    await click(button('Diagnosticar (1 fotos)'));
+    const warning = message + ' Puedes continuar igualmente.';
+    assert.deepEqual(confirmations, [warning]);
+    assert.equal(container.querySelector('output').textContent, '/scan');
+    assert.equal(localStorage.getItem('capturedPlantImages'), null);
+    assert.equal(localStorage.getItem('capturedPlantImage'), 'anterior');
+    assert.deepEqual(photoSources(), photos);
 
-  confirmResult = true;
-  await click(button('Diagnosticar (1 fotos)'));
-  assert.deepEqual(confirmations, [warning, warning]);
-  assert.deepEqual(JSON.parse(localStorage.getItem('capturedPlantImages')), photos);
-  assert.equal(localStorage.getItem('capturedPlantImage'), null);
-  assert.equal(container.querySelector('output').textContent, '/result');
-});
+    confirmResult = true;
+    await click(button('Diagnosticar (1 fotos)'));
+    assert.deepEqual(confirmations, [warning, warning]);
+    assert.deepEqual(JSON.parse(localStorage.getItem('capturedPlantImages')), photos);
+    assert.equal(localStorage.getItem('capturedPlantImage'), null);
+    assert.equal(container.querySelector('output').textContent, '/result');
+  });
+}
