@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plant } from '../types';
 import { getWateringStatus } from '../services/plantStorage';
@@ -12,6 +12,12 @@ interface PlantCardProps {
 
 const PlantCard: React.FC<PlantCardProps> = ({ plant, onWater, onDelete }) => {
   const navigate = useNavigate();
+  const [justWatered, setJustWatered] = useState(false);
+  useEffect(() => {
+    if (!justWatered) return;
+    const timer = setTimeout(() => setJustWatered(false), 2000);
+    return () => clearTimeout(timer);
+  }, [justWatered]);
   const watering = getWateringStatus(plant);
   const needsWater = watering.needsWater;
   const nextWatering = watering.nextWatering;
@@ -105,13 +111,15 @@ const PlantCard: React.FC<PlantCardProps> = ({ plant, onWater, onDelete }) => {
             onClick={() => {
               if (needsWater && onWater) {
                 onWater(plant.id);
+                setJustWatered(true);
               } else {
                 navigate(`/plant/${plant.id}`);
               }
             }}
+            disabled={justWatered}
             className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${needsWater ? 'bg-primary text-black shadow-lg shadow-primary/20 hover:bg-[#0fd60f]' : 'bg-primary/10 text-green-800 dark:text-green-300 hover:bg-primary/20'}`}
           >
-            {needsWater ? 'Regar Ahora' : 'Detalles'}
+            {justWatered ? 'Regada ✓' : needsWater ? 'Regar Ahora' : 'Detalles'}
           </button>
         </div>
       </div>

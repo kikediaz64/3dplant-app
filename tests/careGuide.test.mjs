@@ -26,7 +26,7 @@ registerHooks({
 });
 
 const { diagnosisCare } = await import('../services/careGuide.ts');
-const { plantStorage } = await import('../services/plantStorage.ts');
+const { plantStorage, formatLastWateredAt } = await import('../services/plantStorage.ts');
 const React = await import('react');
 const { renderToStaticMarkup } = await import('react-dom/server');
 const { MemoryRouter, Routes, Route } = await import('react-router-dom');
@@ -41,6 +41,15 @@ globalThis.localStorage = {
 const base = { name: 'Tomate', scientificName: 'Solanum lycopersicum', location: 'Huerto', image: '', status: 'healthy', isToxic: false, needsWater: false, nextWatering: 'Mañana' };
 const renderDetail = id => renderToStaticMarkup(React.createElement(MemoryRouter, { initialEntries: [`/plant/${id}`] },
   React.createElement(Routes, null, React.createElement(Route, { path: '/plant/:id', element: React.createElement(PlantDetail) }))));
+
+test('formatea el último riego por día de calendario y omite datos vacíos o inválidos', () => {
+  const now = new Date(2026, 10, 7, 0, 5);
+  assert.equal(formatLastWateredAt(new Date(2026, 10, 7, 23, 55).toISOString(), now), 'hoy');
+  assert.equal(formatLastWateredAt(new Date(2026, 10, 6, 23, 55).toISOString(), now), 'ayer');
+  assert.equal(formatLastWateredAt(new Date(2026, 9, 11, 12).toISOString(), now), 'hace 27 días');
+  assert.equal(formatLastWateredAt('', now), null);
+  assert.equal(formatLastWateredAt('fecha inválida', now), null);
+});
 
 test('la guía simulada se guarda, se recupera y aparece en el detalle y en el reescaneo', () => {
   store.clear();
