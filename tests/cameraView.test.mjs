@@ -32,7 +32,7 @@ const { createRoot } = await import('react-dom/client');
 const { MemoryRouter, useLocation } = await import('react-router-dom');
 const { act } = React;
 
-let dom, root, container, alerts, confirmations, confirmResult, originals, pixelValue;
+let dom, root, container, alerts, originals, pixelValue;
 const photoSources = () => [...container.querySelectorAll('img[alt^="Foto "]')].map(img => img.src);
 const button = text => [...container.querySelectorAll('button')].find(node => node.textContent === text);
 
@@ -43,8 +43,6 @@ function Location() {
 beforeEach(async () => {
   dom = new JSDOM('<!doctype html><div id="root"></div>', { url: 'https://plant.test/scan' });
   alerts = [];
-  confirmations = [];
-  confirmResult = false;
   pixelValue = () => 0;
   originals = new Map();
   const globals = {
@@ -54,6 +52,7 @@ beforeEach(async () => {
     localStorage: dom.window.localStorage,
     IS_REACT_ACT_ENVIRONMENT: true,
     alert: message => alerts.push(message),
+    confirm: () => assert.fail('CameraView no debe abrir confirmaciones del navegador'),
     Image: class {
       naturalWidth = 256;
       naturalHeight = 256;
@@ -68,7 +67,6 @@ beforeEach(async () => {
     originals.set(key, Object.getOwnPropertyDescriptor(globalThis, key));
     Object.defineProperty(globalThis, key, { configurable: true, writable: true, value });
   }
-  dom.window.confirm = message => { confirmations.push(message); return confirmResult; };
   // Solo se simulan las APIs de imagen que jsdom no implementa. assessPhoto
   // sigue ejecutándose con píxeles oscuros o bordes difusos según el caso.
   dom.window.HTMLCanvasElement.prototype.getContext = function () {
@@ -132,13 +130,14 @@ test('acepta tres subidas y rechaza la cuarta conservando las tres miniaturas', 
   for (let i = 1; i <= 3; i++) {
     await upload(`hoja-${i}.jpg`);
     assert.equal(photoSources().length, i);
-    assert.ok(container.textContent.includes(`${i}/3 fotos`));
-    assert.ok(button(`Diagnosticar (${i} fotos)`));
+    assert.ok(container.textContent.includes(`${i}/3 ${i === 1 ? 'foto' : 'fotos'}`));
+    assert.ok(button(`Diagnosticar (${i} ${i === 1 ? 'foto' : 'fotos'})`));
   }
   const accepted = photoSources();
   assert.equal(new Set(accepted).size, 3);
   await upload('cuarta.jpg');
-  assert.deepEqual(alerts, ['Puedes añadir hasta 3 fotos.']);
+  assert.deepEqual(alerts, []);
+  assert.ok(container.textContent.includes('Puedes añadir hasta 3 fotos.'));
   assert.deepEqual(photoSources(), accepted);
   assert.ok(container.textContent.includes('3/3 fotos'));
   assert.ok(button('Diagnosticar (3 fotos)'));
@@ -161,28 +160,41 @@ test('quitar la miniatura intermedia elimina esa foto y deja añadir otra', asyn
   assert.equal([...container.querySelectorAll('button')].some(node => node.textContent.startsWith('Diagnosticar')), false);
 });
 
-for (const { kind, pixels, message } of [
-  { kind: 'oscura', pixels: () => 0, message: 'Esta foto está muy oscura, ¿repetir?' },
-  { kind: 'borrosa', pixels: x => 140 + 80 * Math.tanh((x - 128) / 12), message: 'Esta foto está muy borrosa, ¿repetir?' },
-]) {
-  test(`una foto ${kind} pide confirmación: cancelar conserva la pantalla y aceptar guarda y avanza`, async () => {
-    pixelValue = pixels;
-    await upload(`${kind}.jpg`);
-    const photos = photoSources();
-    localStorage.setItem('capturedPlantImage', 'anterior');
-    await click(button('Diagnosticar (1 fotos)'));
-    const warning = message + ' Puedes continuar igualmente.';
-    assert.deepEqual(confirmations, [warning]);
-    assert.equal(container.querySelector('output').textContent, '/scan');
-    assert.equal(localStorage.getItem('capturedPlantImages'), null);
-    assert.equal(localStorage.getItem('capturedPlantImage'), 'anterior');
-    assert.deepEqual(photoSources(), photos);
+test('agrupa avisos de fotos malas; repetir conserva la cámara y continuar guarda y navega', async () => {
+  pixelValue = () => 0;
+  await upload('oscura-1.jpg');
+  await upload('oscura-2.jpg');
+  const photos = photoSources();
+  localStorage.setItem('capturedPlantImage', 'anterior');
+  await click(button('Diagnosticar (2 fotos)'));
+  assert.equal(container.querySelectorAll('[role="alert"]').length, 1);
+  assert.equal(container.querySelector('[role="alert"] p').textContent, 'La foto 1 está muy oscura. La foto 2 está muy oscura.');
+  assert.equal(localStorage.getItem('capturedPlantImages'), null);
+  assert.equal(container.querySelector('output').textContent, '/scan');
+  assert.ok(button('Repetir fotos'));
+  assert.ok(button('Continuar igualmente'));
+  await click(button('Repetir fotos'));
+  assert.equal(container.querySelector('[role="alert"]'), null);
+  assert.equal(container.querySelector('output').textContent, '/scan');
+  assert.equal(localStorage.getItem('capturedPlantImages'), null);
+  assert.equal(localStorage.getItem('capturedPlantImage'), 'anterior');
+  assert.deepEqual(photoSources(), photos);
 
-    confirmResult = true;
-    await click(button('Diagnosticar (1 fotos)'));
-    assert.deepEqual(confirmations, [warning, warning]);
-    assert.deepEqual(JSON.parse(localStorage.getItem('capturedPlantImages')), photos);
-    assert.equal(localStorage.getItem('capturedPlantImage'), null);
-    assert.equal(container.querySelector('output').textContent, '/result');
-  });
-}
+  await click(button('Diagnosticar (2 fotos)'));
+  await click(button('Continuar igualmente'));
+  assert.deepEqual(JSON.parse(localStorage.getItem('capturedPlantImages')), photos);
+  assert.equal(localStorage.getItem('capturedPlantImage'), null);
+  assert.equal(container.querySelector('output').textContent, '/result');
+  assert.deepEqual(alerts, []);
+});
+
+test('fotos sin advertencias se guardan y van al resultado directamente', async () => {
+  pixelValue = () => 140;
+  await upload('hoja.jpg');
+  const photos = photoSources();
+  await click(button('Diagnosticar (1 foto)'));
+  assert.equal(container.querySelector('[role="alert"]'), null);
+  assert.deepEqual(JSON.parse(localStorage.getItem('capturedPlantImages')), photos);
+  assert.equal(container.querySelector('output').textContent, '/result');
+  assert.deepEqual(alerts, []);
+});
