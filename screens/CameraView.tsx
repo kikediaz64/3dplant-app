@@ -20,6 +20,8 @@ const CameraView: React.FC = () => {
   const [cameraActive, setCameraActive] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [photos, setPhotos] = useState<string[]>([]);
+  const [qualityWarnings, setQualityWarnings] = useState<string[]>([]);
+  const [photoLimitMessage, setPhotoLimitMessage] = useState(false);
 
   const photosRef = useRef<string[]>([]);
   const updatePhotos = (next: string[]) => {
@@ -28,20 +30,35 @@ const CameraView: React.FC = () => {
   };
   const addPhoto = (dataUrl: string) => {
     if (photosRef.current.length >= 3) {
-      alert('Puedes añadir hasta 3 fotos.');
+      setPhotoLimitMessage(true);
       return;
     }
+    setPhotoLimitMessage(false);
     updatePhotos([...photosRef.current, dataUrl]);
   };
 
-  const continueWithPhotos = async () => {
-    if (!photos.length) return;
-    for (const photo of photos) { const warning = await assessPhoto(photo); if (warning && !window.confirm(warning + ' Puedes continuar igualmente.')) return; }
+  const saveAndContinue = () => {
+    setQualityWarnings([]);
+    setPhotoLimitMessage(false);
     try {
       localStorage.setItem('capturedPlantImages', JSON.stringify(photos));
       localStorage.removeItem('capturedPlantImage');
     } catch { alert('No hay espacio suficiente para guardar las fotos. Borra datos del navegador e intenta de nuevo.'); return; }
     navigate(resultPath);
+  };
+
+  const continueWithPhotos = async () => {
+    if (!photos.length) return;
+    const warnings = await Promise.all(photos.map(async (photo, index) => {
+      const warning = await assessPhoto(photo);
+      return warning ? `La foto ${index + 1} ${warning.replace(/^Esta foto /i, 'está ' ).replace(/, ¿repetir\?$/i, '.')}` : null;
+    }));
+    const groupedWarnings = warnings.filter((warning): warning is string => Boolean(warning));
+    if (groupedWarnings.length) {
+      setQualityWarnings(groupedWarnings);
+      return;
+    }
+    saveAndContinue();
   };
 
   const startCamera = useCallback(async () => {
@@ -242,8 +259,18 @@ const CameraView: React.FC = () => {
           </div>
           <div className="mt-3 flex gap-2 items-center">
             {photos.map((photo, index) => <div key={index} className="relative"><img src={photo} alt={`Foto ${index + 1}`} className="w-14 h-14 rounded-lg object-cover"/><button aria-label={`Quitar foto ${index + 1}`} onClick={() => updatePhotos(photosRef.current.filter((_, i) => i !== index))} className="absolute -top-2 -right-2 rounded-full bg-red-600 px-1">×</button></div>)}
-            <span className="text-xs text-white/70">{photos.length}/3 fotos</span>
+            <span className="text-xs text-white/70">{photos.length}/3 {photos.length === 1 ? 'foto' : 'fotos'}</span>
           </div>
+          {photoLimitMessage && <p role="status" className="mt-2 text-xs text-amber-200">Puedes añadir hasta 3 fotos.</p>}
+          {qualityWarnings.length > 0 && (
+            <div role="alert" className="mt-3 w-full max-w-sm rounded-xl border border-amber-300/40 bg-black/80 p-4 text-sm">
+              <p>{qualityWarnings.join(' ')}</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <button onClick={() => setQualityWarnings([])} className="rounded-lg bg-white/15 px-3 py-2 font-bold">Repetir fotos</button>
+                <button onClick={saveAndContinue} className="rounded-lg bg-primary px-3 py-2 font-bold text-black">Continuar igualmente</button>
+              </div>
+            </div>
+          )}
         </main>
 
         {showTip && (
@@ -286,7 +313,7 @@ const CameraView: React.FC = () => {
               <span className="material-symbols-outlined text-[24px]" style={{ fontVariationSettings: "'FILL' 1" }}>lightbulb</span>
             </button>
           </div>
-          {photos.length > 0 && <button onClick={continueWithPhotos} className="block mx-auto mt-3 px-6 py-3 rounded-xl bg-primary text-black font-bold">Diagnosticar ({photos.length} fotos)</button>}
+          {photos.length > 0 && <button onClick={continueWithPhotos} className="block mx-auto mt-3 px-6 py-3 rounded-xl bg-primary text-black font-bold">Diagnosticar ({photos.length} {photos.length === 1 ? 'foto' : 'fotos'})</button>}
         </footer>
       </div>
     </div>
