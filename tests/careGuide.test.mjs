@@ -101,6 +101,8 @@ test('normaliza toxicidad desconocida o malformada y solo destaca la toxicidad c
   const toxicHtml = renderDetail(toxicPlant.id);
   assert.match(toxicHtml, /Tóxica para mascotas/);
   assert.doesNotMatch(toxicHtml, /Tóxica para personas/);
+  const toxicCard = renderToStaticMarkup(React.createElement(MemoryRouter, null, React.createElement(PlantCard, { plant: toxicPlant })));
+  assert.match(toxicCard, />Tóxica</);
   store.clear();
   const safePlant = plantStorage.savePlant({ ...base, ...diagnosisCare({ toxicity: { pets: 'no tóxica', people: 'no tóxica', note: '' } }) });
   assert.doesNotMatch(renderDetail(safePlant.id), /Tóxica para|Toxicidad: sin datos fiables/);
@@ -215,10 +217,11 @@ test('las plantas antiguas con false por defecto no se presentan como seguras', 
     assert.equal(toxicityState(plant), undefined);
     const notice = renderToStaticMarkup(React.createElement(ToxicityNotice, plant));
     const card = renderToStaticMarkup(React.createElement(MemoryRouter, null, React.createElement(PlantCard, { plant })));
-    for (const html of [renderDetail(plant.id), notice, card]) {
+    for (const html of [renderDetail(plant.id), notice]) {
       assert.match(html, /Toxicidad: sin datos fiables/);
       assert.doesNotMatch(html, /Segura|⚠️/);
     }
+    assert.doesNotMatch(card, /sin datos fiables|Segura|⚠️|>Tóxica</);
     assert.match(renderDetail(plant.id), /consulta a un veterinario o a un médico/);
   }
   assert.equal(toxicityState({}), undefined);
