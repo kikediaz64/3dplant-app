@@ -48,7 +48,10 @@ for (const [action, call] of [
       await assert.rejects(call(), error => {
         assert.ok(error instanceof AIUserError);
         assert.equal(error.kind, 'daily-limit');
-        assert.equal(error.message, 'Has llegado al límite de diagnósticos de hoy. Vuelve mañana.');
+        const expectedMessage = action === 'pregunta'
+          ? 'Has llegado al límite de preguntas de hoy. Vuelve mañana.'
+          : 'Has llegado al límite de diagnósticos de hoy. Vuelve mañana.';
+        assert.equal(error.message, expectedMessage);
         return true;
       });
     });

@@ -16,6 +16,7 @@ export class AIUserError extends Error {
 
 const RATE_LIMIT_MESSAGE = 'Has hecho varias consultas muy seguidas. Espera un minuto y vuelve a intentarlo.';
 const DAILY_LIMIT_MESSAGE = 'Has llegado al límite de diagnósticos de hoy. Vuelve mañana.';
+const DAILY_QUESTION_LIMIT_MESSAGE = 'Has llegado al límite de preguntas de hoy. Vuelve mañana.';
 const UNAVAILABLE_MESSAGE = 'El servicio de diagnóstico no está disponible en este momento. Inténtalo más tarde.';
 const BAD_RESPONSE_MESSAGE = 'La IA devolvió una respuesta que no se pudo entender. Inténtalo de nuevo.';
 
@@ -106,7 +107,8 @@ async function callAI(body: Record<string, unknown>): Promise<{ text: string; ca
       const err = await res.json().catch(() => null);
       if (res.status === 429) {
         if (err?.code === 'daily-limit') {
-          throw new AIUserError(DAILY_LIMIT_MESSAGE, 'daily-limit');
+          const message = body.action === 'ask' ? DAILY_QUESTION_LIMIT_MESSAGE : DAILY_LIMIT_MESSAGE;
+          throw new AIUserError(message, 'daily-limit');
         }
         // Sin cuerpo: rate limit de Netlify. JSON con error pero sin código: cuota/saldo de OpenAI.
         if (err?.error) {
