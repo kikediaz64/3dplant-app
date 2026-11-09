@@ -52,6 +52,7 @@ beforeEach(async () => {
     localStorage: dom.window.localStorage,
     IS_REACT_ACT_ENVIRONMENT: true,
     alert: message => alerts.push(message),
+    confirm: () => assert.fail('CameraView no debe abrir confirmaciones del navegador'),
     Image: class {
       naturalWidth = 256;
       naturalHeight = 256;
@@ -166,10 +167,14 @@ test('agrupa avisos de fotos malas; repetir conserva la cámara y continuar guar
   const photos = photoSources();
   localStorage.setItem('capturedPlantImage', 'anterior');
   await click(button('Diagnosticar (2 fotos)'));
-  assert.ok(container.textContent.includes('La foto 1 está muy oscura. La foto 2 está muy oscura.'));
+  assert.equal(container.querySelectorAll('[role="alert"]').length, 1);
+  assert.equal(container.querySelector('[role="alert"] p').textContent, 'La foto 1 está muy oscura. La foto 2 está muy oscura.');
+  assert.equal(localStorage.getItem('capturedPlantImages'), null);
+  assert.equal(container.querySelector('output').textContent, '/scan');
   assert.ok(button('Repetir fotos'));
   assert.ok(button('Continuar igualmente'));
   await click(button('Repetir fotos'));
+  assert.equal(container.querySelector('[role="alert"]'), null);
   assert.equal(container.querySelector('output').textContent, '/scan');
   assert.equal(localStorage.getItem('capturedPlantImages'), null);
   assert.equal(localStorage.getItem('capturedPlantImage'), 'anterior');
@@ -180,4 +185,16 @@ test('agrupa avisos de fotos malas; repetir conserva la cámara y continuar guar
   assert.deepEqual(JSON.parse(localStorage.getItem('capturedPlantImages')), photos);
   assert.equal(localStorage.getItem('capturedPlantImage'), null);
   assert.equal(container.querySelector('output').textContent, '/result');
+  assert.deepEqual(alerts, []);
+});
+
+test('fotos sin advertencias se guardan y van al resultado directamente', async () => {
+  pixelValue = () => 140;
+  await upload('hoja.jpg');
+  const photos = photoSources();
+  await click(button('Diagnosticar (1 foto)'));
+  assert.equal(container.querySelector('[role="alert"]'), null);
+  assert.deepEqual(JSON.parse(localStorage.getItem('capturedPlantImages')), photos);
+  assert.equal(container.querySelector('output').textContent, '/result');
+  assert.deepEqual(alerts, []);
 });

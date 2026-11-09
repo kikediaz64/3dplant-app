@@ -51,7 +51,7 @@ const CameraView: React.FC = () => {
     if (!photos.length) return;
     const warnings = await Promise.all(photos.map(async (photo, index) => {
       const warning = await assessPhoto(photo);
-      return warning ? `La foto ${index + 1} ${warning.replace(/^Esta foto /i, 'está ' ).replace(/, ¿repetir\?$/i, '.')}` : null;
+      return warning ? warning.replace(/^Esta foto/i, `La foto ${index + 1}`).replace(/, ¿repetir\?$/i, '.') : null;
     }));
     const groupedWarnings = warnings.filter((warning): warning is string => Boolean(warning));
     if (groupedWarnings.length) {
@@ -187,9 +187,9 @@ const CameraView: React.FC = () => {
         </header>
 
         {/* Main Content */}
-        <main className="flex-1 flex flex-col items-center justify-center px-6 pt-20 pb-24">
+        <main className="flex-1 min-h-0 overflow-y-auto flex flex-col items-center px-6 pt-20 pb-48">
           {/* Camera Frame */}
-          <div className="relative w-full max-w-sm h-[46vh] rounded-3xl border-4 border-primary/30 overflow-hidden mb-4 bg-black">
+          <div className="relative shrink-0 w-full max-w-sm h-[46vh] rounded-3xl border-4 border-primary/30 overflow-hidden mb-4 bg-black">
             <video
               ref={videoRef}
               playsInline
