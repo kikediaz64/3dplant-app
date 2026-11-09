@@ -262,16 +262,19 @@ const CameraView: React.FC = () => {
             <span className="text-xs text-white/70">{photos.length}/3 {photos.length === 1 ? 'foto' : 'fotos'}</span>
           </div>
           {photoLimitMessage && <p role="status" className="mt-2 text-xs text-amber-200">Puedes añadir hasta 3 fotos.</p>}
-          {qualityWarnings.length > 0 && (
-            <div role="alert" className="mt-3 w-full max-w-sm rounded-xl border border-amber-300/40 bg-black/80 p-4 text-sm">
+        </main>
+
+        {qualityWarnings.length > 0 && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 px-6">
+            <div role="alert" className="w-full max-w-sm rounded-xl border border-amber-300/40 bg-black/90 p-4 text-sm text-white">
               <p>{qualityWarnings.join(' ')}</p>
               <div className="mt-3 flex flex-wrap gap-2">
                 <button onClick={() => setQualityWarnings([])} className="rounded-lg bg-white/15 px-3 py-2 font-bold">Repetir fotos</button>
                 <button onClick={saveAndContinue} className="rounded-lg bg-primary px-3 py-2 font-bold text-black">Continuar igualmente</button>
               </div>
             </div>
-          )}
-        </main>
+          </div>
+        )}
 
         {showTip && (
           <div className="absolute inset-x-4 top-20 z-40 rounded-2xl bg-white/95 dark:bg-card-dark/95 backdrop-blur-md border border-white/10 p-4 shadow-xl">
