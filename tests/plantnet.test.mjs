@@ -251,3 +251,4 @@ describe('integración opcional con Pl@ntNet', () => {
     assert.equal((await postWith({ scientificName: 'Rosa canina' })).status, 429);
   });
 });
+

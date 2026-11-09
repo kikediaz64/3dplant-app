@@ -1,6 +1,17 @@
 const ENDPOINT = 'https://my-api.plantnet.org/v2/identify/all';
 const TIMEOUT_MS = 5000;
 
+export function formatCandidateHint(candidate) {
+  const commonNames = (Array.isArray(candidate.commonNames) ? candidate.commonNames : [])
+    .filter(name => typeof name === 'string')
+    .map(name => name.slice(0, 60).trim())
+    .filter(Boolean)
+    .filter((name, index, names) => names.findIndex(other => other.toLowerCase() === name.toLowerCase()) === index)
+    .slice(0, 3);
+  const names = commonNames.length ? ` (${commonNames.join(', ')})` : '';
+  return `${candidate.scientificName}${names} (${Math.round(candidate.score * 100)} %)`;
+}
+
 /** Returns up to four Pl@ntNet candidates, or null when identification is unavailable. */
 export async function identifyPlant(images, apiKey = process.env.PLANTNET_API_KEY) {
   if (!apiKey || !(typeof images === 'string' || (Array.isArray(images) && images.length > 0 && images.length <= 3))) return null;
