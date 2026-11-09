@@ -73,9 +73,6 @@ const PlantCard: React.FC<PlantCardProps> = ({ plant, onWater, onDelete }) => {
               <span className="text-[10px] font-bold text-red-600 dark:text-red-300 uppercase tracking-wide">Tóxica</span>
             </div>
           )}
-          {toxic === undefined && (
-            <p className="text-xs text-text-sec-light dark:text-text-sec-dark">Toxicidad: sin datos fiables</p>
-          )}
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 py-2 border-y border-gray-100 dark:border-white/5">
