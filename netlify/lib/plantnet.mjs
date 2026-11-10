@@ -1,6 +1,9 @@
 const ENDPOINT = 'https://my-api.plantnet.org/v2/identify/all';
 const TIMEOUT_MS = 5000;
 
+// Puntuación mínima para pasar una candidata como pista a la IA
+export const HINT_MIN_SCORE = 0.2;
+
 export function formatCandidateHint(candidate) {
   const commonNames = (Array.isArray(candidate.commonNames) ? candidate.commonNames : [])
     .filter(name => typeof name === 'string')

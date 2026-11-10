@@ -1,7 +1,7 @@
 // 3dPlant — Función serverless que conecta con la IA (OpenAI GPT-4o-mini).
 import { getStore } from '@netlify/blobs';
 import { validateImage, consumeDailyQuota, dailyStoreName } from '../lib/limites.mjs';
-import { identifyPlant, formatCandidateHint } from '../lib/plantnet.mjs';
+import { identifyPlant, formatCandidateHint, HINT_MIN_SCORE } from '../lib/plantnet.mjs';
 
 // Debe coincidir con MIN_ALTERNATIVE_SCORE de services/diagnosisCandidates.ts.
 const MIN_ALTERNATIVE_SCORE = 0.05;
@@ -188,8 +188,9 @@ export default async (request, context) => {
       try {
         const candidates = await identifyPlant(diagnoseBase64);
         diagnoseCandidates = candidates?.filter(candidate => candidate.score >= MIN_ALTERNATIVE_SCORE);
-        if (candidates?.some(candidate => candidate.score >= 0.2)) {
-          const hints = candidates.filter(candidate => candidate.score >= 0.2).map(formatCandidateHint).join(', ');
+        const hintCandidates = candidates?.filter(c => c.score >= HINT_MIN_SCORE) ?? [];
+        if (hintCandidates.length > 0) {
+          const hints = hintCandidates.map(formatCandidateHint).join(', ');
           payload.messages[0].content.unshift({
             type: 'text',
             text: `Pl@ntNet sugiere: ${hints}. Úsalo para speciesName/scientificName si encaja con lo que ves; si no, decide tú.`
