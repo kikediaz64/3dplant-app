@@ -40,11 +40,27 @@ export function normalizeActionPlanIcon(value: unknown): string {
 }
 
 function normalizeActionPlan(value: unknown) {
-  return toArray(value, s => ({ title: 'Recomendación', description: s, icon: 'task_alt' }))
-    .map((action: any) => ({
-      ...action,
-      icon: normalizeActionPlanIcon(action?.icon)
-    }));
+  const actions = toArray(value, s => ({ title: 'Recomendación', description: s, icon: 'task_alt' }));
+  return actions.flatMap((action: unknown) => {
+    if (typeof action === 'string') {
+      return action.trim()
+        ? [{ title: 'Recomendación', description: action, icon: 'task_alt' }]
+        : [];
+    }
+    if (action === null || typeof action !== 'object' || Array.isArray(action)) return [];
+
+    const item = action as { title?: unknown; description?: unknown; icon?: unknown };
+    const hasTitle = typeof item.title === 'string' && item.title.trim().length > 0;
+    const hasDescription = typeof item.description === 'string' && item.description.trim().length > 0;
+    if (!hasTitle && !hasDescription) return [];
+
+    return [{
+      ...item,
+      title: hasTitle ? item.title : 'Recomendación',
+      description: typeof item.description === 'string' ? item.description : '',
+      icon: normalizeActionPlanIcon(item.icon)
+    }];
+  });
 }
 
 function extractJson(text: string): string {
