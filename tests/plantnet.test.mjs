@@ -51,6 +51,7 @@ globalThis.fetch = async (url, init) => {
 };
 process.env.OPENAI_API_KEY = 'openai-test-key';
 const { default: handler } = await import('../netlify/functions/ai.mjs');
+const { HINT_MIN_SCORE } = await import('../netlify/lib/plantnet.mjs');
 
 const post = () => handler(new Request('https://example.test/api/ai', {
   method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -60,6 +61,10 @@ const identifyResponse = results => new Response(JSON.stringify({ results }), { 
 const candidate = (name, score, commonNames = [], images) => ({ species: { scientificNameWithoutAuthor: name, commonNames }, score, ...(images ? { images } : {}) });
 
 describe('integración opcional con Pl@ntNet', () => {
+  test('el umbral de pista a la IA es 0.2', () => {
+    assert.equal(HINT_MIN_SCORE, 0.2);
+  });
+
   beforeEach(() => {
     stores.clear(); openAiCalls.length = 0;
     plantnetCalls = 0;
