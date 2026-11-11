@@ -5,6 +5,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { diagnosePlant, AIUserError, type AIUserErrorKind } from '../services/aiService';
 import { DiagnosisResult as IDiagnosisResult, DiagnosisEntry } from '../types';
+import { getActionPlanDisplay } from '../utils/actionPlanDisplay';
 import { plantStorage } from '../services/plantStorage';
 
 // Comprime la imagen para no llenar el almacenamiento del navegador.
@@ -212,7 +213,7 @@ const DiagnosisResult: React.FC = () => {
       const diagnosis = await diagnosePlant(img);
       console.log('Diagnosis complete:', diagnosis);
       setResult(diagnosis);
-      setCompletedActions(new Array(diagnosis.actionPlan.length).fill(false));
+      setCompletedActions(new Array((diagnosis.actionPlan ?? []).length).fill(false));
       setLoading(false);
     } catch (error) {
       console.error('Diagnosis error:', error);
@@ -249,7 +250,7 @@ const DiagnosisResult: React.FC = () => {
     try {
       const newDiagnosis = await diagnosePlant(images.length ? images : image, { scientificName: candidate.scientificName, commonName: candidate.commonNames[0] });
       setResult({ ...newDiagnosis, candidates: previousResult.candidates });
-      setCompletedActions(new Array(newDiagnosis.actionPlan.length).fill(false));
+      setCompletedActions(new Array((newDiagnosis.actionPlan ?? []).length).fill(false));
     } catch (err) {
       console.error('Re-diagnosis error:', err);
       setCandidateError(err instanceof AIUserError ? err.message : 'No se pudo repetir el diagnóstico. Inténtalo de nuevo.');
@@ -361,6 +362,8 @@ const DiagnosisResult: React.FC = () => {
 
   if (!result) return null;
 
+  const { actionPlan, topActions } = getActionPlanDisplay(result?.actionPlan);
+
   return (
     <div className="relative flex h-auto min-h-screen w-full flex-col overflow-x-hidden pb-24 bg-background-light dark:bg-background-dark">
       {/* Top Bar */}
@@ -452,9 +455,9 @@ const DiagnosisResult: React.FC = () => {
                 {result.healthStatus === 'Saludable' && result.urgency && <p className="mt-1 text-xs font-semibold">Urgencia: {result.urgency}</p>}
                 <div className="mt-4 border-t border-current pt-3">
                   <h3 className="text-sm font-bold">Qué hacer ahora</h3>
-                  {result.actionPlan.slice(0, 3).length ? (
+                  {topActions.length ? (
                     <ol className="mt-2 space-y-2 list-decimal pl-5">
-                      {result.actionPlan.slice(0, 3).map((action, idx) => (
+                      {topActions.map((action, idx) => (
                         <li key={idx} className="text-sm leading-relaxed">
                           <span className="font-bold">{action.title}</span>
                           <span className="block text-xs leading-relaxed opacity-90">{action.description}</span>
@@ -531,7 +534,7 @@ const DiagnosisResult: React.FC = () => {
           <span className="text-xs font-medium text-primary cursor-pointer">Ver guía completa</span>
         </div>
         <div className="flex flex-col gap-3">
-          {result.actionPlan.map((action, idx) => (
+          {actionPlan.map((action, idx) => (
             <div key={idx} className="flex items-start gap-3 p-4 rounded-xl bg-white dark:bg-surface-dark border border-gray-100 dark:border-white/5 shadow-sm">
               <div className="mt-0.5 size-9 overflow-hidden rounded-full bg-primary/20 text-primary shrink-0 flex items-center justify-center">
                 <span className="material-symbols-outlined block w-5 overflow-hidden text-center" style={{ fontSize: '20px' }}>{action.icon}</span>
