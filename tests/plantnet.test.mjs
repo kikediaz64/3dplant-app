@@ -153,7 +153,23 @@ describe('integración opcional con Pl@ntNet', () => {
   ]) {
     test(`${scenario[0]}: OpenAI responde sin pista y sin error al usuario`, async () => {
       scenario[1]();
-      const response = await post();
+      let response;
+      if (scenario[0] === 'tiempo agotado') {
+        const realTimeout = globalThis.setTimeout;
+        const timerMock = mock.method(globalThis, 'setTimeout', (callback, ms, ...args) =>
+          ms === 5000 ? realTimeout(callback, 0, ...args) : realTimeout(callback, ms, ...args)
+        );
+        try {
+          response = await Promise.race([
+            post(),
+            new Promise((_, reject) => realTimeout(() => reject(new Error('Pl@ntNet no agotó el tiempo')), 400))
+          ]);
+        } finally {
+          timerMock.mock.restore();
+        }
+      } else {
+        response = await post();
+      }
       assert.equal(response.status, 200);
       const output = await response.json();
       assert.equal(output.text, '{"speciesName":"Respuesta habitual"}');
