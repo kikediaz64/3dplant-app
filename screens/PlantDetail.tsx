@@ -1,3 +1,4 @@
+import { getPlantDetailTones } from '../utils/plantDetailTones';
 import ToxicityNotice from '../components/ToxicityNotice';
 import { normalizeCareGuide, missingCareData, careText } from '../services/careGuide';
 import React, { useState, useEffect } from 'react';
@@ -58,11 +59,7 @@ const PlantDetail: React.FC = () => {
         problems: [],
         recommendations: []
     };
-    const diagnosisTone = plant.status === 'sick'
-        ? { box: 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-900/30', title: 'text-red-900 dark:text-red-300', text: 'text-red-800 dark:text-red-200', icon: '🔴' }
-        : plant.status === 'warning'
-            ? { box: 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-900/30', title: 'text-orange-900 dark:text-orange-300', text: 'text-orange-800 dark:text-orange-200', icon: '⚠️' }
-            : { box: 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-900/30', title: 'text-green-900 dark:text-green-300', text: 'text-green-800 dark:text-green-200', icon: '✅' };
+    const { diagnosisTone, recommendationsTone } = getPlantDetailTones(plant.status);
 
     const watering = getWateringStatus(plant);
     const history = getDiagnosisHistory(plant);
@@ -218,12 +215,12 @@ const PlantDetail: React.FC = () => {
                     </div>
                 )}
                 {detailedInfo.recommendations && detailedInfo.recommendations.length > 0 && (
-                    <div className={`rounded-xl border p-4 mb-4 ${diagnosisTone.box}`}>
+                    <div className={`rounded-xl border p-4 mb-4 ${recommendationsTone.box}`}>
                         <div className="flex items-center gap-2 mb-2">
-                            <span className="text-xl">{diagnosisTone.icon}</span>
-                            <h3 className={`text-base font-bold ${diagnosisTone.title}`}>Recomendaciones</h3>
+                            <span className="text-xl">{recommendationsTone.icon}</span>
+                            <h3 className={`text-base font-bold ${recommendationsTone.title}`}>Recomendaciones</h3>
                         </div>
-                        <ul className={`text-sm leading-relaxed list-disc list-inside ${diagnosisTone.text}`}>
+                        <ul className={`text-sm leading-relaxed list-disc list-inside ${recommendationsTone.text}`}>
                             {detailedInfo.recommendations.map((rec, idx) => <li key={idx}>{rec}</li>)}
                         </ul>
                     </div>
