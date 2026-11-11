@@ -5,7 +5,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { diagnosePlant, AIUserError, type AIUserErrorKind } from '../services/aiService';
 import { DiagnosisResult as IDiagnosisResult, DiagnosisEntry } from '../types';
-import { getActionPlanDisplay } from '../utils/actionPlanDisplay';
+import { getActionPlanDisplay, getOriginalDiagnosis, shouldShowReturnToOriginal } from '../utils/actionPlanDisplay';
 import { plantStorage } from '../services/plantStorage';
 
 // Comprime la imagen para no llenar el almacenamiento del navegador.
@@ -166,6 +166,7 @@ const DiagnosisResult: React.FC = () => {
   const scanPath = plantId ? `/scan?plantId=${encodeURIComponent(plantId)}` : '/scan';
   const [loading, setLoading] = useState(true);
   const [result, setResult] = useState<IDiagnosisResult | null>(null);
+  const [originalResult, setOriginalResult] = useState<IDiagnosisResult | null>(null);
   const [completedActions, setCompletedActions] = useState<boolean[]>([]);
   const [image, setImage] = useState<string>('');
   const [images, setImages] = useState<string[]>([]);
@@ -243,6 +244,7 @@ const DiagnosisResult: React.FC = () => {
   const selectCandidate = async (candidate: NonNullable<IDiagnosisResult['candidates']>[number]) => {
     if (!result || !image || rediagnosingRef.current) return;
     const previousResult = result;
+    setOriginalResult(current => getOriginalDiagnosis(current, previousResult));
     const name = candidate.commonNames[0] || candidate.scientificName;
     rediagnosingRef.current = true;
     setRediagnosing(name);
@@ -258,6 +260,13 @@ const DiagnosisResult: React.FC = () => {
       rediagnosingRef.current = false;
       setRediagnosing(null);
     }
+  };
+
+  const returnToOriginal = () => {
+    if (!shouldShowReturnToOriginal(result, originalResult) || !originalResult) return;
+    setResult(originalResult);
+    setCompletedActions(new Array((originalResult.actionPlan ?? []).length).fill(false));
+    setCandidateError(null);
   };
 
   const handleSavePlant = async () => {
@@ -416,6 +425,12 @@ const DiagnosisResult: React.FC = () => {
                     </div>
                     {rediagnosing && <p role="status" className="mt-2 text-xs text-gray-600 dark:text-gray-300">Repitiendo el diagnóstico con {rediagnosing}…</p>}
                     {candidateError && <p role="alert" className="mt-2 text-xs text-red-600 dark:text-red-400">{candidateError}</p>}
+                    {shouldShowReturnToOriginal(result, originalResult) && originalResult && (
+                      <button type="button" onClick={returnToOriginal} disabled={saving || saved || !!rediagnosing}
+                        className="mt-2 text-xs font-semibold text-primary underline disabled:cursor-not-allowed disabled:opacity-50">
+                        Volver a la propuesta inicial ({originalResult.speciesName})
+                      </button>
+                    )}
                   </div>
                 );
               })()}
