@@ -30,6 +30,10 @@ test('normaliza el nombre de planta para el endpoint de recordatorios', () => {
   assert.equal(reminderPlantName('  Tomate  '), 'Tomate');
   assert.equal(reminderPlantName('   '), 'Planta');
   assert.equal(reminderPlantName('a'.repeat(81)), 'a'.repeat(80));
+  assert.equal(reminderPlantName('a'.repeat(80)), 'a'.repeat(80));
+  assert.equal(reminderPlantName('a'.repeat(78) + '🌱x'), 'a'.repeat(78) + '🌱');
+  assert.equal(reminderPlantName('🌱'.repeat(41)), '🌱'.repeat(40));
+  assert.equal(reminderPlantName('a'.repeat(78) + '  x'), 'a'.repeat(78));
   const emojiName = 'a'.repeat(79) + '🌱x';
   const shortened = reminderPlantName(emojiName);
   assert.ok(shortened.length <= 80);

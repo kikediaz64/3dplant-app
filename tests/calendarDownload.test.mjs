@@ -59,9 +59,16 @@ test('la URL de recordatorio en iOS incluye el nombre limitado a 80 unidades UTF
   const location = { href: '' };
   Object.defineProperty(globalThis, 'window', { configurable: true, value: { location, open() {} } });
   try {
-    downloadCalendarReminder('', '', { plantName: '  ' + 'a'.repeat(79) + '🌱x  ', kind: 'riego', intervalDays: 4, start: new Date(2026, 10, 11, 9) });
-    const url = new URL(location.href, 'https://example.test');
-    assert.equal(url.searchParams.get('nombre'), 'a'.repeat(79));
+    for (const [plantName, expected] of [
+      ['  ' + 'a'.repeat(79) + '🌱x  ', 'a'.repeat(79)],
+      ['a'.repeat(81), 'a'.repeat(80)],
+      ['  Rosa  ', 'Rosa'],
+      ['   ', 'Planta'],
+    ]) {
+      downloadCalendarReminder('', '', { plantName, kind: 'riego', intervalDays: 4, start: new Date(2026, 10, 11, 9) });
+      const url = new URL(location.href, 'https://example.test');
+      assert.equal(url.searchParams.get('nombre'), expected);
+    }
   } finally {
     if (originalNavigator) Object.defineProperty(globalThis, 'navigator', originalNavigator);
     else delete globalThis.navigator;
