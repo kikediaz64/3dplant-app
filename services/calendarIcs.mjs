@@ -37,6 +37,10 @@ function addMinutesFloating(value, minutes) {
   return `${date.getUTCFullYear()}${pad(date.getUTCMonth() + 1)}${pad(date.getUTCDate())}T${pad(date.getUTCHours())}${pad(date.getUTCMinutes())}${pad(date.getUTCSeconds())}`;
 }
 
+/**
+ * @param {{ plantName: string, kind: 'riego' | 'abono', intervalDays: number, start?: Date | string }} options
+ * @returns {string}
+ */
 export function createRecurringReminderIcs({ plantName, kind, intervalDays, start = new Date() }) {
   if (!Number.isInteger(intervalDays) || intervalDays <= 0) throw new RangeError('intervalDays debe ser un entero positivo');
   let startText;

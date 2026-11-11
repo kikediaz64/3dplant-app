@@ -41,8 +41,7 @@ export function fertilizerIntervalDays(value?: string): number | undefined {
 }
 
 export function downloadCalendarReminder(ics: string, filename: string, serverParams?: { plantName: string; kind: CalendarReminderKind; intervalDays: number; start: Date }): void {
-  if (isIOS(navigator.userAgent, navigator.platform, navigator.maxTouchPoints)) {
-    if (!serverParams) return;
+  if (isIOS(navigator.userAgent, navigator.platform, navigator.maxTouchPoints) && serverParams) {
     const start = serverParams.start;
     const params = new URLSearchParams({
       nombre: serverParams.plantName,

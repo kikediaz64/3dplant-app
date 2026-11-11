@@ -44,3 +44,22 @@ test('escapa coma, punto y coma y saltos de línea en nombres', async () => {
   assert.equal(response.status, 200);
   assert.match(ics, /SUMMARY:Regar Rosa\\; roja\\, bonita\\nfin\r\n/);
 });
+
+test('admite abono y nombres de 80 caracteres tras trim', async () => {
+  const nombre = 'á'.repeat(80);
+  const response = await handler(request({ nombre: ` ${nombre} `, tipo: 'abono', cada: '365' }));
+  assert.equal(response.status, 200);
+  assert.match(response.headers.get('content-disposition'), /^inline; filename="abono-a{80}\.ics"$/);
+  const ics = (await response.text()).replace(/\r\n /g, '');
+  assert.ok(ics.includes(`SUMMARY:Abonar ${nombre}\r\n`));
+  assert.match(ics, /RRULE:FREQ=DAILY;INTERVAL=365\r\n/);
+});
+
+test('valida límites y fechas reales, incluido febrero bisiesto', async () => {
+  for (const values of [{ cada: '366' }, { cada: '1.5' }, { inicio: '20261111T240000' }, { inicio: '20261111T096000' }, { inicio: '20261111T090060' }, { inicio: '20260229T090000' }]) {
+    assert.equal((await handler(request(values))).status, 400, JSON.stringify(values));
+  }
+  const response = await handler(request({ inicio: '20280229T234500' }));
+  assert.equal(response.status, 200);
+  assert.match(await response.text(), /DTEND:20280301T001500\r\n/);
+});
