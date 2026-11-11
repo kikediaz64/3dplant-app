@@ -1,0 +1,94 @@
+name: Tarjeta para la fábrica
+description: Trabajo que Codex construye y Claude audita
+title: "[tipo] Área · resumen corto"
+labels: ["needs-triage"]
+body:
+  - type: textarea
+    id: que
+    attributes:
+      label: Qué debe pasar
+      description: El resultado que quieres, en una o dos frases.
+    validations:
+      required: true
+  - type: textarea
+    id: porque
+    attributes:
+      label: Por qué
+      description: Para qué sirve. Ayuda a Codex a decidir en los casos dudosos.
+  - type: textarea
+    id: afectado
+    attributes:
+      label: Afectado
+      description: Archivos, carpetas o servicios que toca. Si no lo sabes, «por decidir».
+      placeholder: "src/plantnet.mjs, tests/"
+    validations:
+      required: true
+  - type: textarea
+    id: fuera
+    attributes:
+      label: Fuera de alcance
+      description: Lo que NO debe tocar.
+      placeholder: "No cambiar la interfaz. No tocar netlify.toml."
+  - type: input
+    id: depende
+    attributes:
+      label: Depende de
+      description: "Números de tarjeta que deben estar hechos antes (#12, #15), o «ninguna»."
+      placeholder: ninguna
+    validations:
+      required: true
+  - type: input
+    id: bloquea
+    attributes:
+      label: Bloquea a
+      placeholder: "#20"
+  - type: textarea
+    id: hecho
+    attributes:
+      label: Hecho cuando
+      description: Lista de casillas que el auditor comprobará una a una.
+      value: |
+        - [ ] 
+        - [ ] 
+    validations:
+      required: true
+  - type: textarea
+    id: comprobacion
+    attributes:
+      label: Comprobación
+      description: Comando o prueba que FALLA si no está bien hecho.
+      placeholder: "python -m pytest tests/test_plantnet.py -q"
+    validations:
+      required: true
+  - type: dropdown
+    id: nivel
+    attributes:
+      label: Nivel
+      options:
+        - "1 · sencillo"
+        - "2 · normal"
+        - "3 · difícil"
+    validations:
+      required: true
+  - type: dropdown
+    id: riesgo
+    attributes:
+      label: Riesgo
+      options:
+        - "verde · interno"
+        - "ámbar · pantallas o agentes"
+        - "rojo · clientes, claves, dinero o despliegue"
+    validations:
+      required: true
+  - type: dropdown
+    id: prioridad
+    attributes:
+      label: Prioridad
+      options: ["P1", "P2", "P3"]
+    validations:
+      required: true
+  - type: textarea
+    id: pistas
+    attributes:
+      label: Pistas para el constructor
+      description: Enlaces, ejemplos, errores ya vistos (opcional).
