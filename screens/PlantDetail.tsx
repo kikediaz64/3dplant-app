@@ -100,7 +100,7 @@ const PlantDetail: React.FC = () => {
         const start = nextReminderStart({ lastWateredAt: kind === 'riego' ? plant.lastWateredAt : undefined, intervalDays, now: new Date() });
         const ics = createRecurringReminderIcs({ plantName: plant.name, kind, intervalDays, start });
         const safeName = plant.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9-_]+/g, '-').replace(/^-|-$/g, '') || 'planta';
-        downloadCalendarReminder(ics, `${kind}-${safeName}.ics`);
+        downloadCalendarReminder(ics, `${kind}-${safeName}.ics`, { plantName: plant.name, kind, intervalDays, start });
     };
 
     return (
