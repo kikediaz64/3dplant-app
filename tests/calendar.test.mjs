@@ -23,7 +23,19 @@ registerHooks({
   }
 });
 
-const { createRecurringReminderIcs, fertilizerIntervalDays, isIOS, nextReminderStart } = await import('../services/calendar.ts');
+const { createRecurringReminderIcs, fertilizerIntervalDays, isIOS, nextReminderStart, reminderPlantName } = await import('../services/calendar.ts');
+
+test('normaliza el nombre de planta para el endpoint de recordatorios', () => {
+  assert.equal(reminderPlantName('Tomate'), 'Tomate');
+  assert.equal(reminderPlantName('  Tomate  '), 'Tomate');
+  assert.equal(reminderPlantName('   '), 'Planta');
+  assert.equal(reminderPlantName('a'.repeat(81)), 'a'.repeat(80));
+  const emojiName = 'a'.repeat(79) + '🌱x';
+  const shortened = reminderPlantName(emojiName);
+  assert.ok(shortened.length <= 80);
+  assert.equal(shortened, 'a'.repeat(79));
+  assert.equal(/(?:[\uD800-\uDBFF]$|^[\uDC00-\uDFFF])/.test(shortened), false);
+});
 
 test('crea un VCALENDAR válido con repetición cada N días y nombre de planta', () => {
   const ics = createRecurringReminderIcs({
