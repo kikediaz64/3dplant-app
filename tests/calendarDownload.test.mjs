@@ -52,12 +52,13 @@ test('descarga recordatorios en Safari, pantalla de inicio y mediante Blob', asy
   }
 });
 
-test('la URL de recordatorio en iOS incluye el nombre limitado a 80 unidades UTF-16', () => {
+test('la URL de recordatorio en Safari y pantalla de inicio incluye el nombre normalizado', () => {
   const originalNavigator = Object.getOwnPropertyDescriptor(globalThis, 'navigator');
   const originalWindow = Object.getOwnPropertyDescriptor(globalThis, 'window');
   Object.defineProperty(globalThis, 'navigator', { configurable: true, value: { userAgent: 'iPhone', platform: 'iPhone', maxTouchPoints: 5 } });
   const location = { href: '' };
-  Object.defineProperty(globalThis, 'window', { configurable: true, value: { location, open() {} } });
+  let openedUrl;
+  Object.defineProperty(globalThis, 'window', { configurable: true, value: { location, open(url) { openedUrl = url; } } });
   try {
     for (const [plantName, expected] of [
       ['  ' + 'a'.repeat(79) + '🌱x  ', 'a'.repeat(79)],
@@ -65,9 +66,15 @@ test('la URL de recordatorio en iOS incluye el nombre limitado a 80 unidades UTF
       ['  Rosa  ', 'Rosa'],
       ['   ', 'Planta'],
     ]) {
-      downloadCalendarReminder('', '', { plantName, kind: 'riego', intervalDays: 4, start: new Date(2026, 10, 11, 9) });
-      const url = new URL(location.href, 'https://example.test');
-      assert.equal(url.searchParams.get('nombre'), expected);
+      for (const standalone of [false, true]) {
+        navigator.standalone = standalone;
+        location.href = '';
+        openedUrl = undefined;
+        downloadCalendarReminder('', '', { plantName, kind: 'riego', intervalDays: 4, start: new Date(2026, 10, 11, 9) });
+        const url = new URL(standalone ? openedUrl : location.href, 'https://example.test');
+        assert.equal(url.searchParams.get('nombre'), expected);
+        assert.equal(url.pathname, '/api/recordatorio');
+      }
     }
   } finally {
     if (originalNavigator) Object.defineProperty(globalThis, 'navigator', originalNavigator);
