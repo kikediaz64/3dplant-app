@@ -22,6 +22,16 @@ export function isIOS(userAgent: string = '', platform: string = '', maxTouchPoi
   return /iPad|iPhone|iPod/.test(userAgent) || (platform === 'MacIntel' && maxTouchPoints > 1);
 }
 
+export function reminderPlantName(name: string): string {
+  const trimmed = name.trim();
+  if (!trimmed) return 'Planta';
+  if (trimmed.length <= 80) return trimmed;
+  let shortened = trimmed.slice(0, 80);
+  const lastCodeUnit = shortened.charCodeAt(shortened.length - 1);
+  if (lastCodeUnit >= 0xD800 && lastCodeUnit <= 0xDBFF) shortened = shortened.slice(0, -1);
+  return shortened.trimEnd() || 'Planta';
+}
+
 export function fertilizerIntervalDays(value?: string): number | undefined {
   if (typeof value !== 'string' || !value.trim()) return undefined;
   const text = value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
@@ -44,7 +54,7 @@ export function downloadCalendarReminder(ics: string, filename: string, serverPa
   if (isIOS(navigator.userAgent, navigator.platform, navigator.maxTouchPoints) && serverParams) {
     const start = serverParams.start;
     const params = new URLSearchParams({
-      nombre: serverParams.plantName,
+      nombre: reminderPlantName(serverParams.plantName),
       tipo: serverParams.kind,
       cada: String(serverParams.intervalDays),
       inicio: `${start.getFullYear()}${pad(start.getMonth() + 1)}${pad(start.getDate())}T${pad(start.getHours())}${pad(start.getMinutes())}${pad(start.getSeconds())}`
