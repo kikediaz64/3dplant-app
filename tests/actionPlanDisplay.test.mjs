@@ -18,6 +18,7 @@ registerHooks({
     if (/\.tsx?$/.test(url)) return {
       format: 'module', shortCircuit: true,
       source: ts.transpileModule(readFileSync(new URL(url), 'utf8'), {
+        fileName: new URL(url).pathname,
         compilerOptions: { module: ts.ModuleKind.ESNext, jsx: ts.JsxEmit.ReactJSX }
       }).outputText
     };
@@ -29,6 +30,7 @@ const { getActionPlanDisplay } = await import('../utils/actionPlanDisplay.ts');
 
 test('gestiona un plan de acción ausente', () => {
   assert.deepEqual(getActionPlanDisplay(undefined), { actionPlan: [], topActions: [] });
+  assert.deepEqual(getActionPlanDisplay(null), { actionPlan: [], topActions: [] });
 });
 
 test('limita las acciones principales a tres y conserva el plan completo', () => {
