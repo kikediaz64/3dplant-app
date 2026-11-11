@@ -11,3 +11,7 @@ export const getOriginalDiagnosis = <T>(original: T | null, current: T): T => or
 /** Indica si el resultado mostrado difiere del diagnóstico inicial guardado. */
 export const shouldShowReturnToOriginal = <T>(current: T | null, original: T | null): boolean =>
   current !== null && original !== null && current !== original;
+
+/** Indica si se puede volver al diagnóstico inicial mientras no haya otro diagnóstico en curso. */
+export const canReturnToOriginal = <T>(current: T | null, original: T | null, rediagnosing: boolean): boolean =>
+  !rediagnosing && shouldShowReturnToOriginal(current, original);

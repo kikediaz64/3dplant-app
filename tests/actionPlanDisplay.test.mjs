@@ -26,7 +26,7 @@ registerHooks({
   }
 });
 
-const { getActionPlanDisplay, getOriginalDiagnosis, shouldShowReturnToOriginal } = await import('../utils/actionPlanDisplay.ts');
+const { canReturnToOriginal, getActionPlanDisplay, getOriginalDiagnosis, shouldShowReturnToOriginal } = await import('../utils/actionPlanDisplay.ts');
 
 test('gestiona un plan de acción ausente', () => {
   assert.deepEqual(getActionPlanDisplay(undefined), { actionPlan: [], topActions: [] });
@@ -53,4 +53,14 @@ test('conserva el primer diagnóstico al elegir varias especies y solo ofrece vo
   assert.equal(shouldShowReturnToOriginal(initial, originalAfterB), false);
   assert.equal(shouldShowReturnToOriginal(choiceA, originalAfterB), true);
   assert.equal(shouldShowReturnToOriginal(choiceB, originalAfterB), true);
+});
+
+test('solo permite volver al diagnóstico original si no hay un re-diagnóstico en marcha', () => {
+  const original = { speciesName: 'Propuesta IA' };
+  const current = { speciesName: 'Especie elegida' };
+
+  assert.equal(canReturnToOriginal(current, original, true), false);
+  assert.equal(canReturnToOriginal(current, null, false), false);
+  assert.equal(canReturnToOriginal(original, original, false), false);
+  assert.equal(canReturnToOriginal(current, original, false), true);
 });

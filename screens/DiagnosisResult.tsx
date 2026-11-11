@@ -5,7 +5,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { diagnosePlant, AIUserError, type AIUserErrorKind } from '../services/aiService';
 import { DiagnosisResult as IDiagnosisResult, DiagnosisEntry } from '../types';
-import { getActionPlanDisplay, getOriginalDiagnosis, shouldShowReturnToOriginal } from '../utils/actionPlanDisplay';
+import { canReturnToOriginal, getActionPlanDisplay, getOriginalDiagnosis, shouldShowReturnToOriginal } from '../utils/actionPlanDisplay';
 import { plantStorage } from '../services/plantStorage';
 
 // Comprime la imagen para no llenar el almacenamiento del navegador.
@@ -263,7 +263,7 @@ const DiagnosisResult: React.FC = () => {
   };
 
   const returnToOriginal = () => {
-    if (!shouldShowReturnToOriginal(result, originalResult) || !originalResult) return;
+    if (!canReturnToOriginal(result, originalResult, rediagnosingRef.current) || !originalResult) return;
     setResult(originalResult);
     setCompletedActions(new Array((originalResult.actionPlan ?? []).length).fill(false));
     setCandidateError(null);
