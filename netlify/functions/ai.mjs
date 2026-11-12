@@ -4,7 +4,7 @@ import { validateImage, consumeDailyQuota, dailyStoreName } from '../lib/limites
 import { identifyPlant, formatCandidateHint, HINT_MIN_SCORE } from '../lib/plantnet.mjs';
 
 // Debe coincidir con MIN_ALTERNATIVE_SCORE de services/diagnosisCandidates.ts.
-const MIN_ALTERNATIVE_SCORE = 0.05;
+export const MIN_ALTERNATIVE_SCORE = 0.05;
 const MODEL = 'gpt-4o-mini';
 const ENDPOINT = 'https://api.openai.com/v1/chat/completions';
 
