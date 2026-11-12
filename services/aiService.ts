@@ -55,7 +55,6 @@ function normalizeActionPlan(value: unknown) {
     if (!hasTitle && !hasDescription) return [];
 
     return [{
-      ...item,
       title: hasTitle ? item.title : 'Recomendación',
       description: typeof item.description === 'string' ? item.description : '',
       icon: normalizeActionPlanIcon(item.icon)
