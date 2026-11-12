@@ -34,6 +34,10 @@ const newDiagnosis = {
 };
 
 let dom, root, container, originals, network;
+// El aviso de toxicidad también usa role=status; busca solo el estado del rediagnóstico.
+const pendingStatus = () => [...container.querySelectorAll('[role="status"]')]
+  .map(node => node.textContent)
+  .find(text => text.startsWith('Repitiendo el diagnóstico con '));
 beforeEach(() => {
   dom = new JSDOM('<!doctype html><div id="root"></div>', { url: 'https://plant.test/result' });
   // jsdom no carga recursos externos por defecto; cualquier fetch también falla.
@@ -87,7 +91,7 @@ for (const storageKey of ['capturedPlantImages', 'capturedPlantImage']) {
       assert.equal(button.disabled, false);
       return button;
     });
-    assert.equal(container.querySelector('[role="status"]'), null);
+    assert.equal(pendingStatus(), undefined);
 
     await act(async () => candidateButtons[0].dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true })));
 
@@ -95,7 +99,7 @@ for (const storageKey of ['capturedPlantImages', 'capturedPlantImage']) {
       [photos],
       [photos, { scientificName: candidates[1].scientificName, commonName: candidates[1].commonNames[0] }],
     ]);
-    assert.equal(container.querySelector('[role="status"]').textContent, 'Repitiendo el diagnóstico con Filodendro…');
+    assert.equal(pendingStatus(), 'Repitiendo el diagnóstico con Filodendro…');
     assert.equal(container.querySelector('h1').textContent, initialDiagnosis.speciesName);
     assert.ok(candidateButtons.every(button => button.disabled));
     assert.equal(container.textContent.includes(newDiagnosis.problemName), false);
@@ -107,8 +111,8 @@ for (const storageKey of ['capturedPlantImages', 'capturedPlantImage']) {
     assert.ok(container.textContent.includes(newDiagnosis.problemName));
     assert.ok(container.textContent.includes(newDiagnosis.impact));
     assert.equal(container.textContent.includes(initialDiagnosis.problemName), false);
-    assert.equal(container.querySelector('[role="status"]'), null);
-    assert.equal(container.querySelector('[role="alert"]'), null);
+    assert.equal(pendingStatus(), undefined);
+    assert.equal(container.querySelectorAll('[role="alert"]').length, 0);
     assert.equal(diagnosePlant.mock.callCount(), 2);
     assert.equal(network.mock.callCount(), 0);
   });
