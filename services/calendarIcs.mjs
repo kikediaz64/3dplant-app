@@ -25,6 +25,15 @@ const pad = value => String(value).padStart(2, '0');
 const formatUtc = date => date.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}Z$/, 'Z');
 const formatLocal = date => `${date.getFullYear()}${pad(date.getMonth() + 1)}${pad(date.getDate())}T${pad(date.getHours())}${pad(date.getMinutes())}${pad(date.getSeconds())}`;
 
+export function isValidFloatingDate(value) {
+  if (typeof value !== 'string' || !/^\d{8}T\d{6}$/.test(value)) return false;
+  const year = Number(value.slice(0, 4)), month = Number(value.slice(4, 6)), day = Number(value.slice(6, 8));
+  const hour = Number(value.slice(9, 11)), minute = Number(value.slice(11, 13)), second = Number(value.slice(13, 15));
+  const date = new Date(Date.UTC(year, month - 1, day, hour, minute, second));
+  return date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day
+    && hour <= 23 && minute <= 59 && second <= 59;
+}
+
 // Add minutes to calendar fields as UTC arithmetic, without consulting the server timezone.
 function addMinutesFloating(value, minutes) {
   const year = Number(value.slice(0, 4));
@@ -46,11 +55,7 @@ export function createRecurringReminderIcs({ plantName, kind, intervalDays, star
   let startText;
   let endText;
   if (typeof start === 'string') {
-    if (!/^\d{8}T\d{6}$/.test(start)) throw new RangeError('start debe ser una fecha válida');
-    const year = Number(start.slice(0, 4)), month = Number(start.slice(4, 6)), day = Number(start.slice(6, 8));
-    const hour = Number(start.slice(9, 11)), minute = Number(start.slice(11, 13)), second = Number(start.slice(13, 15));
-    const check = new Date(Date.UTC(year, month - 1, day, hour, minute, second));
-    if (check.getUTCFullYear() !== year || check.getUTCMonth() !== month - 1 || check.getUTCDate() !== day || hour > 23 || minute > 59 || second > 59) throw new RangeError('start debe ser una fecha válida');
+    if (!isValidFloatingDate(start)) throw new RangeError('start debe ser una fecha válida');
     startText = start;
     endText = addMinutesFloating(start, 30);
   } else {
