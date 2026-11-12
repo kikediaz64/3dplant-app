@@ -1,30 +1,7 @@
 import { test, beforeEach, afterEach } from 'node:test';
 import { JSDOM } from 'jsdom';
 import assert from 'node:assert/strict';
-import { registerHooks } from 'node:module';
-import { readFileSync, existsSync } from 'node:fs';
-import ts from 'typescript';
-
-registerHooks({
-  resolve(specifier, context, next) {
-    if (specifier.startsWith('.') && context.parentURL) {
-      const url = new URL(specifier, context.parentURL);
-      for (const ext of ['.ts', '.tsx', '.mjs']) {
-        if (existsSync(new URL(url.href + ext))) return next(url.href + ext, context);
-      }
-    }
-    return next(specifier, context);
-  },
-  load(url, context, next) {
-    if (/\.tsx?$/.test(url)) return {
-      format: 'module', shortCircuit: true,
-      source: ts.transpileModule(readFileSync(new URL(url), 'utf8'), {
-        compilerOptions: { module: ts.ModuleKind.ESNext, jsx: ts.JsxEmit.ReactJSX }
-      }).outputText
-    };
-    return next(url, context);
-  }
-});
+import './helpers/tsLoader.mjs';
 
 const { default: CameraView } = await import('../screens/CameraView.tsx');
 const React = await import('react');
