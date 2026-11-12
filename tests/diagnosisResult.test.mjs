@@ -1,12 +1,13 @@
 import { test, beforeEach, afterEach, mock } from 'node:test';
 import assert from 'node:assert/strict';
 import { JSDOM } from 'jsdom';
-import './helpers/tsLoader.mjs';
 
 const diagnosePlant = mock.fn();
 mock.module('../services/aiService.ts', {
   namedExports: { diagnosePlant, AIUserError: class AIUserError extends Error {} },
 });
+
+await import('./helpers/tsLoader.mjs');
 
 const { default: DiagnosisResult } = await import('../screens/DiagnosisResult.tsx');
 const React = await import('react');
