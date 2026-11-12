@@ -201,7 +201,7 @@ describe('ai.mjs con Blobs y OpenAI simulados', async () => {
     if (!stores.has(name)) stores.set(name, new FakeStore());
     return stores.get(name);
   };
-  mock.module('@netlify/blobs', { namedExports: { getStore } });
+  mock.module('@netlify/blobs', { exports: { getStore } });
   const prod = () => stores.get('consultas-diarias') ?? new FakeStore();
 
   const openAICalls = [];

@@ -9,7 +9,7 @@ const fakeStore = {
   },
   async setJSON(key, value) { stores.set(key, value); return { modified: true }; }
 };
-mock.module('@netlify/blobs', { namedExports: { getStore: () => fakeStore } });
+mock.module('@netlify/blobs', { exports: { getStore: () => fakeStore } });
 
 const validBase64 = () => {
   const bytes = Buffer.alloc(5000, 7);

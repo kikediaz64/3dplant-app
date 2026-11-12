@@ -17,7 +17,7 @@ const store = {
     return { modified: true, etag };
   }
 };
-mock.module('@netlify/blobs', { namedExports: { getStore: () => store } });
+mock.module('@netlify/blobs', { exports: { getStore: () => store } });
 
 const bytes = Buffer.alloc(5000, 7);
 bytes.set([0xff, 0xd8, 0xff, 0xe0]);
