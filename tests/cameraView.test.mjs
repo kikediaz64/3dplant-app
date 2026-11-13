@@ -1,7 +1,7 @@
 import { test, beforeEach, afterEach } from 'node:test';
-import { JSDOM } from 'jsdom';
 import assert from 'node:assert/strict';
 import './helpers/tsLoader.mjs';
+import { montarCamara } from './helpers/montajeCamara.mjs';
 
 const { default: CameraView } = await import('../screens/CameraView.tsx');
 const React = await import('react');
@@ -9,7 +9,7 @@ const { createRoot } = await import('react-dom/client');
 const { MemoryRouter, useLocation } = await import('react-router-dom');
 const { act } = React;
 
-let dom, root, container, alerts, originals, pixelValue;
+let dom, root, container, alerts, montaje, pixelValue;
 const photoSources = () => [...container.querySelectorAll('img[alt^="Foto "]')].map(img => img.src);
 const button = text => [...container.querySelectorAll('button')].find(node => node.textContent === text);
 
@@ -18,51 +18,13 @@ function Location() {
 }
 
 beforeEach(async () => {
-  dom = new JSDOM('<!doctype html><div id="root"></div>', { url: 'https://plant.test/scan' });
   alerts = [];
   pixelValue = () => 0;
-  originals = new Map();
-  const globals = {
-    window: dom.window,
-    document: dom.window.document,
-    navigator: dom.window.navigator, // Sin cámara en vivo: usa la entrada de archivos.
-    localStorage: dom.window.localStorage,
-    IS_REACT_ACT_ENVIRONMENT: true,
+  montaje = montarCamara({ pixelValue: (...args) => pixelValue(...args), globals: {
     alert: message => alerts.push(message),
     confirm: () => assert.fail('CameraView no debe abrir confirmaciones del navegador'),
-    Image: class {
-      naturalWidth = 256;
-      naturalHeight = 256;
-      set src(value) {
-        this.source = value;
-        queueMicrotask(() => this.onload?.());
-      }
-      decode() { return Promise.resolve(); }
-    },
-  };
-  for (const [key, value] of Object.entries(globals)) {
-    originals.set(key, Object.getOwnPropertyDescriptor(globalThis, key));
-    Object.defineProperty(globalThis, key, { configurable: true, writable: true, value });
-  }
-  // Solo se simulan las APIs de imagen que jsdom no implementa. assessPhoto
-  // sigue ejecutándose con píxeles oscuros o bordes difusos según el caso.
-  dom.window.HTMLCanvasElement.prototype.getContext = function () {
-    return {
-      drawImage: image => { this.source = image.source; },
-      getImageData: () => {
-        const data = new Uint8ClampedArray(this.width * this.height * 4);
-        for (let y = 0; y < this.height; y++) for (let x = 0; x < this.width; x++) {
-          const i = (y * this.width + x) * 4;
-          data[i] = data[i + 1] = data[i + 2] = pixelValue(x, y);
-          data[i + 3] = 255;
-        }
-        return { data };
-      },
-    };
-  };
-  dom.window.HTMLCanvasElement.prototype.toDataURL = function () {
-    return `data:image/jpeg;base64,${Buffer.from(this.source).toString('base64')}`;
-  };
+  }});
+  dom = montaje.dom;
   container = document.getElementById('root');
   root = createRoot(container);
   await act(async () => root.render(React.createElement(MemoryRouter, { initialEntries: ['/scan'] },
@@ -70,15 +32,8 @@ beforeEach(async () => {
 });
 
 afterEach(async () => {
-  try {
-    await act(async () => root?.unmount());
-    dom.window.close();
-  } finally {
-    for (const [key, descriptor] of originals) {
-      if (descriptor) Object.defineProperty(globalThis, key, descriptor);
-      else delete globalThis[key];
-    }
-  }
+  await act(async () => root?.unmount());
+  montaje.restaurar();
 });
 
 async function upload(name) {

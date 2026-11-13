@@ -1,7 +1,7 @@
 import { test, beforeEach, afterEach, mock } from 'node:test';
-import { JSDOM } from 'jsdom';
 import assert from 'node:assert/strict';
 import './helpers/tsLoader.mjs';
+import { montarCamara } from './helpers/montajeCamara.mjs';
 
 mock.module('../services/photoQuality.mjs', {
   namedExports: {
@@ -20,7 +20,7 @@ const { createRoot } = await import('react-dom/client');
 const { MemoryRouter, useLocation } = await import('react-router-dom');
 const { act } = React;
 
-let dom, root, container, originals;
+let dom, root, container, montaje;
 const button = text => [...container.querySelectorAll('button')].find(node => node.textContent === text);
 
 function Location() {
@@ -28,36 +28,16 @@ function Location() {
 }
 
 beforeEach(async () => {
-  dom = new JSDOM('<!doctype html><div id="root"></div>', { url: 'https://plant.test/scan' });
-  originals = new Map();
-  const globals = {
-    window: dom.window,
-    document: dom.window.document,
-    navigator: dom.window.navigator,
-    localStorage: dom.window.localStorage,
-    IS_REACT_ACT_ENVIRONMENT: true,
+  let nextUrl = 0;
+  montaje = montarCamara({
+    createObjectURL: file => `blob:${file.name}:${++nextUrl}`,
+    revokeObjectURL: () => {},
+    globals: {
     alert: () => assert.fail('No se esperaba un aviso del navegador'),
     confirm: () => assert.fail('No se esperaba una confirmación'),
-    Image: class {
-      naturalWidth = 256;
-      naturalHeight = 256;
-      set src(value) { this.source = value; queueMicrotask(() => this.onload?.()); }
-      decode() { return Promise.resolve(); }
     },
-  };
-  for (const [key, value] of Object.entries(globals)) {
-    originals.set(key, Object.getOwnPropertyDescriptor(globalThis, key));
-    Object.defineProperty(globalThis, key, { configurable: true, writable: true, value });
-  }
-  let nextUrl = 0;
-  URL.createObjectURL = file => `blob:${file.name}:${++nextUrl}`;
-  URL.revokeObjectURL = () => {};
-  dom.window.HTMLCanvasElement.prototype.getContext = function () {
-    return { drawImage: image => { this.source = image.source; } };
-  };
-  dom.window.HTMLCanvasElement.prototype.toDataURL = function () {
-    return `data:image/jpeg;base64,${Buffer.from(this.source).toString('base64')}`;
-  };
+  });
+  dom = montaje.dom;
   container = document.getElementById('root');
   root = createRoot(container);
   await act(async () => root.render(React.createElement(MemoryRouter, { initialEntries: ['/scan'] },
@@ -65,15 +45,8 @@ beforeEach(async () => {
 });
 
 afterEach(async () => {
-  try {
-    await act(async () => root?.unmount());
-    dom.window.close();
-  } finally {
-    for (const [key, descriptor] of originals) {
-      if (descriptor) Object.defineProperty(globalThis, key, descriptor);
-      else delete globalThis[key];
-    }
-  }
+  await act(async () => root?.unmount());
+  montaje.restaurar();
 });
 
 async function upload(name) {
