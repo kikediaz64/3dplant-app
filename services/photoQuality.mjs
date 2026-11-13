@@ -32,7 +32,8 @@ export async function assessPhoto(dataUrl) {
   img.src = dataUrl;
   try {
     await img.decode();
-    const scale = Math.min(1, 512 / Math.max(img.naturalWidth, img.naturalHeight));
+    // Normalizar también las fotos pequeñas: la varianza depende de la escala.
+    const scale = 512 / Math.max(img.naturalWidth, img.naturalHeight);
     const canvas = document.createElement('canvas');
     canvas.width = Math.max(1, Math.round(img.naturalWidth * scale));
     canvas.height = Math.max(1, Math.round(img.naturalHeight * scale));
