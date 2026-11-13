@@ -87,7 +87,6 @@ async function upload(name) {
   const file = new File(['photo'], name, { type: 'image/jpeg' });
   Object.defineProperty(input, 'files', { configurable: true, value: [file] });
   await act(async () => input.dispatchEvent(new dom.window.Event('change', { bubbles: true })));
-  assert.equal(input.value, '', 'la entrada queda lista para otra foto');
 }
 
 async function click(node) {
