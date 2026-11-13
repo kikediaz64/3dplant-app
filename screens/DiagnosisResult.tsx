@@ -187,7 +187,6 @@ const DiagnosisResult: React.FC = () => {
     let savedImages: string[] = [];
     try { const parsed = JSON.parse(localStorage.getItem('capturedPlantImages') || 'null'); if (Array.isArray(parsed) && parsed.every(item => typeof item === 'string')) savedImages = parsed; } catch { /* compatibilidad con el almacenamiento anterior */ }
     const savedImage = savedImages[0] || localStorage.getItem('capturedPlantImage');
-    console.log('Saved image exists:', !!savedImage);
 
     if (savedImage) {
       setImage(savedImage);
@@ -210,9 +209,7 @@ const DiagnosisResult: React.FC = () => {
 
   const handleDiagnosis = async (img: string | string[]) => {
     try {
-      console.log('Starting diagnosis...');
       const diagnosis = await diagnosePlant(img);
-      console.log('Diagnosis complete:', diagnosis);
       setResult(diagnosis);
       setCompletedActions(new Array((diagnosis.actionPlan ?? []).length).fill(false));
       setLoading(false);
@@ -326,7 +323,6 @@ const DiagnosisResult: React.FC = () => {
         // No toca riego, nombre ni ubicación (lo garantiza addDiagnosis).
         plantStorage.addDiagnosis(target, entry, { diagnosis, status, image: compressedImage, careGuide: plantData.careGuide, careDetails: plantData.careDetails });
       } else {
-        console.log('Saving plant:', plantData);
         plantStorage.savePlant(plantData);
         setSavedAsNew(!!plantId);
       }
