@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
+import { useJustWatered } from '../hooks/useJustWatered';
 import { useNavigate } from 'react-router-dom';
 import { Plant } from '../types';
 import { getWateringStatus } from '../services/plantStorage';
@@ -13,12 +14,7 @@ interface PlantCardProps {
 const PlantCard: React.FC<PlantCardProps> = ({ plant, onWater, onDelete }) => {
   const navigate = useNavigate();
   const toxic = toxicityState(plant);
-  const [justWatered, setJustWatered] = useState(false);
-  useEffect(() => {
-    if (!justWatered) return;
-    const timer = setTimeout(() => setJustWatered(false), 2000);
-    return () => clearTimeout(timer);
-  }, [justWatered]);
+  const { justWatered, markJustWatered } = useJustWatered();
   const watering = getWateringStatus(plant);
   const needsWater = watering.needsWater;
   const nextWatering = watering.nextWatering;
@@ -106,7 +102,7 @@ const PlantCard: React.FC<PlantCardProps> = ({ plant, onWater, onDelete }) => {
             onClick={() => {
               if (needsWater && onWater) {
                 onWater(plant.id);
-                setJustWatered(true);
+                markJustWatered();
               } else {
                 navigate(`/plant/${plant.id}`);
               }
