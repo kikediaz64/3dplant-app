@@ -1,6 +1,5 @@
 import { test, beforeEach, afterEach, mock } from 'node:test';
 import assert from 'node:assert/strict';
-import { JSDOM } from 'jsdom';
 
 const diagnosePlant = mock.fn();
 mock.module('../services/aiService.ts', {
@@ -14,6 +13,7 @@ const React = await import('react');
 const { createRoot } = await import('react-dom/client');
 const { MemoryRouter } = await import('react-router-dom');
 const { act } = React;
+const { montarPantalla } = await import('./helpers/montajePantalla.mjs');
 
 const candidates = [
   { scientificName: 'Monstera deliciosa', commonNames: ['Costilla de Adán'], score: 0.65, imageUrl: null },
@@ -33,26 +33,18 @@ const newDiagnosis = {
   candidates: undefined,
 };
 
-let dom, root, container, originals, network;
+let dom, root, container, montaje, network;
 // El aviso de toxicidad también usa role=status; busca solo el estado del rediagnóstico.
 const pendingStatus = () => [...container.querySelectorAll('[role="status"]')]
   .map(node => node.textContent)
   .find(text => text.startsWith('Repitiendo el diagnóstico con '));
 beforeEach(() => {
-  dom = new JSDOM('<!doctype html><div id="root"></div>', { url: 'https://plant.test/result' });
-  // jsdom no carga recursos externos por defecto; cualquier fetch también falla.
   network = mock.fn(() => { throw new Error('La prueba no debe acceder a la red'); });
+  montaje = montarPantalla({ globals: { fetch: network } });
+  dom = montaje.dom;
   dom.window.fetch = network;
-  originals = new Map();
-  for (const [key, value] of Object.entries({
-    window: dom.window, document: dom.window.document, navigator: dom.window.navigator,
-    localStorage: dom.window.localStorage, IS_REACT_ACT_ENVIRONMENT: true, fetch: network,
-  })) {
-    originals.set(key, Object.getOwnPropertyDescriptor(globalThis, key));
-    Object.defineProperty(globalThis, key, { configurable: true, writable: true, value });
-  }
+  container = montaje.container;
   diagnosePlant.mock.resetCalls();
-  container = document.getElementById('root');
   root = createRoot(container);
 });
 
@@ -60,11 +52,7 @@ afterEach(async () => {
   try {
     await act(async () => root?.unmount());
   } finally {
-    dom.window.close();
-    for (const [key, descriptor] of originals) {
-      if (descriptor) Object.defineProperty(globalThis, key, descriptor);
-      else delete globalThis[key];
-    }
+    montaje.restaurar();
   }
 });
 

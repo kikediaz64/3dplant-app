@@ -1,6 +1,5 @@
 import { test, beforeEach, afterEach, mock } from 'node:test';
 import assert from 'node:assert/strict';
-import { JSDOM } from 'jsdom';
 
 const diagnosePlant = mock.fn();
 mock.module('../services/aiService.ts', {
@@ -14,6 +13,7 @@ const React = await import('react');
 const { createRoot } = await import('react-dom/client');
 const { MemoryRouter } = await import('react-router-dom');
 const { act } = React;
+const { montarPantalla } = await import('./helpers/montajePantalla.mjs');
 
 const photo = 'data:image/jpeg;base64,Zm90bw==';
 const originalDiagnosis = {
@@ -35,23 +35,16 @@ const candidateDiagnosis = {
   candidates: undefined,
 };
 
-let dom, root, container, originals;
+let dom, root, container, montaje;
 
 beforeEach(() => {
-  dom = new JSDOM('<!doctype html><div id="root"></div>', { url: 'https://plant.test/result' });
-  originals = new Map();
-  for (const [key, value] of Object.entries({
-    window: dom.window, document: dom.window.document, navigator: dom.window.navigator,
-    localStorage: dom.window.localStorage, IS_REACT_ACT_ENVIRONMENT: true,
-  })) {
-    originals.set(key, Object.getOwnPropertyDescriptor(globalThis, key));
-    Object.defineProperty(globalThis, key, { configurable: true, writable: true, value });
-  }
+  montaje = montarPantalla();
+  dom = montaje.dom;
   localStorage.setItem('capturedPlantImage', photo);
   diagnosePlant.mock.resetCalls();
   diagnosePlant.mock.mockImplementationOnce(async () => originalDiagnosis);
   diagnosePlant.mock.mockImplementationOnce(async () => candidateDiagnosis, 1);
-  container = document.getElementById('root');
+  container = montaje.container;
   root = createRoot(container);
 });
 
@@ -59,11 +52,7 @@ afterEach(async () => {
   try {
     await act(async () => root?.unmount());
   } finally {
-    dom.window.close();
-    for (const [key, descriptor] of originals) {
-      if (descriptor) Object.defineProperty(globalThis, key, descriptor);
-      else delete globalThis[key];
-    }
+    montaje.restaurar();
   }
 });
 
