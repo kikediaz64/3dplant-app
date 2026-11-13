@@ -1,3 +1,4 @@
+import { useJustWatered } from '../hooks/useJustWatered';
 import { getPlantDetailTones } from '../utils/plantDetailTones';
 import ToxicityNotice from '../components/ToxicityNotice';
 import { normalizeCareGuide, missingCareData, careText } from '../services/careGuide';
@@ -30,10 +31,7 @@ const PlantDetail: React.FC = () => {
 
     // Fuerza un re-render periódico para que "Próximo riego" se actualice con el tiempo.
     const [, setTick] = useState(0);
-    const [justWatered, setJustWatered] = useState(false);
-    const [waterTimer, setWaterTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
-
-    useEffect(() => () => { if (waterTimer) clearTimeout(waterTimer); }, [waterTimer]);
+    const { justWatered, markJustWatered } = useJustWatered();
 
     useEffect(() => {
         const refresh = () => setTick(t => t + 1);
@@ -70,8 +68,7 @@ const PlantDetail: React.FC = () => {
         const now = new Date().toISOString();
         plantStorage.updatePlant(plant.id, { lastWateredAt: now });
         setPlant(prev => prev ? { ...prev, lastWateredAt: now } : prev);
-        setJustWatered(true);
-        setWaterTimer(setTimeout(() => setJustWatered(false), 2000));
+        markJustWatered();
     };
 
     const handleDelete = () => {
