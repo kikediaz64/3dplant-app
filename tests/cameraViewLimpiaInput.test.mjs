@@ -1,7 +1,7 @@
 import { test, beforeEach, afterEach } from 'node:test';
-import { JSDOM } from 'jsdom';
 import assert from 'node:assert/strict';
 import './helpers/tsLoader.mjs';
+import { montarCamara } from './helpers/montajeCamara.mjs';
 
 const { default: CameraView } = await import('../screens/CameraView.tsx');
 const React = await import('react');
@@ -9,38 +9,13 @@ const { createRoot } = await import('react-dom/client');
 const { MemoryRouter } = await import('react-router-dom');
 const { act } = React;
 
-let dom, root, container, originals;
+let dom, root, container, montaje;
 
 beforeEach(async () => {
-  dom = new JSDOM('<!doctype html><div id="root"></div>', { url: 'https://plant.test/scan' });
-  originals = new Map();
-  const globals = {
-    window: dom.window,
-    document: dom.window.document,
-    navigator: dom.window.navigator,
-    localStorage: dom.window.localStorage,
-    IS_REACT_ACT_ENVIRONMENT: true,
+  montaje = montarCamara({ globals: {
     alert: () => assert.fail('No se esperaba un error al procesar la foto'),
-    Image: class {
-      naturalWidth = 256;
-      naturalHeight = 256;
-      set src(value) {
-        this.source = value;
-        queueMicrotask(() => this.onload?.());
-      }
-      decode() { return Promise.resolve(); }
-    },
-  };
-  for (const [key, value] of Object.entries(globals)) {
-    originals.set(key, Object.getOwnPropertyDescriptor(globalThis, key));
-    Object.defineProperty(globalThis, key, { configurable: true, writable: true, value });
-  }
-  dom.window.HTMLCanvasElement.prototype.getContext = function () {
-    return { drawImage: image => { this.source = image.source; } };
-  };
-  dom.window.HTMLCanvasElement.prototype.toDataURL = function () {
-    return `data:image/jpeg;base64,${Buffer.from(this.source).toString('base64')}`;
-  };
+  }});
+  dom = montaje.dom;
   container = document.getElementById('root');
   root = createRoot(container);
   await act(async () => root.render(React.createElement(MemoryRouter, null,
@@ -48,15 +23,8 @@ beforeEach(async () => {
 });
 
 afterEach(async () => {
-  try {
-    await act(async () => root?.unmount());
-    dom.window.close();
-  } finally {
-    for (const [key, descriptor] of originals) {
-      if (descriptor) Object.defineProperty(globalThis, key, descriptor);
-      else delete globalThis[key];
-    }
-  }
+  await act(async () => root?.unmount());
+  montaje.restaurar();
 });
 
 test('limpia el input de archivo después de procesar la foto', async () => {
