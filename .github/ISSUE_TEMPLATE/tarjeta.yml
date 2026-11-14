@@ -1,7 +1,8 @@
 name: Tarjeta para la fábrica
 description: Trabajo que Codex construye y Claude audita
 title: "[tipo] Área · resumen corto"
-labels: ["needs-triage"]
+projects: ["kikediaz64/1"]
+labels: []
 body:
   - type: textarea
     id: que
