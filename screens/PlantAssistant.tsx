@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { askPlantExpert, AIUserError } from '../services/aiService';
+import { askPlantExpert, AIUserError, type PlantExpertExchange } from '../services/aiService';
 import { plantStorage } from '../services/plantStorage';
 import { MOCK_PLANTS } from '../constants';
 import { Plant } from '../types';
@@ -36,6 +36,7 @@ const PlantAssistant: React.FC = () => {
       text: '¡Hola! Soy tu asistente de plantas 🌱. Pregúntame lo que necesites: riego, abono, plagas, remedios caseros, dosis…'
     }
   ]);
+  const historyRef = useRef<PlantExpertExchange[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -51,7 +52,8 @@ const PlantAssistant: React.FC = () => {
     setMessages(prev => [...prev, { role: 'user', text: q }]);
     setLoading(true);
     try {
-      const answer = await askPlantExpert(q, plantContext);
+      const answer = await askPlantExpert(q, plantContext, historyRef.current);
+      historyRef.current = [...historyRef.current, { question: q, answer }].slice(-6);
       setMessages(prev => [...prev, { role: 'assistant', text: answer }]);
     } catch (err) {
       const text = err instanceof AIUserError

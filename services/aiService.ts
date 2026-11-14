@@ -181,7 +181,24 @@ export const diagnosePlant = async (
   };
 };
 
-export const askPlantExpert = async (question: string, plantContext?: string): Promise<string> => {
-  const { text } = await callAI({ action: 'ask', question, plantContext });
+export interface PlantExpertExchange {
+  question: string;
+  answer: string;
+}
+
+export const askPlantExpert = async (
+  question: string,
+  plantContext?: string,
+  history?: PlantExpertExchange[]
+): Promise<string> => {
+  // Acota también las respuestas largas sin alterar lo que se muestra en pantalla.
+  const recentHistory = history?.slice(-6).map(({ question, answer }) => ({
+    question: question.slice(0, 500),
+    answer: answer.slice(0, 500)
+  }));
+  const { text } = await callAI({
+    action: 'ask', question, plantContext,
+    ...(recentHistory ? { history: recentHistory } : {})
+  });
   return text || 'No pude generar una respuesta. Inténtalo de nuevo.';
 };

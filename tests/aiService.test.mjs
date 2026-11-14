@@ -49,3 +49,36 @@ for (const [action, call] of [
     });
   });
 }
+
+describe('historial del asistente', () => {
+  let sent;
+  beforeEach(() => {
+    globalThis.fetch = async (url, init) => {
+      assert.equal(url, '/api/ai');
+      sent = JSON.parse(init.body);
+      return new Response(JSON.stringify({ text: 'Respuesta' }));
+    };
+  });
+
+  test('sin historial conserva la petición original', async () => {
+    await askPlantExpert('¿Riego?', 'Monstera');
+    assert.deepEqual(sent, { action: 'ask', question: '¿Riego?', plantContext: 'Monstera' });
+  });
+
+  for (const count of [0, 6, 8]) {
+    test(`envía las últimas seis parejas de ${count}`, async () => {
+      const history = Array.from({ length: count }, (_, i) => ({ question: `Pregunta ${i}`, answer: `Respuesta ${i}` }));
+      await askPlantExpert('¿Y ahora?', undefined, history);
+      assert.deepEqual(sent.history, history.slice(-6));
+      assert.equal(history.length, count);
+    });
+  }
+
+  test('acota el texto de cada mensaje sin mutar el historial', async () => {
+    const history = [{ question: 'q'.repeat(501), answer: 'a'.repeat(2000) }];
+    await askPlantExpert('¿Y ahora?', undefined, history);
+    assert.equal(sent.history[0].question.length, 500);
+    assert.equal(sent.history[0].answer.length, 500);
+    assert.equal(history[0].answer.length, 2000);
+  });
+});

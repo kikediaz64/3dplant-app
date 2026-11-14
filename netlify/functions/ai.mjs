@@ -11,6 +11,26 @@ const ENDPOINT = 'https://api.openai.com/v1/chat/completions';
 // Topes de tamaño para que nadie dispare el gasto de tokens con payloads enormes.
 const MAX_QUESTION_CHARS = 500;
 const MAX_CONTEXT_CHARS = 1000;
+const MAX_HISTORY_PAIRS = 6;
+const MAX_HISTORY_CHARS = MAX_HISTORY_PAIRS * 2 * MAX_QUESTION_CHARS;
+
+function parseHistory(value) {
+  if (value === undefined) return [];
+  if (!Array.isArray(value) || value.length > MAX_HISTORY_PAIRS) return null;
+  const messages = [];
+  let total = 0;
+  for (const pair of value) {
+    if (!pair || typeof pair !== 'object' || Array.isArray(pair)) return null;
+    for (const [key, role] of [['question', 'user'], ['answer', 'assistant']]) {
+      const content = pair[key];
+      if (typeof content !== 'string' || !content.trim() || content.length > MAX_QUESTION_CHARS) return null;
+      total += content.length;
+      if (total > MAX_HISTORY_CHARS) return null;
+      messages.push({ role, content });
+    }
+  }
+  return messages;
+}
 
 const json = (data, status = 200) =>
   new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } });
@@ -132,6 +152,8 @@ export default async (request, context) => {
         max_tokens: 2000
       };
     } else if (action === 'ask') {
+      const history = parseHistory(body.history);
+      if (!history) return json({ error: 'Historial no válido.' }, 400);
       const { question } = body;
       const plantContext = body.plantContext ?? '';
       if (typeof question !== 'string' || typeof plantContext !== 'string' || question.trim() === '') {
@@ -150,6 +172,7 @@ export default async (request, context) => {
         model: MODEL,
         messages: [
           { role: 'system', content: ASK_SYSTEM_PROMPT },
+          ...history,
           { role: 'user', content: userMessage }
         ],
         temperature: 0.4,
