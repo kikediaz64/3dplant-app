@@ -9,6 +9,7 @@ mock.module('../services/aiService.ts', {
 await import('./helpers/tsLoader.mjs');
 
 const { default: DiagnosisResult } = await import('../screens/DiagnosisResult.tsx');
+const { plantStorage } = await import('../services/plantStorage.ts');
 const React = await import('react');
 const { createRoot } = await import('react-dom/client');
 const { MemoryRouter } = await import('react-router-dom');
@@ -40,7 +41,7 @@ const pendingStatus = () => [...container.querySelectorAll('[role="status"]')]
   .find(text => text.startsWith('Repitiendo el diagnóstico con '));
 beforeEach(() => {
   network = mock.fn(() => { throw new Error('La prueba no debe acceder a la red'); });
-  montaje = montarPantalla({ globals: { fetch: network } });
+  montaje = montarPantalla({ globals: { fetch: network, Image: class { set src(value) { queueMicrotask(() => this.onerror()); } } } });
   dom = montaje.dom;
   dom.window.fetch = network;
   container = montaje.container;
@@ -103,5 +104,42 @@ for (const storageKey of ['capturedPlantImages', 'capturedPlantImage']) {
     assert.equal(container.querySelectorAll('[role="alert"]').length, 0);
     assert.equal(diagnosePlant.mock.callCount(), 2);
     assert.equal(network.mock.callCount(), 0);
+  });
+}
+
+for (const mode of ['nueva', 'reescaneo', 'original eliminada']) {
+  test(`DiagnosisResult guarda el resultado: ${mode}`, async () => {
+    const photo = 'data:image/jpeg;base64,Zm90bw==';
+    localStorage.setItem('capturedPlantImage', photo);
+    const original = mode === 'reescaneo' ? plantStorage.savePlant({
+      name: 'Mi planta', scientificName: initialDiagnosis.scientificName,
+      image: photo, status: 'healthy', location: 'Terraza',
+    }) : null;
+    const plantId = mode === 'nueva' ? null : original?.id || 'eliminada';
+    diagnosePlant.mock.mockImplementationOnce(async () => initialDiagnosis);
+    await act(async () => root.render(React.createElement(MemoryRouter, {
+      initialEntries: [plantId ? `/result?plantId=${plantId}` : '/result'],
+    }, React.createElement(DiagnosisResult))));
+
+    const saveButton = [...container.querySelectorAll('button')]
+      .find(node => node.textContent.includes(plantId ? 'Añadir al historial' : 'Guardar en Mi Jardín'));
+    mock.timers.enable({ apis: ['setTimeout'] });
+    try {
+      await act(async () => saveButton.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true })));
+      const plants = plantStorage.getSavedPlants();
+      assert.equal(plants.length, 1);
+      assert.equal(plants[0].name, original ? 'Mi planta' : initialDiagnosis.speciesName);
+      assert.equal(plants[0].location, original ? 'Terraza' : 'Mi Jardín');
+      assert.equal(plants[0].diagnosisHistory[0].healthScore, initialDiagnosis.healthScore);
+      assert.equal(plants[0].image, photo);
+      assert.equal(localStorage.getItem('capturedPlantImage'), null);
+      assert.equal(saveButton.disabled, true);
+      assert.ok(saveButton.textContent.includes(mode === 'original eliminada'
+        ? 'Guardada como planta nueva (la original ya no existe)'
+        : original ? 'Añadido al historial' : 'Guardada en Mi Jardín'));
+      assert.equal(network.mock.callCount(), 0);
+    } finally {
+      mock.timers.reset();
+    }
   });
 }
