@@ -4,7 +4,7 @@ import { diagnosisCare, toxicityState } from '../services/careGuide';
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { diagnosePlant, AIUserError, type AIUserErrorKind } from '../services/aiService';
-import { DiagnosisResult as IDiagnosisResult, DiagnosisEntry } from '../types';
+import { DiagnosisResult as IDiagnosisResult, DiagnosisEntry, DiagnosisAction } from '../types';
 import { canReturnToOriginal, getActionPlanDisplay, getOriginalDiagnosis, shouldShowReturnToOriginal } from '../utils/actionPlanDisplay';
 import { plantStorage } from '../services/plantStorage';
 
@@ -157,6 +157,290 @@ const RootCausesList: React.FC<RootCausesListProps> = ({ causes }) => (
   </div>
 );
 
+interface CandidateOptionsProps {
+  result: IDiagnosisResult;
+  originalResult: IDiagnosisResult | null;
+  disabled: boolean;
+  rediagnosing: string | null;
+  candidateError: string | null;
+  selectCandidate: (candidate: NonNullable<IDiagnosisResult['candidates']>[number]) => void;
+  returnToOriginal: () => void;
+}
+
+const CandidateOptions = ({ result, originalResult, disabled, rediagnosing, candidateError, selectCandidate, returnToOriginal }: CandidateOptionsProps) => {
+  const alternatives = otherCandidates(result);
+  if (!alternatives.length) return null;
+  return (
+    <div className="mt-3">
+      <p className="text-xs font-bold text-gray-600 dark:text-gray-300 mb-2">¿No es esta? Otras posibles</p>
+      <div className="flex gap-2 overflow-x-auto pb-1">
+        {alternatives.map(candidate => (
+          <button disabled={disabled} key={candidate.scientificName} type="button" onClick={() => selectCandidate(candidate)}
+            className="w-28 shrink-0 overflow-hidden rounded-lg border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 text-left active:scale-95">
+            {candidate.imageUrl ? <img src={candidate.imageUrl} alt="" className="h-16 w-full object-cover" loading="lazy" />
+              : <div className="h-16 w-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center"><span className="material-symbols-outlined text-gray-400">local_florist</span></div>}
+            <span className="block px-2 pt-1.5 text-xs font-semibold text-gray-900 dark:text-white line-clamp-2">{candidate.commonNames[0] || candidate.scientificName}</span>
+            <span className="block px-2 pb-2 pt-0.5 text-[10px] text-gray-500 dark:text-gray-400">{Math.round(candidate.score * 100)} % Pl@ntNet</span>
+          </button>
+        ))}
+      </div>
+      {rediagnosing && <p role="status" className="mt-2 text-xs text-gray-600 dark:text-gray-300">Repitiendo el diagnóstico con {rediagnosing}…</p>}
+      {candidateError && <p role="alert" className="mt-2 text-xs text-red-600 dark:text-red-400">{candidateError}</p>}
+      {shouldShowReturnToOriginal(result, originalResult) && originalResult && (
+        <button type="button" onClick={returnToOriginal} disabled={disabled}
+          className="mt-2 text-xs font-semibold text-primary underline disabled:cursor-not-allowed disabled:opacity-50">
+          Volver a la propuesta inicial ({originalResult.speciesName})
+        </button>
+      )}
+    </div>
+  );
+};
+
+const DiagnosisOverview = ({ result, topActions }: { result: IDiagnosisResult; topActions: DiagnosisAction[] }) => {
+  const statusClasses = result.healthStatus === 'Saludable'
+    ? 'border-green-200 bg-green-50 text-green-900 dark:border-green-900/40 dark:bg-green-900/20 dark:text-green-200'
+    : result.healthStatus === 'Enferma'
+      ? 'border-red-200 bg-red-50 text-red-900 dark:border-red-900/40 dark:bg-red-900/20 dark:text-red-200'
+      : 'border-orange-200 bg-orange-50 text-orange-900 dark:border-orange-900/40 dark:bg-orange-900/20 dark:text-orange-200';
+  return (
+    <div className={`mt-4 rounded-xl border p-4 ${statusClasses}`}>
+      <h2 className="text-base font-bold">¿Qué le pasa?</h2>
+      {result.healthStatus === 'Saludable' ? (
+        <p className="mt-1 text-sm font-semibold">No vemos problemas importantes</p>
+      ) : (
+        <>
+          <p className="mt-1 text-sm font-bold">{result.problemName}</p>
+          <p className="mt-1 text-sm leading-relaxed">{result.impact}</p>
+          <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs font-semibold">
+            <span>Impacto: {result.severity === 'low' ? 'Bajo' : result.severity === 'moderate' ? 'Moderado' : 'Crítico'}</span>
+            {result.urgency && <span>Urgencia: {result.urgency}</span>}
+          </div>
+        </>
+      )}
+      {result.healthStatus === 'Saludable' && result.urgency && <p className="mt-1 text-xs font-semibold">Urgencia: {result.urgency}</p>}
+      <div className="mt-4 border-t border-current pt-3">
+        <h3 className="text-sm font-bold">Qué hacer ahora</h3>
+        {topActions.length ? (
+          <ol className="mt-2 space-y-2 list-decimal pl-5">
+            {topActions.map((action, idx) => (
+              <li key={idx} className="text-sm leading-relaxed">
+                <span className="font-bold">{action.title}</span>
+                <span className="block text-xs leading-relaxed opacity-90">{action.description}</span>
+              </li>
+            ))}
+          </ol>
+        ) : <p className="mt-1 text-sm">No hay acciones recomendadas.</p>}
+      </div>
+    </div>
+  );
+};
+
+const DiagnosisStatus = ({ result }: { result: IDiagnosisResult }) => (
+  <div className="flex gap-2 mt-4 flex-wrap">
+    {result.hydration && (
+      <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/5">
+        <span className="material-symbols-outlined text-blue-500" style={{ fontSize: '16px' }}>water_drop</span>
+        <span className="text-xs font-medium text-gray-700 dark:text-gray-200">Hidratación: {result.hydration}</span>
+      </div>
+    )}
+    {result.lightStatus && (
+      <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/5">
+        <span className="material-symbols-outlined text-yellow-500" style={{ fontSize: '16px' }}>wb_sunny</span>
+        <span className="text-xs font-medium text-gray-700 dark:text-gray-200">Luz: {result.lightStatus}</span>
+      </div>
+    )}
+    {result.urgency && (
+      <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/5">
+        <span className="material-symbols-outlined text-red-500" style={{ fontSize: '16px' }}>timer</span>
+        <span className="text-xs font-medium text-gray-700 dark:text-gray-200">Urgencia: {result.urgency}</span>
+      </div>
+    )}
+    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/5">
+      <span className="material-symbols-outlined text-orange-500" style={{ fontSize: '16px' }}>vital_signs</span>
+      <span className="text-xs font-medium text-gray-700 dark:text-gray-200">Impacto {result.severity === 'low' ? 'Bajo' : result.severity === 'moderate' ? 'Moderado' : 'Crítico'}</span>
+    </div>
+    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/5">
+      <span className="material-symbols-outlined text-primary" style={{ fontSize: '16px' }}>coronavirus</span>
+      <span className="text-xs font-medium text-gray-700 dark:text-gray-200">{result.isContagious ? 'Contagioso' : 'No contagioso'}</span>
+    </div>
+  </div>
+);
+
+const DiagnosisSymptoms = ({ result }: { result: IDiagnosisResult }) => (
+  (result.symptoms?.length || result.pests?.length) ? (
+    <div className="mt-4 space-y-3">
+      {result.symptoms?.length ? (
+        <div>
+          <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5">Síntomas observados</p>
+          <div className="flex flex-wrap gap-1.5">
+            {result.symptoms.map((s) => (
+              <span key={s} className="text-xs px-2.5 py-1 rounded-full bg-gray-100 dark:bg-white/5 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-white/5">{s}</span>
+            ))}
+          </div>
+        </div>
+      ) : null}
+      {result.pests?.length ? (
+        <div>
+          <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5">Plagas / enfermedades</p>
+          <div className="flex flex-wrap gap-1.5">
+            {result.pests.map((p) => (
+              <span key={p} className="text-xs px-2.5 py-1 rounded-full bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 border border-red-100 dark:border-red-900/30">{p}</span>
+            ))}
+          </div>
+        </div>
+      ) : null}
+    </div>
+  ) : null
+);
+
+const DiagnosisSummary = ({ result, topActions, ...candidateProps }: CandidateOptionsProps & { topActions: DiagnosisAction[] }) => (
+  <div className="relative -mt-16 px-4 z-10">
+    <div className="bg-white dark:bg-surface-dark rounded-2xl p-5 shadow-lg border border-gray-100 dark:border-white/5">
+      <ToxicityNotice careGuide={result.careGuide} isToxic={result.isToxic} />
+      <div className="flex justify-between items-start mb-2">
+        <div className="min-w-0 pr-3">
+          <div className="flex items-center gap-2 mb-1 flex-wrap">
+            <span className="bg-primary/20 text-green-800 dark:text-primary text-xs font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+              <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>verified</span>
+              {result.confidence}% Coincidencia
+            </span>
+          </div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white leading-tight">{result.speciesName}</h1>
+          <p className="text-gray-500 dark:text-gray-400 text-sm font-medium mt-0.5 italic">{result.scientificName}</p>
+          <CandidateOptions result={result} {...candidateProps} />
+          {result.family && <p className="text-gray-400 dark:text-gray-500 text-xs mt-0.5">Familia: {result.family}</p>}
+        </div>
+        <div className="text-center shrink-0">
+          <div className="text-3xl font-bold text-primary">{result.healthScore ?? '—'}<span className="text-sm text-gray-400">/100</span></div>
+          <div className={`mt-1 text-xs font-bold px-2 py-0.5 rounded-full ${result.healthStatus === 'Saludable' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' : result.healthStatus === 'Enferma' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300' : 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300'}`}>
+            {result.healthStatus ?? '—'}
+          </div>
+        </div>
+      </div>
+      <p role="note" className="text-sm text-gray-600 dark:text-gray-300 leading-snug">
+        Diagnóstico orientativo generado por IA: puede contener errores. Si la planta no coincide, repite la foto. Ante dudas sobre toxicidad, consulta a un veterinario o a un médico.
+      </p>
+      <DiagnosisOverview result={result} topActions={topActions} />
+      <DiagnosisStatus result={result} />
+
+      <DiagnosisSymptoms result={result} />
+
+    </div>
+  </div>
+);
+
+const DiagnosisActionPlan = ({ actionPlan, completedActions, toggleAction }: { actionPlan: DiagnosisAction[]; completedActions: boolean[]; toggleAction: (index: number) => void }) => (
+  <div className="px-4 mt-6">
+    <div className="flex items-center justify-between mb-3">
+      <h3 className="text-lg font-bold text-gray-900 dark:text-white">Plan de Acción Inmediato</h3>
+      <span className="text-xs font-medium text-primary cursor-pointer">Ver guía completa</span>
+    </div>
+    <div className="flex flex-col gap-3">
+      {actionPlan.map((action, idx) => (
+        <div key={idx} className="flex items-start gap-3 p-4 rounded-xl bg-white dark:bg-surface-dark border border-gray-100 dark:border-white/5 shadow-sm">
+          <div className="mt-0.5 size-9 overflow-hidden rounded-full bg-primary/20 text-primary shrink-0 flex items-center justify-center">
+            <span className="material-symbols-outlined block w-5 overflow-hidden text-center" style={{ fontSize: '20px' }}>{action.icon}</span>
+          </div>
+          <div className="flex-1">
+            <p className="text-sm font-bold text-gray-900 dark:text-white">{action.title}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 leading-relaxed">{action.description}</p>
+          </div>
+          <button
+            onClick={() => toggleAction(idx)}
+            className={`size-6 rounded-full border-2 flex items-center justify-center transition-colors ${completedActions[idx] ? 'bg-primary border-primary' : 'border-gray-300 dark:border-gray-600 hover:border-primary'}`}
+          >
+            {completedActions[idx] && <span className="material-symbols-outlined text-black font-bold" style={{ fontSize: '16px' }}>check</span>}
+          </button>
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
+const DiagnosisSaveBar = ({ saved, savedAsNew, saving, plantId, handleSavePlant, onBack }: { saved: boolean; savedAsNew: boolean; saving: boolean; plantId: string | null; handleSavePlant: () => void; onBack: () => void }) => {
+  const saveLabel = saved
+    ? (savedAsNew ? 'Guardada como planta nueva (la original ya no existe)' : plantId ? 'Añadido al historial' : 'Guardada en Mi Jardín')
+    : saving ? 'Guardando…'
+    : (plantId ? 'Añadir al historial' : 'Guardar en Mi Jardín');
+
+  return (
+    <div className="fixed bottom-0 w-full bg-background-light dark:bg-background-dark border-t border-gray-200 dark:border-white/10 p-4 pb-6 z-50">
+      <div className="flex flex-col gap-3 max-w-lg mx-auto">
+        <button
+          onClick={handleSavePlant}
+          disabled={saved || saving}
+          className={`w-full rounded-xl font-bold h-12 flex items-center justify-center gap-2 transition-colors active:scale-95 shadow-lg ${saved
+            ? 'bg-green-600 text-white'
+            : 'bg-primary hover:bg-green-400 text-black shadow-primary/20'
+            }`}
+        >
+          <span className="material-symbols-outlined">{saved ? 'check_circle' : 'add_circle'}</span>
+          {saveLabel}
+        </button>
+        <button
+          onClick={onBack}
+          className="w-full rounded-xl bg-gray-200 dark:bg-surface-dark hover:bg-gray-300 dark:hover:bg-white/10 text-gray-900 dark:text-white font-bold h-12 flex items-center justify-center gap-2 transition-colors active:scale-95 border border-gray-300 dark:border-white/10"
+        >
+          <span className="material-symbols-outlined">home</span>
+          {plantId ? 'Volver a la planta' : 'Volver al Jardín'}
+        </button>
+      </div>
+    </div>
+  );
+};
+
+const persistDiagnosis = (result: IDiagnosisResult, compressedImage: string, historyImage: string, plantId: string | null) => {
+  const status: 'healthy' | 'warning' | 'sick' =
+    result.healthStatus === 'Saludable' ? 'healthy' : result.healthStatus === 'Enferma' ? 'sick' : 'warning';
+
+  const problems = [...(result.symptoms || []), ...(result.pests || [])];
+  const recommendations = result.actionPlan?.map(a => a.description) || [];
+  const diagnosis = {
+    health: result.healthStatus ? `${result.healthStatus} · ${result.healthScore ?? '—'}/100` : (result.problemName || 'Diagnóstico completado'),
+    problems,
+    recommendations
+  };
+  const entry: DiagnosisEntry = {
+    id: `diag_${Date.now()}`,
+    date: new Date().toISOString(),
+    healthStatus: result.healthStatus,
+    healthScore: result.healthScore,
+    image: historyImage,
+    problems,
+    recommendations
+  };
+
+  // Reescaneo solo si la planta sigue existiendo; si no, se guarda como planta nueva.
+  const target = plantId && plantStorage.getSavedPlants().some(p => p.id === plantId) ? plantId : null;
+
+  const plantData = {
+    name: result.speciesName || 'Planta desconocida',
+    scientificName: result.scientificName || '',
+    image: compressedImage,
+    status,
+    location: 'Mi Jardín',
+    isToxic: toxicityState(result),
+    needsWater: result.hydration === 'Sedienta' || result.actionPlan?.some(a => a.title?.toLowerCase().includes('agua')) || false,
+    nextWatering: 'En 3 días',
+    wateringFrequencyDays: result.hydration === 'Sedienta' ? 2 : result.hydration === 'Encharcada' ? 5 : 3,
+    lastWateredAt: new Date().toISOString(),
+    ...diagnosisCare(result.careGuide),
+    zona: result.zona,
+    luz: result.luz,
+    tipo: result.tipo,
+    diagnosis,
+    diagnosisHistory: [entry]
+  };
+
+  if (target) {
+    // No toca riego, nombre ni ubicación (lo garantiza addDiagnosis).
+    plantStorage.addDiagnosis(target, entry, { diagnosis, status, image: compressedImage, careGuide: plantData.careGuide, careDetails: plantData.careDetails });
+  } else {
+    plantStorage.savePlant(plantData);
+  }
+  return target;
+};
+
 const DiagnosisResult: React.FC = () => {
   const navigate = useNavigate();
   // Reescaneo: /result?plantId=X añade el diagnóstico al historial de esa planta.
@@ -272,60 +556,12 @@ const DiagnosisResult: React.FC = () => {
     setSaving(true);
 
     try {
-      const status: 'healthy' | 'warning' | 'sick' =
-        result.healthStatus === 'Saludable' ? 'healthy' : result.healthStatus === 'Enferma' ? 'sick' : 'warning';
-
       // Guarda una versión comprimida de la foto para no llenar el almacenamiento.
       const compressedImage = await compressForStorage(image);
       // Miniatura más pequeña para el historial (hasta 10 por planta).
       const historyImage = await compressForStorage(image, 240, 0.5);
-
-      const problems = [...(result.symptoms || []), ...(result.pests || [])];
-      const recommendations = result.actionPlan?.map(a => a.description) || [];
-      const diagnosis = {
-        health: result.healthStatus ? `${result.healthStatus} · ${result.healthScore ?? '—'}/100` : (result.problemName || 'Diagnóstico completado'),
-        problems,
-        recommendations
-      };
-      const entry: DiagnosisEntry = {
-        id: `diag_${Date.now()}`,
-        date: new Date().toISOString(),
-        healthStatus: result.healthStatus,
-        healthScore: result.healthScore,
-        image: historyImage,
-        problems,
-        recommendations
-      };
-
-      // Reescaneo solo si la planta sigue existiendo; si no, se guarda como planta nueva.
-      const target = plantId && plantStorage.getSavedPlants().some(p => p.id === plantId) ? plantId : null;
-
-      const plantData = {
-        name: result.speciesName || 'Planta desconocida',
-        scientificName: result.scientificName || '',
-        image: compressedImage,
-        status,
-        location: 'Mi Jardín',
-        isToxic: toxicityState(result),
-        needsWater: result.hydration === 'Sedienta' || result.actionPlan?.some(a => a.title?.toLowerCase().includes('agua')) || false,
-        nextWatering: 'En 3 días',
-        wateringFrequencyDays: result.hydration === 'Sedienta' ? 2 : result.hydration === 'Encharcada' ? 5 : 3,
-        lastWateredAt: new Date().toISOString(),
-        ...diagnosisCare(result.careGuide),
-        zona: result.zona,
-        luz: result.luz,
-        tipo: result.tipo,
-        diagnosis,
-        diagnosisHistory: [entry]
-      };
-
-      if (target) {
-        // No toca riego, nombre ni ubicación (lo garantiza addDiagnosis).
-        plantStorage.addDiagnosis(target, entry, { diagnosis, status, image: compressedImage, careGuide: plantData.careGuide, careDetails: plantData.careDetails });
-      } else {
-        plantStorage.savePlant(plantData);
-        setSavedAsNew(!!plantId);
-      }
+      const target = persistDiagnosis(result, compressedImage, historyImage, plantId);
+      if (!target) setSavedAsNew(!!plantId);
       // Limpia la imagen temporal capturada para no acumular peso en el navegador.
       localStorage.removeItem('capturedPlantImage');
       localStorage.removeItem('capturedPlantImages');
@@ -343,11 +579,6 @@ const DiagnosisResult: React.FC = () => {
       alert(`Error al guardar la planta: ${error instanceof Error ? error.message : 'Error desconocido'}`);
     }
   };
-
-  const saveLabel = saved
-    ? (savedAsNew ? 'Guardada como planta nueva (la original ya no existe)' : plantId ? 'Añadido al historial' : 'Guardada en Mi Jardín')
-    : saving ? 'Guardando…'
-    : (plantId ? 'Añadir al historial' : 'Guardar en Mi Jardín');
 
   if (loading) {
     return <LoadingView message={loadingMessages[loadingMsgIdx]} />;
@@ -388,209 +619,15 @@ const DiagnosisResult: React.FC = () => {
         <div className="absolute inset-0 bg-gradient-to-t from-background-dark via-transparent to-transparent opacity-90"></div>
       </div>
 
-      {/* Summary Card */}
-      <div className="relative -mt-16 px-4 z-10">
-        <div className="bg-white dark:bg-surface-dark rounded-2xl p-5 shadow-lg border border-gray-100 dark:border-white/5">
-          <ToxicityNotice careGuide={result.careGuide} isToxic={result.isToxic} />
-          <div className="flex justify-between items-start mb-2">
-            <div className="min-w-0 pr-3">
-              <div className="flex items-center gap-2 mb-1 flex-wrap">
-                <span className="bg-primary/20 text-green-800 dark:text-primary text-xs font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
-                  <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>verified</span>
-                  {result.confidence}% Coincidencia
-                </span>
-              </div>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white leading-tight">{result.speciesName}</h1>
-              <p className="text-gray-500 dark:text-gray-400 text-sm font-medium mt-0.5 italic">{result.scientificName}</p>
-              {(() => {
-                const alternatives = otherCandidates(result);
-                if (!alternatives.length) return null;
-                return (
-                  <div className="mt-3">
-                    <p className="text-xs font-bold text-gray-600 dark:text-gray-300 mb-2">¿No es esta? Otras posibles</p>
-                    <div className="flex gap-2 overflow-x-auto pb-1">
-                      {alternatives.map(candidate => (
-                        <button disabled={saving || saved || !!rediagnosing} key={candidate.scientificName} type="button" onClick={() => selectCandidate(candidate)}
-                          className="w-28 shrink-0 overflow-hidden rounded-lg border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 text-left active:scale-95">
-                          {candidate.imageUrl ? <img src={candidate.imageUrl} alt="" className="h-16 w-full object-cover" loading="lazy" />
-                            : <div className="h-16 w-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center"><span className="material-symbols-outlined text-gray-400">local_florist</span></div>}
-                          <span className="block px-2 pt-1.5 text-xs font-semibold text-gray-900 dark:text-white line-clamp-2">{candidate.commonNames[0] || candidate.scientificName}</span>
-                          <span className="block px-2 pb-2 pt-0.5 text-[10px] text-gray-500 dark:text-gray-400">{Math.round(candidate.score * 100)} % Pl@ntNet</span>
-                        </button>
-                      ))}
-                    </div>
-                    {rediagnosing && <p role="status" className="mt-2 text-xs text-gray-600 dark:text-gray-300">Repitiendo el diagnóstico con {rediagnosing}…</p>}
-                    {candidateError && <p role="alert" className="mt-2 text-xs text-red-600 dark:text-red-400">{candidateError}</p>}
-                    {shouldShowReturnToOriginal(result, originalResult) && originalResult && (
-                      <button type="button" onClick={returnToOriginal} disabled={saving || saved || !!rediagnosing}
-                        className="mt-2 text-xs font-semibold text-primary underline disabled:cursor-not-allowed disabled:opacity-50">
-                        Volver a la propuesta inicial ({originalResult.speciesName})
-                      </button>
-                    )}
-                  </div>
-                );
-              })()}
-              {result.family && <p className="text-gray-400 dark:text-gray-500 text-xs mt-0.5">Familia: {result.family}</p>}
-            </div>
-            <div className="text-center shrink-0">
-              <div className="text-3xl font-bold text-primary">{result.healthScore ?? '—'}<span className="text-sm text-gray-400">/100</span></div>
-              <div className={`mt-1 text-xs font-bold px-2 py-0.5 rounded-full ${result.healthStatus === 'Saludable' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' : result.healthStatus === 'Enferma' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300' : 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300'}`}>
-                {result.healthStatus ?? '—'}
-              </div>
-            </div>
-          </div>
-          <p role="note" className="text-sm text-gray-600 dark:text-gray-300 leading-snug">
-            Diagnóstico orientativo generado por IA: puede contener errores. Si la planta no coincide, repite la foto. Ante dudas sobre toxicidad, consulta a un veterinario o a un médico.
-          </p>
-          {(() => {
-            const statusClasses = result.healthStatus === 'Saludable'
-              ? 'border-green-200 bg-green-50 text-green-900 dark:border-green-900/40 dark:bg-green-900/20 dark:text-green-200'
-              : result.healthStatus === 'Enferma'
-                ? 'border-red-200 bg-red-50 text-red-900 dark:border-red-900/40 dark:bg-red-900/20 dark:text-red-200'
-                : 'border-orange-200 bg-orange-50 text-orange-900 dark:border-orange-900/40 dark:bg-orange-900/20 dark:text-orange-200';
-            return (
-              <div className={`mt-4 rounded-xl border p-4 ${statusClasses}`}>
-                <h2 className="text-base font-bold">¿Qué le pasa?</h2>
-                {result.healthStatus === 'Saludable' ? (
-                  <p className="mt-1 text-sm font-semibold">No vemos problemas importantes</p>
-                ) : (
-                  <>
-                    <p className="mt-1 text-sm font-bold">{result.problemName}</p>
-                    <p className="mt-1 text-sm leading-relaxed">{result.impact}</p>
-                    <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs font-semibold">
-                      <span>Impacto: {result.severity === 'low' ? 'Bajo' : result.severity === 'moderate' ? 'Moderado' : 'Crítico'}</span>
-                      {result.urgency && <span>Urgencia: {result.urgency}</span>}
-                    </div>
-                  </>
-                )}
-                {result.healthStatus === 'Saludable' && result.urgency && <p className="mt-1 text-xs font-semibold">Urgencia: {result.urgency}</p>}
-                <div className="mt-4 border-t border-current pt-3">
-                  <h3 className="text-sm font-bold">Qué hacer ahora</h3>
-                  {topActions.length ? (
-                    <ol className="mt-2 space-y-2 list-decimal pl-5">
-                      {topActions.map((action, idx) => (
-                        <li key={idx} className="text-sm leading-relaxed">
-                          <span className="font-bold">{action.title}</span>
-                          <span className="block text-xs leading-relaxed opacity-90">{action.description}</span>
-                        </li>
-                      ))}
-                    </ol>
-                  ) : <p className="mt-1 text-sm">No hay acciones recomendadas.</p>}
-                </div>
-              </div>
-            );
-          })()}
-          {/* Estado rico */}
-          <div className="flex gap-2 mt-4 flex-wrap">
-            {result.hydration && (
-              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/5">
-                <span className="material-symbols-outlined text-blue-500" style={{ fontSize: '16px' }}>water_drop</span>
-                <span className="text-xs font-medium text-gray-700 dark:text-gray-200">Hidratación: {result.hydration}</span>
-              </div>
-            )}
-            {result.lightStatus && (
-              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/5">
-                <span className="material-symbols-outlined text-yellow-500" style={{ fontSize: '16px' }}>wb_sunny</span>
-                <span className="text-xs font-medium text-gray-700 dark:text-gray-200">Luz: {result.lightStatus}</span>
-              </div>
-            )}
-            {result.urgency && (
-              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/5">
-                <span className="material-symbols-outlined text-red-500" style={{ fontSize: '16px' }}>timer</span>
-                <span className="text-xs font-medium text-gray-700 dark:text-gray-200">Urgencia: {result.urgency}</span>
-              </div>
-            )}
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/5">
-              <span className="material-symbols-outlined text-orange-500" style={{ fontSize: '16px' }}>vital_signs</span>
-              <span className="text-xs font-medium text-gray-700 dark:text-gray-200">Impacto {result.severity === 'low' ? 'Bajo' : result.severity === 'moderate' ? 'Moderado' : 'Crítico'}</span>
-            </div>
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/5">
-              <span className="material-symbols-outlined text-primary" style={{ fontSize: '16px' }}>coronavirus</span>
-              <span className="text-xs font-medium text-gray-700 dark:text-gray-200">{result.isContagious ? 'Contagioso' : 'No contagioso'}</span>
-            </div>
-          </div>
+      <DiagnosisSummary result={result} topActions={topActions} originalResult={originalResult} disabled={saving || saved || !!rediagnosing} rediagnosing={rediagnosing} candidateError={candidateError} selectCandidate={selectCandidate} returnToOriginal={returnToOriginal} />
 
-          {/* Síntomas y plagas */}
-          {(result.symptoms?.length || result.pests?.length) ? (
-            <div className="mt-4 space-y-3">
-              {result.symptoms?.length ? (
-                <div>
-                  <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5">Síntomas observados</p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {result.symptoms.map((s) => (
-                      <span key={s} className="text-xs px-2.5 py-1 rounded-full bg-gray-100 dark:bg-white/5 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-white/5">{s}</span>
-                    ))}
-                  </div>
-                </div>
-              ) : null}
-              {result.pests?.length ? (
-                <div>
-                  <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5">Plagas / enfermedades</p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {result.pests.map((p) => (
-                      <span key={p} className="text-xs px-2.5 py-1 rounded-full bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 border border-red-100 dark:border-red-900/30">{p}</span>
-                    ))}
-                  </div>
-                </div>
-              ) : null}
-            </div>
-          ) : null}
-        </div>
-      </div>
-
-      {/* Action Plan */}
-      <div className="px-4 mt-6">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-lg font-bold text-gray-900 dark:text-white">Plan de Acción Inmediato</h3>
-          <span className="text-xs font-medium text-primary cursor-pointer">Ver guía completa</span>
-        </div>
-        <div className="flex flex-col gap-3">
-          {actionPlan.map((action, idx) => (
-            <div key={idx} className="flex items-start gap-3 p-4 rounded-xl bg-white dark:bg-surface-dark border border-gray-100 dark:border-white/5 shadow-sm">
-              <div className="mt-0.5 size-9 overflow-hidden rounded-full bg-primary/20 text-primary shrink-0 flex items-center justify-center">
-                <span className="material-symbols-outlined block w-5 overflow-hidden text-center" style={{ fontSize: '20px' }}>{action.icon}</span>
-              </div>
-              <div className="flex-1">
-                <p className="text-sm font-bold text-gray-900 dark:text-white">{action.title}</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 leading-relaxed">{action.description}</p>
-              </div>
-              <button
-                onClick={() => toggleAction(idx)}
-                className={`size-6 rounded-full border-2 flex items-center justify-center transition-colors ${completedActions[idx] ? 'bg-primary border-primary' : 'border-gray-300 dark:border-gray-600 hover:border-primary'}`}
-              >
-                {completedActions[idx] && <span className="material-symbols-outlined text-black font-bold" style={{ fontSize: '16px' }}>check</span>}
-              </button>
-            </div>
-          ))}
-        </div>
-      </div>
+      <DiagnosisActionPlan actionPlan={actionPlan} completedActions={completedActions} toggleAction={toggleAction} />
 
       {/* Root Causes */}
       <RootCausesList causes={result.rootCauses} />
 
-      {/* Sticky Bottom Bar */}
-      <div className="fixed bottom-0 w-full bg-background-light dark:bg-background-dark border-t border-gray-200 dark:border-white/10 p-4 pb-6 z-50">
-        <div className="flex flex-col gap-3 max-w-lg mx-auto">
-          <button
-            onClick={handleSavePlant}
-            disabled={saved || saving}
-            className={`w-full rounded-xl font-bold h-12 flex items-center justify-center gap-2 transition-colors active:scale-95 shadow-lg ${saved
-              ? 'bg-green-600 text-white'
-              : 'bg-primary hover:bg-green-400 text-black shadow-primary/20'
-              }`}
-          >
-            <span className="material-symbols-outlined">{saved ? 'check_circle' : 'add_circle'}</span>
-            {saveLabel}
-          </button>
-          <button
-            onClick={() => navigate(backPath)}
-            className="w-full rounded-xl bg-gray-200 dark:bg-surface-dark hover:bg-gray-300 dark:hover:bg-white/10 text-gray-900 dark:text-white font-bold h-12 flex items-center justify-center gap-2 transition-colors active:scale-95 border border-gray-300 dark:border-white/10"
-          >
-            <span className="material-symbols-outlined">home</span>
-            {plantId ? 'Volver a la planta' : 'Volver al Jardín'}
-          </button>
-        </div>
-      </div>
+      <DiagnosisSaveBar saved={saved} saving={saving} savedAsNew={savedAsNew} plantId={plantId} handleSavePlant={handleSavePlant} onBack={() => navigate(backPath)} />
+
     </div>
   );
 };
