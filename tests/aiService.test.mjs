@@ -65,6 +65,11 @@ describe('historial del asistente', () => {
     assert.deepEqual(sent, { action: 'ask', question: '¿Riego?', plantContext: 'Monstera' });
   });
 
+  test('respuestas solo con espacios usan el texto de reserva', async () => {
+    globalThis.fetch = async () => new Response(JSON.stringify({ text: '  \n  ' }));
+    assert.equal(await askPlantExpert('¿Riego?'), 'No pude generar una respuesta. Inténtalo de nuevo.');
+  });
+
   for (const count of [0, 6, 8]) {
     test(`envía las últimas seis parejas de ${count}`, async () => {
       const history = Array.from({ length: count }, (_, i) => ({ question: `Pregunta ${i}`, answer: `Respuesta ${i}` }));
