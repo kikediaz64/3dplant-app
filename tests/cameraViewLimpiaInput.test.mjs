@@ -12,7 +12,7 @@ const { act } = React;
 let dom, root, container, montaje;
 
 beforeEach(async () => {
-  montaje = montarCamara({ globals: {
+  montaje = montarCamara({ pixelValue: () => 0, globals: {
     alert: () => assert.fail('No se esperaba un error al procesar la foto'),
   }});
   dom = montaje.dom;
