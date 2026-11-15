@@ -200,5 +200,5 @@ export const askPlantExpert = async (
     action: 'ask', question, plantContext,
     ...(recentHistory ? { history: recentHistory } : {})
   });
-  return text || 'No pude generar una respuesta. Inténtalo de nuevo.';
+  return text.trim() ? text : 'No pude generar una respuesta. Inténtalo de nuevo.';
 };

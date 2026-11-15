@@ -53,7 +53,9 @@ const PlantAssistant: React.FC = () => {
     setLoading(true);
     try {
       const answer = await askPlantExpert(q, plantContext, historyRef.current);
-      historyRef.current = [...historyRef.current, { question: q, answer }].slice(-6);
+      if (answer.trim() && answer !== 'No pude generar una respuesta. Inténtalo de nuevo.') {
+        historyRef.current = [...historyRef.current, { question: q, answer }].slice(-6);
+      }
       setMessages(prev => [...prev, { role: 'assistant', text: answer }]);
     } catch (err) {
       const text = err instanceof AIUserError
