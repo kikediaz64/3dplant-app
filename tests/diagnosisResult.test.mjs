@@ -1,3 +1,4 @@
+import './helpers/tsLoader.mjs';
 import { test, beforeEach, afterEach, mock } from 'node:test';
 import assert from 'node:assert/strict';
 
@@ -5,8 +6,6 @@ const diagnosePlant = mock.fn();
 mock.module('../services/aiService.ts', {
   namedExports: { diagnosePlant, AIUserError: class AIUserError extends Error {} },
 });
-
-await import('./helpers/tsLoader.mjs');
 
 const { default: DiagnosisResult } = await import('../screens/DiagnosisResult.tsx');
 const { plantStorage } = await import('../services/plantStorage.ts');
