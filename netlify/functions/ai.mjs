@@ -1,5 +1,6 @@
 // 3dPlant — Función serverless que conecta con la IA (OpenAI GPT-4o-mini).
 import { getStore } from '@netlify/blobs';
+import { MAX_HISTORY_PAIRS, MAX_QUESTION_CHARS } from '../../shared/assistantLimits.mjs';
 import { validateImage, consumeDailyQuota, dailyStoreName } from '../lib/limites.mjs';
 import { identifyPlant, formatCandidateHint, HINT_MIN_SCORE } from '../lib/plantnet.mjs';
 
@@ -9,9 +10,7 @@ const MODEL = 'gpt-4o-mini';
 const ENDPOINT = 'https://api.openai.com/v1/chat/completions';
 
 // Topes de tamaño para que nadie dispare el gasto de tokens con payloads enormes.
-const MAX_QUESTION_CHARS = 500;
 const MAX_CONTEXT_CHARS = 1000;
-const MAX_HISTORY_PAIRS = 6;
 const MAX_HISTORY_CHARS = MAX_HISTORY_PAIRS * 2 * MAX_QUESTION_CHARS;
 
 function parseHistory(value) {
