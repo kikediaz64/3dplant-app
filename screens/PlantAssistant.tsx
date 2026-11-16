@@ -5,6 +5,7 @@ import { askPlantExpert, AIUserError, type PlantExpertExchange } from '../servic
 import { plantStorage } from '../services/plantStorage';
 import { MOCK_PLANTS } from '../constants';
 import { Plant } from '../types';
+import { MAX_HISTORY_PAIRS } from '../shared/assistantLimits.mjs';
 
 function buildPlantContext(p: Plant): string {
   const parts = [
@@ -54,7 +55,7 @@ const PlantAssistant: React.FC = () => {
     try {
       const answer = await askPlantExpert(q, plantContext, historyRef.current);
       if (answer.trim() && answer !== 'No pude generar una respuesta. Inténtalo de nuevo.') {
-        historyRef.current = [...historyRef.current, { question: q, answer }].slice(-6);
+        historyRef.current = [...historyRef.current, { question: q, answer }].slice(-MAX_HISTORY_PAIRS);
       }
       setMessages(prev => [...prev, { role: 'assistant', text: answer }]);
     } catch (err) {

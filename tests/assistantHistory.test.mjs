@@ -1,5 +1,7 @@
 import { test, mock, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
+import './helpers/tsLoader.mjs';
+import { MAX_HISTORY_PAIRS, MAX_QUESTION_CHARS } from '../shared/assistantLimits.mjs';
 
 let quotaCalls, payload;
 mock.module('@netlify/blobs', { namedExports: { getStore: () => {
@@ -11,6 +13,7 @@ mock.module('@netlify/blobs', { namedExports: { getStore: () => {
 } } });
 process.env.OPENAI_API_KEY = 'test';
 const { default: handler } = await import('../netlify/functions/ai.mjs');
+const { askPlantExpert } = await import('../services/aiService.ts');
 beforeEach(() => {
   quotaCalls = 0;
   payload = null;
@@ -52,3 +55,24 @@ for (const [name, history] of Object.entries({
     assert.equal(payload, null);
   });
 }
+
+test('cliente y servidor comparten los topes del historial', async () => {
+  assert.equal(MAX_HISTORY_PAIRS, 6);
+  assert.equal(MAX_QUESTION_CHARS, 500);
+  const history = Array.from({ length: MAX_HISTORY_PAIRS + 1 }, (_, i) => ({
+    question: `${i}`.repeat(MAX_QUESTION_CHARS + 1),
+    answer: 'a'.repeat(MAX_QUESTION_CHARS + 1)
+  }));
+  const upstreamFetch = globalThis.fetch;
+  globalThis.fetch = async (url, init) => {
+    if (url !== '/api/ai') return upstreamFetch(url, init);
+    return handler(new Request('https://example.test/api/ai', init), { ip: '127.0.0.1' });
+  };
+
+  assert.equal(await askPlantExpert('¿Cada cuánto?', 'Monstera', history), 'Riega cuando se seque.');
+  assert.deepEqual(payload.messages.slice(1, -1), history.slice(-MAX_HISTORY_PAIRS).flatMap(pair => [
+    { role: 'user', content: pair.question.slice(0, MAX_QUESTION_CHARS) },
+    { role: 'assistant', content: pair.answer.slice(0, MAX_QUESTION_CHARS) }
+  ]));
+  assert.equal((await post(history.slice(-MAX_HISTORY_PAIRS))).status, 400);
+});
