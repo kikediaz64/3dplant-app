@@ -197,6 +197,7 @@ const CandidateOptions = ({ result, originalResult, disabled, rediagnosing, cand
 };
 
 const DiagnosisOverview = ({ result, topActions }: { result: IDiagnosisResult; topActions: DiagnosisAction[] }) => {
+  const titleOccurrences = new Map<string, number>();
   const statusClasses = result.healthStatus === 'Saludable'
     ? 'border-green-200 bg-green-50 text-green-900 dark:border-green-900/40 dark:bg-green-900/20 dark:text-green-200'
     : result.healthStatus === 'Enferma'
@@ -222,12 +223,17 @@ const DiagnosisOverview = ({ result, topActions }: { result: IDiagnosisResult; t
         <h3 className="text-sm font-bold">Qué hacer ahora</h3>
         {topActions.length ? (
           <ol className="mt-2 space-y-2 list-decimal pl-5">
-            {topActions.map((action, idx) => (
-              <li key={`${action.title}-${idx}`} className="text-sm leading-relaxed">
-                <span className="font-bold">{action.title}</span>
-                <span className="block text-xs leading-relaxed opacity-90">{action.description}</span>
-              </li>
-            ))}
+            {topActions.map(action => {
+              const occurrence = titleOccurrences.get(action.title) ?? 0;
+              titleOccurrences.set(action.title, occurrence + 1);
+              const actionKey = JSON.stringify([action.title, occurrence]);
+              return (
+                <li key={actionKey} className="text-sm leading-relaxed">
+                  <span className="font-bold">{action.title}</span>
+                  <span className="block text-xs leading-relaxed opacity-90">{action.description}</span>
+                </li>
+              );
+            })}
           </ol>
         ) : <p className="mt-1 text-sm">No hay acciones recomendadas.</p>}
       </div>
