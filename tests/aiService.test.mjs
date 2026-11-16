@@ -1,7 +1,7 @@
 import { test, describe, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import './helpers/tsLoader.mjs';
-const { diagnosePlant, askPlantExpert, AIUserError } = await import('../services/aiService.ts');
+const { diagnosePlant, askPlantExpert, AIUserError, EXPERT_FALLBACK_ANSWER } = await import('../services/aiService.ts');
 
 let response;
 globalThis.fetch = async () => response;
@@ -67,7 +67,7 @@ describe('historial del asistente', () => {
 
   test('respuestas solo con espacios usan el texto de reserva', async () => {
     globalThis.fetch = async () => new Response(JSON.stringify({ text: '  \n  ' }));
-    assert.equal(await askPlantExpert('¿Riego?'), 'No pude generar una respuesta. Inténtalo de nuevo.');
+    assert.equal(await askPlantExpert('¿Riego?'), EXPERT_FALLBACK_ANSWER);
   });
 
   for (const count of [0, 6, 8]) {

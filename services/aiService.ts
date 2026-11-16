@@ -20,6 +20,7 @@ const DAILY_LIMIT_MESSAGE = 'Has llegado al límite de diagnósticos de hoy. Vue
 const DAILY_QUESTION_LIMIT_MESSAGE = 'Has llegado al límite de preguntas de hoy. Vuelve mañana.';
 const UNAVAILABLE_MESSAGE = 'El servicio de diagnóstico no está disponible en este momento. Inténtalo más tarde.';
 const BAD_RESPONSE_MESSAGE = 'La IA devolvió una respuesta que no se pudo entender. Inténtalo de nuevo.';
+export const EXPERT_FALLBACK_ANSWER = 'No pude generar una respuesta. Inténtalo de nuevo.';
 
 const ACTION_PLAN_ICONS = new Set([
   'water_drop', 'wb_sunny', 'content_cut', 'compost', 'bug_report', 'pest_control',
@@ -201,5 +202,5 @@ export const askPlantExpert = async (
     action: 'ask', question, plantContext,
     ...(recentHistory ? { history: recentHistory } : {})
   });
-  return text.trim() ? text : 'No pude generar una respuesta. Inténtalo de nuevo.';
+  return text.trim() ? text : EXPERT_FALLBACK_ANSWER;
 };
