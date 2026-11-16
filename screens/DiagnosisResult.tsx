@@ -223,7 +223,7 @@ const DiagnosisOverview = ({ result, topActions }: { result: IDiagnosisResult; t
         {topActions.length ? (
           <ol className="mt-2 space-y-2 list-decimal pl-5">
             {topActions.map((action, idx) => (
-              <li key={idx} className="text-sm leading-relaxed">
+              <li key={`${action.title}-${idx}`} className="text-sm leading-relaxed">
                 <span className="font-bold">{action.title}</span>
                 <span className="block text-xs leading-relaxed opacity-90">{action.description}</span>
               </li>
