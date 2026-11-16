@@ -1,30 +1,11 @@
-import { registerHooks } from 'node:module';
-import { readFileSync, existsSync } from 'node:fs';
-import ts from 'typescript';
+import { register } from 'node:module';
 
-const { options: compilerOptions } = ts.convertCompilerOptionsFromJson(
-  JSON.parse(readFileSync(new URL('../../tsconfig.json', import.meta.url), 'utf8')).compilerOptions,
-  new URL('../../', import.meta.url).pathname
-);
-
-registerHooks({
-  resolve(specifier, context, next) {
-    if (specifier.startsWith('.') && context.parentURL) {
-      const url = new URL(specifier, context.parentURL);
-      for (const ext of ['.ts', '.tsx', '.mjs']) {
-        if (existsSync(new URL(url.href + ext))) return next(url.href + ext, context);
-      }
-    }
-    return next(specifier, context);
-  },
-  load(url, context, next) {
-    if (/\.tsx?$/.test(url)) return {
-      format: 'module', shortCircuit: true,
-      source: ts.transpileModule(readFileSync(new URL(url), 'utf8'), {
-        fileName: new URL(url).pathname,
-        compilerOptions
-      }).outputText
-    };
-    return next(url, context);
-  }
-});
+// Los hooks asíncronos conservan la carga nativa de CommonJS y son compatibles
+// con los módulos sintéticos de mock.module en Node 22.15.
+// Con registerHooks, el grafo de CameraView en Node 22.15 hace que el
+// require('react') de react/jsx-runtime reciba exports vacíos durante la carga.
+// ReactSharedInternals queda undefined y jsx falla en recentlyCreatedOwnerStacks.
+// No precargar React para ocultarlo: mantener la carga nativa con register.
+// Importar este helper antes de registrar mock.module: el último hook envuelve
+// a los anteriores y debe poder sustituir el resultado de la transpilación.
+register(new URL('./tsLoaderHooks.mjs', import.meta.url));
