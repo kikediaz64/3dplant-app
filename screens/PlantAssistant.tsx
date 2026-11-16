@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { askPlantExpert, AIUserError, type PlantExpertExchange } from '../services/aiService';
+import { askPlantExpert, AIUserError, EXPERT_FALLBACK_ANSWER, type PlantExpertExchange } from '../services/aiService';
 import { plantStorage } from '../services/plantStorage';
 import { MOCK_PLANTS } from '../constants';
 import { Plant } from '../types';
@@ -54,7 +54,7 @@ const PlantAssistant: React.FC = () => {
     setLoading(true);
     try {
       const answer = await askPlantExpert(q, plantContext, historyRef.current);
-      if (answer.trim() && answer !== 'No pude generar una respuesta. Inténtalo de nuevo.') {
+      if (answer.trim() && answer !== EXPERT_FALLBACK_ANSWER) {
         historyRef.current = [...historyRef.current, { question: q, answer }].slice(-MAX_HISTORY_PAIRS);
       }
       setMessages(prev => [...prev, { role: 'assistant', text: answer }]);
