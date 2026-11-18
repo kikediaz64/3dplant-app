@@ -1,30 +1,36 @@
 # Avisos de scripts de instalación de npm
 
-## Entorno y reproducción
+## Entorno y aviso real
 
-La comprobación se hizo con Node.js `v24.22.1` y npm `11.19.1`, usando las versiones fijadas en `package-lock.json` (`@google/genai` 1.52.0, `protobufjs` 7.6.6 y `esbuild` 0.25.12).
+Revisión con Node.js `v24.22.1` y npm **11.19.1** (`node -v` y `npm -v`). Las versiones fijadas en `package-lock.json` e inspeccionadas en `node_modules` son `@google/genai@1.52.0`, `protobufjs@7.6.6` y `esbuild@0.25.12`.
 
-Se ejecutó `npm ci --foreground-scripts`. npm no mostró un aviso de `allowScripts` antes de que la instalación fallara: el `postinstall` de esbuild no pudo ejecutar su binario en este sandbox y terminó con `spawnSync .../esbuild/bin/esbuild EPERM`. Su salida final fue:
+Aviso real de `npm ci` recogido en las pruebas de la tarjeta y reproducido aquí literalmente según la evidencia aportada por el auditor:
 
 ```text
-Error: spawnSync /srv/kanban/worktrees/kikediaz64/3dplant-app/CARD-169/node_modules/esbuild/bin/esbuild EPERM
-...
-npm error code 1
-npm error path /srv/kanban/worktrees/kikediaz64/3dplant-app/CARD-169/node_modules/esbuild
-npm error command failed
-npm error command sh -c node install.js
+npm warn install-scripts 3 packages have install scripts not yet covered by allowScripts:
+npm warn install-scripts   @google/genai@1.52.0 (preinstall: echo 'preinstall: no-op')
+npm warn install-scripts   protobufjs@7.6.6 (postinstall: node scripts/postinstall)
+npm warn install-scripts   esbuild@0.25.12 (postinstall: node install.js)
 ```
 
-También se ejecutó `npm ci --ignore-scripts`: terminó correctamente («added 322 packages in 9s») y no emitió aviso de `allowScripts`. Por tanto, no hay un aviso real de `allowScripts` que copiar de esta reproducción. La configuración actual de npm devuelve `false` para `npm config get allow-scripts`; `.npmrc` solo establece `engine-strict=true`. No se modificó la configuración.
+Este bloque procede de aquella ejecución, no de una nueva ejecución de `npm ci` en esta revisión. No se reinstalaron dependencias para corregir el documento. El intento anterior con `npm ci --foreground-scripts` registró un error `spawnSync .../esbuild/bin/esbuild EPERM`; su causa no se ha confirmado y no permite concluir que sea una restricción del sandbox. La instalación anterior con `--ignore-scripts` tampoco demuestra que los scripts sean prescindibles.
 
-## Evaluación
+En esta revisión, `npm config get allow-scripts` devuelve **una línea vacía**, no `false`. Ese resultado no equivale a una denegación explícita: `allow-scripts` es una lista de configuración distinta del mapa `allowScripts` de `package.json`. Actualmente el proyecto no declara ese mapa y su `.npmrc` solo contiene `engine-strict=true`.
 
-| Paquete | Qué hace el script | ¿Lo necesita la app? | Recomendación |
+## Evaluación por paquete
+
+| Paquete | Qué hace su script de instalación | ¿Lo necesita la app? | Recomendación |
 | --- | --- | --- | --- |
-| `@google/genai` 1.52.0 | `preinstall` ejecuta `echo 'preinstall: no-op'`; no prepara archivos ni compila código. | No. El paquete aparece en dependencias, pero la app usa `services/aiService.ts` contra `/api/ai` y no importa el SDK. | **Bloquear**: el script no aporta funcionalidad. La dependencia instalada no se necesita en el runtime actual, aunque retirarla queda fuera de esta tarjeta. |
-| `protobufjs` 7.6.6 | `postinstall` ejecuta `scripts/postinstall.js`; solo comprueba `versionScheme` y avisa si la dependencia usa un esquema de versión incompatible. No genera archivos ni descarga código. | No se encontró uso en el código de la app. Es una dependencia transitiva de `@google/genai`; el script solo aporta una advertencia de compatibilidad para consumidores. | **Bloquear**: no es necesario para ejecutar la app ni para sus builds y pruebas actuales. |
-| `esbuild` 0.25.12 | `postinstall` ejecuta `node install.js`; valida que el ejecutable nativo disponible corresponda a la versión instalada y, según plataforma, puede descargar/descomprimir el binario correcto. | Sí. Vite lo requiere durante el build/desarrollo y las pruebas del proyecto también lo usan para empaquetar código. | **Autorizar**: el binario de la plataforma es necesario. Sin el script puede faltar su instalación o validación; el EPERM observado aquí es una restricción de ejecución del sandbox, no un fallo del script en un entorno normal. |
+| `@google/genai@1.52.0` | `preinstall: echo 'preinstall: no-op'`. Solo imprime un mensaje; no prepara archivos, descarga ni compila código. | El script no es necesario. No se encontraron imports del SDK en el código de la app ni en la función de Netlify: `services/aiService.ts` llama a `/api/ai` y `netlify/functions/ai.mjs` usa peticiones HTTP. | **Bloquear el script**: no aporta funcionalidad. Esto no implica quitar la dependencia. |
+| `protobufjs@7.6.6` | `postinstall: node scripts/postinstall`. El archivo `scripts/postinstall.js` consulta `versionScheme`; si existe, lee el `package.json` del consumidor e imprime un aviso cuando su especificación no coincide con ese esquema. No genera archivos ni descarga o compila código. | El script no es necesario para la app. Es una dependencia transitiva de `@google/genai`; no se encontraron imports directos en la app. La advertencia de compatibilidad no prepara el runtime. | **Bloquear el script**: su omisión no elimina código del paquete ni altera su funcionamiento. |
+| `esbuild@0.25.12` | `postinstall: node install.js`. Localiza el binario de la plataforma instalado mediante una dependencia opcional `@esbuild/*`, prepara/optimiza su ejecutable y valida la versión ejecutándolo con `--version`. Respeta `ESBUILD_BINARY_PATH` si está configurado. Si falta la dependencia opcional, intenta instalarla mediante npm y, si falla, descargar y extraer su archivo desde el registro. La descarga es una vía de respaldo, no el paso habitual. | **Se necesita esbuild en desarrollo/build**: `package.json` ejecuta Vite y el código instalado de Vite importa esbuild para transformar código y optimizar dependencias. El script prepara y valida esa herramienta; con la dependencia opcional disponible puede funcionar aun omitiéndolo, pero no se ha comprobado esa variante del build. `npm test` usa Node y un loader basado en `typescript.transpileModule`, no esbuild. | **Autorizar el script de la versión revisada**: conserva la preparación y validación soportadas por esbuild, incluida la recuperación si falta el binario opcional. No afirmar que todos los entornos fallan al bloquearlo. |
 
-## Límite de la comprobación
+## Política recomendada para npm 11.19.1
 
-La ejecución normal no llegó a completar `npm ci` por el bloqueo de procesos del sandbox en el script de esbuild. La instalación con scripts omitidos sí completó, pero no prueba que el proyecto compile con esos scripts bloqueados. Las recomendaciones describen el efecto de los scripts de las versiones fijadas y el uso hallado en el árbol de código; no se cambió `package.json`, `package-lock.json` ni `.npmrc`.
+El código de la versión instalada confirma que los scripts sin decisión explícita todavía se ejecutan con aviso. Una entrada `false` omite los scripts del paquete; una aprobación permite ejecutarlos. `strict-allow-scripts` convierte los pendientes en error y su valor predeterminado es `false`. No confundir el aviso con un bloqueo ya aplicado.
+
+Para una futura tarjeta de configuración, la recomendación es registrar las dos denegaciones y aprobar únicamente `esbuild@0.25.12` tras esta revisión. npm ofrece `npm install-scripts ls` para consultar pendientes sin escribir y `npm install-scripts approve` / `deny` para mantener el mapa `allowScripts` de `package.json`. Las aprobaciones fijan la versión por defecto (`allow-scripts-pin=true`), mientras las denegaciones se guardan por nombre. Conviene revisar de nuevo el script al cambiar la versión autorizada, en lugar de aprobar todos los paquetes. No pasar `--allow-scripts` a un `npm ci` del proyecto: esta versión lo rechaza; la política compartida corresponde al proyecto.
+
+Se contrastó con la [documentación oficial de npm sobre install-scripts](https://docs.npmjs.com/cli/v11/commands/npm-install-scripts/). Esa página sirve actualmente npm 11.21.2 y describe bloqueo predeterminado; para el comportamiento de **11.19.1** prevalece la inspección local de `lib/utils/resolve-allow-scripts.js`, `lib/commands/install-scripts.js`, `node_modules/@npmcli/arborist/lib/arborist/rebuild.js` y `node_modules/@npmcli/config/lib/definitions/definitions.js`, relativos a la instalación de npm (`npm root -g` + `/npm`).
+
+Esta tarjeta solo documenta las decisiones: no se ha aplicado ninguna autorización o denegación ni se ha cambiado la configuración o las dependencias.
