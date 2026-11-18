@@ -10,7 +10,7 @@ class AIUserError extends Error {
   }
 }
 mock.module('../services/aiService.ts', {
-  namedExports: { diagnosePlant, AIUserError },
+  exports: { diagnosePlant, AIUserError },
 });
 
 const { default: DiagnosisResult } = await import('../screens/DiagnosisResult.tsx');

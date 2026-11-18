@@ -6,7 +6,7 @@ import { montarPantalla } from './helpers/montajePantalla.mjs';
 const calendar = await import('../services/calendar.ts');
 const downloadCalendarReminder = mock.fn();
 mock.module('../services/calendar.ts', {
-  namedExports: { ...calendar, downloadCalendarReminder },
+  exports: { ...calendar, downloadCalendarReminder },
 });
 
 const { default: PlantDetail } = await import('../screens/PlantDetail.tsx');

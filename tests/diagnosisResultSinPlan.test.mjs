@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 
 const diagnosePlant = mock.fn();
 mock.module('../services/aiService.ts', {
-  namedExports: { diagnosePlant, AIUserError: class AIUserError extends Error {} },
+  exports: { diagnosePlant, AIUserError: class AIUserError extends Error {} },
 });
 
 const { default: DiagnosisResult } = await import('../screens/DiagnosisResult.tsx');
