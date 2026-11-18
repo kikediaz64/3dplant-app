@@ -6,7 +6,7 @@ const calls = [];
 let fail = false;
 let nextAnswer;
 const ai = await import('../services/aiService.ts');
-mock.module('../services/aiService.ts', { namedExports: {
+mock.module('../services/aiService.ts', { exports: {
   ...ai,
   askPlantExpert: async (question, context, history) => {
     calls.push({ question, history: structuredClone(history) });

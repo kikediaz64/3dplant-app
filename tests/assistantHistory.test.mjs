@@ -4,7 +4,7 @@ import './helpers/tsLoader.mjs';
 import { MAX_HISTORY_PAIRS, MAX_QUESTION_CHARS } from '../shared/assistantLimits.mjs';
 
 let quotaCalls, payload;
-mock.module('@netlify/blobs', { namedExports: { getStore: () => {
+mock.module('@netlify/blobs', { exports: { getStore: () => {
   quotaCalls++;
   return {
     getWithMetadata: async () => null,

@@ -4,7 +4,7 @@ import './helpers/tsLoader.mjs';
 import { montarCamara } from './helpers/montajeCamara.mjs';
 
 mock.module('../services/photoQuality.mjs', {
-  namedExports: {
+  exports: {
     assessPhoto: async dataUrl => {
       const source = Buffer.from(dataUrl.split(',')[1], 'base64').toString();
       if (source.includes('oscura')) return 'Esta foto está muy oscura, ¿repetir?';
