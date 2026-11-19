@@ -1,6 +1,6 @@
 import React from 'react';
 import type { Plant } from '../../types';
-import type { NavigateFunction } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { isMockPlant } from '../../constants';
 import { getDiagnosisHistory } from '../../services/plantStorage';
 import { isValidScore } from '../../services/healthTrend';
@@ -8,7 +8,6 @@ import HealthChart from '../HealthChart';
 
 interface Props {
     plant: Plant;
-    navigate: NavigateFunction;
 }
 
 // Fecha y hora legibles para el historial; si la fecha no es válida, no muestra nada.
@@ -19,7 +18,8 @@ const formatEntryDate = (iso: string) => {
         : d.toLocaleString('es-ES', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 };
 
-export default function PlantDiagnosisHistory({ plant, navigate }: Props) {
+export default function PlantDiagnosisHistory({ plant }: Props) {
+    const navigate = useNavigate();
     const history = getDiagnosisHistory(plant);
     if (isMockPlant(plant.id)) return null;
     return (

@@ -74,13 +74,13 @@ const PlantDetail: React.FC = () => {
 
     return (
         <div className="relative flex h-screen w-full flex-col overflow-hidden bg-background-light dark:bg-background-dark">
-            <PlantDetailHero plant={plant} navigate={navigate} handleDelete={handleDelete} />
+            <PlantDetailHero plant={plant} handleDelete={handleDelete} />
 
             {/* Scrollable Content */}
             <div className="flex-1 overflow-y-auto px-5 py-4 pb-24">
                 <ToxicityNotice careGuide={guide} isToxic={plant.isToxic} />
                 <p className="mb-4 text-xs text-gray-500 dark:text-gray-400">Ante dudas sobre toxicidad, consulta a un veterinario o a un médico.</p>
-                <PlantDiagnosisHistory plant={plant} navigate={navigate} />
+                <PlantDiagnosisHistory plant={plant} />
 
                 <PlantDiagnosisDetails plant={plant} />
 
