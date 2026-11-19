@@ -131,6 +131,7 @@ const PlantAssistant: React.FC = () => {
             className="flex-1 h-12 rounded-xl px-4 text-sm bg-gray-100 dark:bg-card-dark text-text-main-light dark:text-text-main-dark outline-none border border-black/5 dark:border-white/10 focus:border-primary"
           />
           <button
+            aria-label="Enviar pregunta"
             onClick={handleSend}
             disabled={loading || !input.trim()}
             className="flex size-12 items-center justify-center rounded-xl bg-primary text-black active:scale-95 transition-all disabled:opacity-40"

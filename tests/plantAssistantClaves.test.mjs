@@ -28,7 +28,7 @@ test('mantiene las claves y los nodos de mensajes al añadir preguntas', async (
       Object.getOwnPropertyDescriptor(page.dom.window.HTMLInputElement.prototype, 'value').set.call(input, question);
       input.dispatchEvent(new page.dom.window.Event('input', { bubbles: true }));
     });
-    await act(async () => page.container.querySelectorAll('button')[1].dispatchEvent(
+    await act(async () => page.container.querySelector('button[aria-label="Enviar pregunta"]').dispatchEvent(
       new page.dom.window.MouseEvent('click', { bubbles: true })
     ));
   };
