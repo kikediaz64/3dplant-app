@@ -14,8 +14,8 @@ export default function PlantDiagnosisDetails({ plant }: Props) {
         recommendations: []
     };
     const { diagnosisTone, recommendationsTone } = getPlantDetailTones(plant.status);
-    const problemKeys = occurrenceKeys(detailedInfo.problems, item => item);
-    const recommendationKeys = occurrenceKeys(detailedInfo.recommendations, item => item);
+    const problemKeys = occurrenceKeys(detailedInfo.problems ?? [], item => item);
+    const recommendationKeys = occurrenceKeys(detailedInfo.recommendations ?? [], item => item);
 
     return (
         <>
