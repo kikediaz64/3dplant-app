@@ -1,6 +1,7 @@
 import React from 'react';
 import type { Plant } from '../../types';
 import { getPlantDetailTones } from '../../utils/plantDetailTones';
+import { occurrenceKeys } from '../../utils/occurrenceKeys';
 
 interface Props {
     plant: Plant;
@@ -13,6 +14,8 @@ export default function PlantDiagnosisDetails({ plant }: Props) {
         recommendations: []
     };
     const { diagnosisTone, recommendationsTone } = getPlantDetailTones(plant.status);
+    const problemKeys = occurrenceKeys(detailedInfo.problems, item => item);
+    const recommendationKeys = occurrenceKeys(detailedInfo.recommendations, item => item);
 
     return (
         <>
@@ -24,10 +27,9 @@ export default function PlantDiagnosisDetails({ plant }: Props) {
                         <h3 className={`text-base font-bold ${diagnosisTone.title}`}>Problemas detectados</h3>
                     </div>
                     <ul className={`text-sm leading-relaxed list-disc list-inside ${diagnosisTone.text}`}>
-                        {detailedInfo.problems.map((problem, idx) => {
-                            const occurrence = detailedInfo.problems.slice(0, idx).filter(item => item === problem).length;
-                            return <li key={JSON.stringify([problem, occurrence])}>{problem}</li>;
-                        })}
+                        {detailedInfo.problems.map((problem, idx) => (
+                            <li key={problemKeys[idx]}>{problem}</li>
+                        ))}
                     </ul>
                 </div>
             )}
@@ -38,10 +40,9 @@ export default function PlantDiagnosisDetails({ plant }: Props) {
                         <h3 className={`text-base font-bold ${recommendationsTone.title}`}>Recomendaciones</h3>
                     </div>
                     <ul className={`text-sm leading-relaxed list-disc list-inside ${recommendationsTone.text}`}>
-                        {detailedInfo.recommendations.map((rec, idx) => {
-                            const occurrence = detailedInfo.recommendations.slice(0, idx).filter(item => item === rec).length;
-                            return <li key={JSON.stringify([rec, occurrence])}>{rec}</li>;
-                        })}
+                        {detailedInfo.recommendations.map((rec, idx) => (
+                            <li key={recommendationKeys[idx]}>{rec}</li>
+                        ))}
                     </ul>
                 </div>
             )}

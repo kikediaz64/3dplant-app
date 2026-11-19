@@ -3,6 +3,7 @@ import type { Plant, CareGuide } from '../../types';
 import { careText, missingCareData } from '../../services/careGuide';
 import { fertilizerIntervalDays } from '../../services/calendar';
 import { getWateringStatus, formatLastWateredAt } from '../../services/plantStorage';
+import { occurrenceKeys } from '../../utils/occurrenceKeys';
 
 interface Props {
     plant: Plant;
@@ -13,6 +14,7 @@ interface Props {
 export default function PlantCareSections({ plant, guide, exportReminder }: Props) {
     const watering = getWateringStatus(plant);
     const fertilizerDays = fertilizerIntervalDays(guide?.fertilizer);
+    const pestKeys = occurrenceKeys(guide?.commonPests ?? [], item => item);
     return (
         <>
             {/* Historia */}
@@ -106,10 +108,9 @@ export default function PlantCareSections({ plant, guide, exportReminder }: Prop
                     <span className="text-xl">🐛</span>
                     <h3 className="text-base font-bold text-gray-900 dark:text-white">Plagas e insecticidas</h3>
                 </div>
-                {guide?.commonPests?.length ? <ul className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed list-disc list-inside space-y-1">{guide.commonPests.map((pest, idx) => {
-                    const occurrence = guide.commonPests!.slice(0, idx).filter(item => item === pest).length;
-                    return <li key={JSON.stringify([pest, occurrence])}>{pest}</li>;
-                })}</ul> : <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">{missingCareData}</p>}
+                {guide?.commonPests?.length ? <ul className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed list-disc list-inside space-y-1">{guide.commonPests.map((pest, idx) => (
+                    <li key={pestKeys[idx]}>{pest}</li>
+                ))}</ul> : <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">{missingCareData}</p>}
             </div>
 
             {/* Remedios caseros */}
