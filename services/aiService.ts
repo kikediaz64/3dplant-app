@@ -1,6 +1,6 @@
 
 import { DiagnosisResult } from "../types";
-import { MAX_HISTORY_PAIRS, MAX_QUESTION_CHARS } from "../shared/assistantLimits.mjs";
+import { MAX_HISTORY_PAIRS, MAX_ASSISTANT_MESSAGE_CHARS } from "../shared/assistantLimits.mjs";
 
 const FUNCTION_URL = '/api/ai';
 
@@ -195,8 +195,8 @@ export const askPlantExpert = async (
 ): Promise<string> => {
   // Acota también las respuestas largas sin alterar lo que se muestra en pantalla.
   const recentHistory = history?.slice(-MAX_HISTORY_PAIRS).map(({ question, answer }) => ({
-    question: question.slice(0, MAX_QUESTION_CHARS),
-    answer: answer.slice(0, MAX_QUESTION_CHARS)
+    question: question.slice(0, MAX_ASSISTANT_MESSAGE_CHARS),
+    answer: answer.slice(0, MAX_ASSISTANT_MESSAGE_CHARS)
   }));
   const { text } = await callAI({
     action: 'ask', question, plantContext,

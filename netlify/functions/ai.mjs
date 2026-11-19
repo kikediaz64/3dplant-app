@@ -1,6 +1,6 @@
 // 3dPlant — Función serverless que conecta con la IA (OpenAI GPT-4o-mini).
 import { getStore } from '@netlify/blobs';
-import { MAX_HISTORY_PAIRS, MAX_QUESTION_CHARS } from '../../shared/assistantLimits.mjs';
+import { MAX_HISTORY_PAIRS, MAX_ASSISTANT_MESSAGE_CHARS } from '../../shared/assistantLimits.mjs';
 import { validateImage, consumeDailyQuota, dailyStoreName } from '../lib/limites.mjs';
 import { identifyPlant, formatCandidateHint, HINT_MIN_SCORE } from '../lib/plantnet.mjs';
 
@@ -11,7 +11,7 @@ const ENDPOINT = 'https://api.openai.com/v1/chat/completions';
 
 // Topes de tamaño para que nadie dispare el gasto de tokens con payloads enormes.
 const MAX_CONTEXT_CHARS = 1000;
-const MAX_HISTORY_CHARS = MAX_HISTORY_PAIRS * 2 * MAX_QUESTION_CHARS;
+const MAX_HISTORY_CHARS = MAX_HISTORY_PAIRS * 2 * MAX_ASSISTANT_MESSAGE_CHARS;
 
 function parseHistory(value) {
   if (value === undefined) return [];
@@ -22,7 +22,7 @@ function parseHistory(value) {
     if (!pair || typeof pair !== 'object' || Array.isArray(pair)) return null;
     for (const [key, role] of [['question', 'user'], ['answer', 'assistant']]) {
       const content = pair[key];
-      if (typeof content !== 'string' || !content.trim() || content.length > MAX_QUESTION_CHARS) return null;
+      if (typeof content !== 'string' || !content.trim() || content.length > MAX_ASSISTANT_MESSAGE_CHARS) return null;
       total += content.length;
       if (total > MAX_HISTORY_CHARS) return null;
       messages.push({ role, content });
@@ -158,8 +158,8 @@ export default async (request, context) => {
       if (typeof question !== 'string' || typeof plantContext !== 'string' || question.trim() === '') {
         return json({ error: 'Petición no válida.' }, 400);
       }
-      if (question.length > MAX_QUESTION_CHARS) {
-        return json({ error: `La pregunta es demasiado larga (máximo ${MAX_QUESTION_CHARS} caracteres).` }, 413);
+      if (question.length > MAX_ASSISTANT_MESSAGE_CHARS) {
+        return json({ error: `La pregunta es demasiado larga (máximo ${MAX_ASSISTANT_MESSAGE_CHARS} caracteres).` }, 413);
       }
       if (plantContext.length > MAX_CONTEXT_CHARS) {
         return json({ error: `El contexto es demasiado largo (máximo ${MAX_CONTEXT_CHARS} caracteres).` }, 413);
