@@ -1,14 +1,14 @@
 import React from 'react';
 import type { Plant } from '../../types';
-import type { NavigateFunction } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 interface Props {
     plant: Plant;
-    navigate: NavigateFunction;
     handleDelete: () => void;
 }
 
-export default function PlantDetailHero({ plant, navigate, handleDelete }: Props) {
+export default function PlantDetailHero({ plant, handleDelete }: Props) {
+    const navigate = useNavigate();
     return (
         <div className="relative h-40 w-full">
             <div
