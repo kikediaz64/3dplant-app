@@ -20,6 +20,7 @@ function buildPlantContext(p: Plant): string {
 }
 
 interface Message {
+  id: number;
   role: 'user' | 'assistant';
   text: string;
 }
@@ -31,8 +32,10 @@ const PlantAssistant: React.FC = () => {
     ? [...plantStorage.getSavedPlants(), ...MOCK_PLANTS].find(p => p.id === plantId)
     : undefined;
   const plantContext = contextPlant ? buildPlantContext(contextPlant) : undefined;
+  const nextMessageId = useRef(1);
   const [messages, setMessages] = useState<Message[]>([
     {
+      id: 0,
       role: 'assistant',
       text: '¡Hola! Soy tu asistente de plantas 🌱. Pregúntame lo que necesites: riego, abono, plagas, remedios caseros, dosis…'
     }
@@ -50,19 +53,22 @@ const PlantAssistant: React.FC = () => {
     const q = input.trim();
     if (!q || loading) return;
     setInput('');
-    setMessages(prev => [...prev, { role: 'user', text: q }]);
+    const userMessageId = nextMessageId.current++;
+    setMessages(prev => [...prev, { id: userMessageId, role: 'user', text: q }]);
     setLoading(true);
     try {
       const answer = await askPlantExpert(q, plantContext, historyRef.current);
       if (answer.trim() && answer !== EXPERT_FALLBACK_ANSWER) {
         historyRef.current = [...historyRef.current, { question: q, answer }].slice(-MAX_HISTORY_PAIRS);
       }
-      setMessages(prev => [...prev, { role: 'assistant', text: answer }]);
+      const answerMessageId = nextMessageId.current++;
+      setMessages(prev => [...prev, { id: answerMessageId, role: 'assistant', text: answer }]);
     } catch (err) {
       const text = err instanceof AIUserError
         ? `⚠️ ${err.message}`
         : `⚠️ Error: ${err instanceof Error ? err.message : 'Error desconocido'}`;
-      setMessages(prev => [...prev, { role: 'assistant', text }]);
+      const errorMessageId = nextMessageId.current++;
+      setMessages(prev => [...prev, { id: errorMessageId, role: 'assistant', text }]);
     } finally {
       setLoading(false);
     }
@@ -90,8 +96,8 @@ const PlantAssistant: React.FC = () => {
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
-        {messages.map((m, i) => (
-          <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+        {messages.map(m => (
+          <div key={m.id} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
             <div className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap ${m.role === 'user' ? 'bg-primary text-black rounded-br-md' : 'bg-white dark:bg-card-dark text-text-main-light dark:text-text-main-dark border border-black/5 dark:border-white/10 rounded-bl-md'}`}>
               {m.text}
             </div>
