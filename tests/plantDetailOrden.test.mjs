@@ -79,3 +79,21 @@ test('pinta las secciones en orden y coloca los recordatorios en su bloque', asy
   assert.ok([...container.querySelectorAll('button')].some(button => button.textContent.includes('Regar ahora')));
   assert.ok([...container.querySelectorAll('button')].some(button => button.textContent.includes('Volver')));
 });
+
+test('no muestra el historial en una planta de ejemplo y mantiene el orden de cuidados', async () => {
+  localStorage.setItem('savedPlants', JSON.stringify([]));
+
+  await act(async () => root.render(
+    React.createElement(MemoryRouter, { initialEntries: ['/plant/1'] },
+      React.createElement(Routes, null,
+        React.createElement(Route, { path: '/plant/:id', element: React.createElement(PlantDetail) }))),
+  ));
+
+  const headings = [...container.querySelectorAll('h3')].map(heading => heading.textContent);
+  assert.equal(headings.includes('Historial de diagnósticos'), false);
+  assert.deepEqual(headings, [
+    'Historia', 'Tipo de suelo', 'Abono / Fertilización', 'Cuidado estacional',
+    'Necesidades de riego', 'Requisitos de luz', 'Temperatura', 'Humedad',
+    'Plagas e insecticidas', 'Remedios caseros',
+  ]);
+});
