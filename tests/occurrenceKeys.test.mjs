@@ -14,15 +14,21 @@ test('genera claves por texto y ocurrencia', () => {
   ]);
 });
 
-test('las claves de cada texto se conservan al reordenar y la lista vacía no genera claves', () => {
-  const keyMap = items => new Map(items.map((item, index) => [item.id, occurrenceKeys(items, entry => entry.title)[index]]));
+test('las claves se conservan al reordenar textos manteniendo el orden relativo de sus repeticiones', () => {
+  const keyMap = items => {
+    const keys = occurrenceKeys(items, entry => entry.title);
+    return new Map(items.map((item, index) => [item.id, keys[index]]));
+  };
   const original = [{ id: 'a1', title: 'A' }, { id: 'b', title: 'B' }, { id: 'a2', title: 'A' }];
-  const reordered = [original[2], original[1], original[0]];
+  const reordered = [original[1], original[0], original[2]];
   const before = keyMap(original);
   const after = keyMap(reordered);
 
   assert.equal(before.get('a1'), after.get('a1'));
   assert.equal(before.get('a2'), after.get('a2'));
   assert.equal(before.get('b'), after.get('b'));
+});
+
+test('una lista vacía no genera claves', () => {
   assert.deepEqual(occurrenceKeys([], item => item), []);
 });
