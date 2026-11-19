@@ -29,14 +29,12 @@ const DiagnosisOverview = ({ result, topActions }: { result: IDiagnosisResult; t
         <h3 className="text-sm font-bold">Qué hacer ahora</h3>
         {topActions.length ? (
           <ol className="mt-2 space-y-2 list-decimal pl-5">
-            {topActions.map((action, index) => {
-              return (
+            {topActions.map((action, index) => (
                 <li key={actionKeys[index]} className="text-sm leading-relaxed">
                   <span className="font-bold">{action.title}</span>
                   <span className="block text-xs leading-relaxed opacity-90">{action.description}</span>
                 </li>
-              );
-            })}
+            ))}
           </ol>
         ) : <p className="mt-1 text-sm">No hay acciones recomendadas.</p>}
       </div>
