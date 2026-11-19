@@ -326,7 +326,7 @@ const DiagnosisSaveBar = ({ saved, savedAsNew, saving, plantId, handleSavePlant,
     : (plantId ? 'Añadir al historial' : 'Guardar en Mi Jardín');
 
   return (
-    <div className="fixed bottom-0 w-full bg-background-light dark:bg-background-dark border-t border-gray-200 dark:border-white/10 p-4 pb-6 z-50">
+    <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[500px] bg-background-light dark:bg-background-dark border-t border-gray-200 dark:border-white/10 p-4 pb-6 z-50">
       <div className="flex flex-col gap-3 max-w-lg mx-auto">
         <button
           onClick={handleSavePlant}
