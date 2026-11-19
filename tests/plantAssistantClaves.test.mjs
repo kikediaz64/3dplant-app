@@ -54,7 +54,7 @@ test('mantiene las claves y los nodos de mensajes al añadir preguntas', async (
       'Segunda',
       'Respuesta Segunda'
     ]);
-    assert.deepEqual(allNodes.slice(0, priorNodes.length), priorNodes);
+    priorNodes.forEach((node, i) => assert.strictEqual(allNodes[i], node));
   } finally {
     await act(async () => root.unmount());
     page.restaurar();
