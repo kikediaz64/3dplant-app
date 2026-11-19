@@ -1,35 +1,40 @@
 # Handoff — 3dPlant v2
 
-## Sesión 2026-11-06 — Preparar 3dPlant como primer repo real del Kanban
+## Sesión 2026-11-07 — De Pl@ntNet al estudio de la competencia, todo en producción
 
-**Qué se hizo.**
-1. Revisión de solo lectura de las dos ramas sin subir: `mejoras-diseno-apple` (aviso «Diagnóstico
-   orientativo» + refactor `53654e1` de `main` local) y `a1-tope-diario` (worktree `G:\Laboratorio IA\3dplant-a1`).
-   Las dos: `npm run build` y `tsc --noEmit` OK. A1: 27/27 pruebas. El código no se solapa; solo chocaban
-   `package.json`/`package-lock.json` (Playwright frente a `@netlify/blobs`).
-2. Plan aprobado por Kike. A1 commiteado (`94ec7ee`, sin `package.json.bak1`), subido y **PR #1**
-   https://github.com/kikediaz64/3dplant-app/pull/1 (sin fusionar).
-3. Playwright descartado: `package.json`/`package-lock.json` vueltos a HEAD (los `.bak-20261008-192557` eran
-   idénticos a HEAD); versión con Playwright guardada en `*.bak-playwright-20261106`.
-4. `mejoras-diseno-apple` subida como PR en borrador, para fusionar después de A1.
+**Qué se hizo.** Día entero pasando tarjetas por la fábrica Kanban de kike-srv. Claude revisa cada PR en una
+copia aparte (`scratchpad\pr13`: build, `tsc --noEmit`, todas las pruebas) y fusiona solo con el sí de Kike.
+Después comprueba que el bundle de producción lleva el cambio.
+- #12 Pl@ntNet (PR #13). Queja «dice lo mismo en todas las plantas»: #17 → PR #19 y #18 → PR #23. La fábrica
+  agotó los 3 intentos con #18 y Codex remató `max_tokens` + 502 `truncated`.
+- Estudio de la competencia, solo con información pública. REA capturó 5 webs → Obsidian `research\3dplant-competencia.md`.
+  Las 5 ideas están en producción:
+  - #24 especies alternativas con foto (PR #31; elegir otra especie repite el diagnóstico; umbral 0,05);
+  - #25 hasta 3 fotos + aviso de foto mala (PR #42);
+  - #30 aviso de tóxica (PR #46);
+  - #28 recordatorio `.ics` pensado para iPhone (PR #50);
+  - #29 evolución de la salud (PR #54).
+- Más: #35 «Regada ✓» (PR #36), #40 iconos con lista blanca (PR #58), #41 mensaje del tope diario (PR #62) y
+  #43 pruebas de interfaz de CameraView con jsdom (PR #65, solo pruebas; la web no cambia).
 
-**Qué se descubrió.**
-- El comando documentado `node --test --experimental-test-module-mocks tests/` falla en Node 24 (trata la
-  carpeta como archivo). Sin argumento (busca `*.test.mjs`) o con el archivo funciona.
-- Dispatcher (`src/procesador.py`, `_pruebas`): `comandos_pruebas[repo]` es una lista argv que se ejecuta en
-  el clon **sin `npm ci` previo**; lista vacía = «omitidas». No hay clon de 3dplant-app en `/srv/kanban/repos`.
-  kike-srv: Node 24.22.1, npm 11.19.1.
-- No hay webs de apps de plantas «identificadas» en `REA REVERSE ENGINEER ANYTHING` ni en 3dPlant; la
-  auditoría dice que nunca se analizaron apps de terceros. Kike quiere aprovechar apps que funcionan: se le
-  explicó que no se copia su contenido ni se usan sus API internas; sí ideas de funciones, Pl@ntNet (gratis
-  con límite, sin confirmar) y la biblioteca propia `3dPlant\mi-jardin` (78 artículos). Espera los nombres.
-- El PR #1 se abrió sin poner antes la `OPENAI_API_KEY` falsa en Deploy Previews (paso de `A1_RESULTADO.md`):
-  la vista previa usa la clave real, frenada por el tope de A1.
+**Qué se descubrió y por qué importa.**
+- Tope de vistas previas: todas las vistas previas comparten la cuota `consultas-diarias-deploy-preview`
+  (30 al día). Por eso hoy se probó en producción después de fusionar.
+- La fábrica tiene `max_tarjetas_dia` = 20, y cada intento cuenta. Llegó al tope con la #41. Con el sí de Kike
+  se subió a 25 y la fábrica se reinició (copia en `dispatcher.json.bak-tope20`). Al cerrar se devolvió a **20**,
+  porque es su freno de gasto. La config se lee al arrancar, así que cualquier cambio necesita
+  `sudo systemctl restart kanban-dispatcher`.
+- Una tarjeta `ready-for-human` no pasa sola a «Hecho». Un PR que solo trae pruebas también publica en Netlify
+  (15 créditos), aunque el bundle quede igual.
+- Norma de Kike: cada vez que se le pide algo, su tarjeta del tablero 3dPlant pasa a «Necesita a Kike».
 
-**Qué NO se hizo.** Nada fusionado. Sin script `"test"` en `package.json` (cambio de código: Codex o
-«construye»). Sin tocar la config del Kanban en kike-srv (paso posterior, solo propuesto).
+**Qué NO se ha comprobado.**
+- En el iPhone de Kike: el recordatorio del calendario (data URL), las especies alternativas y el resto de
+  cambios de hoy.
+- El mensaje real del tope diario: verlo exige gastar los 30 análisis.
+- El panel de uso de Pl@ntNet.
 
-**Siguiente.** Kike: Netlify (`AWS_LAMBDA_JS_RUNTIME`, coste de Blobs), probar la vista previa del PR #1 y
-fusionarlo. Después: script `"test"`, clonar el repo en kike-srv y `comandos_pruebas` =
-`["sh","-c","npm ci --no-audit --no-fund && npm run build && node --test --experimental-test-module-mocks"]`;
-primeras tarjetas: pruebas de límites de pregunta (400/413) y `*.bak*` al `.gitignore`.
+**Siguiente.** #44 (calibrar los umbrales de foto oscura o borrosa) y #45 (pulir «1 fotos» y los avisos
+alert/confirm). Después, tickets pequeños: #14, #15, #20-#22, los del revisor de #46 y #50, y que el chat diga
+«preguntas» y no «diagnósticos» al llegar al tope. Pendientes de Kike: factura de Netlify de 9 $, plan de
+Netlify hacia el 1-dic, y rotar la clave de Pl@ntNet si quiere.
