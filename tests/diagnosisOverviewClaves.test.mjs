@@ -1,17 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import ts from 'typescript';
-import React from 'react';
+import './helpers/tsLoader.mjs';
+
+const { default: DiagnosisOverview } = await import('../components/diagnosis/DiagnosisOverview.tsx');
 import { renderToStaticMarkup } from 'react-dom/server';
 
-// Aísla el componente privado sin cargar los servicios de la pantalla.
-const source = readFileSync(new URL('../screens/DiagnosisResult.tsx', import.meta.url), 'utf8');
-const overview = source.slice(source.indexOf('const DiagnosisOverview ='), source.indexOf('const DiagnosisStatus ='));
-const compiled = ts.transpileModule(overview, {
-  compilerOptions: { jsx: ts.JsxEmit.React, target: ts.ScriptTarget.ES2022 },
-}).outputText;
-const DiagnosisOverview = new Function('React', `${compiled}; return DiagnosisOverview;`)(React);
 const render = titles => DiagnosisOverview({
   result: { healthStatus: 'Saludable' },
   topActions: titles.map(title => ({ title, description: `Detalle ${title}` })),
