@@ -70,6 +70,28 @@ export const MOCK_PLANTS: Plant[] = [
     zona: 'Exterior',
     luz: 'Sol pleno',
     tipo: 'Vegetal'
+  },
+  {
+    id: '4',
+    name: 'Agapanto',
+    scientificName: 'Agapanthus africanus',
+    location: 'Balcón',
+    image: '/plantas-ejemplo/agapanto.webp',
+    status: 'warning',
+    isToxic: true,
+    needsWater: false,
+    careDetails: {
+      light: '',
+      water: '',
+      temp: '',
+      humidity: ''
+    },
+    nextWatering: 'En 5 días',
+    wateringFrequencyDays: 7,
+    lastWateredAt: daysAgo(2),
+    zona: 'Exterior',
+    luz: 'Sol pleno',
+    tipo: 'Floral'
   }
 ];
 
