@@ -46,7 +46,7 @@ test('CameraView muestra sus cinco piezas y actualiza miniatura y diagnóstico',
   assert.ok([...header.querySelectorAll('button')].some(node => /flash_off|flash_on/.test(node.textContent)));
 
   // Marco y pie con cámara inactiva.
-  assert.equal(container.querySelector('.grid-cols-3.grid-rows-3')?.children.length, 9);
+  assert.equal(container.querySelector('[data-testid="rejilla-camara"]')?.children.length, 9);
   assert.ok(container.querySelector('footer input[type="file"]'));
   assert.ok(container.textContent.includes('0/3 fotos'));
   assert.equal([...container.querySelectorAll('button')].some(node => node.textContent.startsWith('Diagnosticar')), false);

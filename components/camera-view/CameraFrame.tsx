@@ -64,7 +64,7 @@ export default function CameraFrame({ videoRef, cameraActive, cameraError, start
       </div>
 
       {/* Grid Lines */}
-      <div className="absolute inset-0 grid grid-cols-3 grid-rows-3">
+      <div className="absolute inset-0 grid grid-cols-3 grid-rows-3" aria-hidden="true" data-testid="rejilla-camara">
         {[...Array(9)].map((_, i) => (
           <div key={i} className="border border-white/5"></div>
         ))}
