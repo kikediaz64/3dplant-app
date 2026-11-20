@@ -14,12 +14,20 @@ export default function CameraFooter({ cameraActive, photos, onClose, capturePho
   return (
     <footer className="absolute bottom-0 left-0 right-0 z-50 w-full pb-8 pt-2 px-6 bg-gradient-to-t from-black/90 via-black/70 to-transparent">
       <div className="flex items-center justify-between max-w-sm mx-auto">
-        <button onClick={onClose} className="group flex shrink-0 items-center justify-center rounded-xl size-14 border-2 border-white/20 overflow-hidden relative active:scale-95 transition-transform">
-          <img
-            alt="Thumbnail"
-            className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
-            src="https://lh3.googleusercontent.com/aida-public/AB6AXuA5PH3h2j4Zyup-G4rtQSMtOgwwugl7EG91iRmuzrO-PmD0E0hf7V4KPj0rZz9-EVbCKVF_I2O5x6b1hnhP62kk_2GheN5UAb2sRroNH4PiJtjx65NRvE4P7zxpP7IPbcmwlvnYqJ4LUOS5UrJBEJlG4AztbpxO7pVHXZZMl21tFk39nyrcUMu0PjaTOjXVVykf1Sk-b3cO1vtkHxN4i5n7rZtAfyM2zrYWXtzhxlA4LLEGL2AUVaAFn-BjlDcUXknhQrzzRPnelKg"
-          />
+        <button
+          onClick={onClose}
+          aria-label="Cerrar cámara"
+          className="group flex shrink-0 items-center justify-center rounded-xl size-14 border-2 border-white/20 overflow-hidden relative active:scale-95 transition-transform"
+        >
+          {photos.length > 0 ? (
+            <img
+              alt="Última foto"
+              className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
+              src={photos[photos.length - 1]}
+            />
+          ) : (
+            <span className="material-symbols-outlined text-white text-[24px]">photo_library</span>
+          )}
         </button>
 
         {/* Hidden file input for camera */}
