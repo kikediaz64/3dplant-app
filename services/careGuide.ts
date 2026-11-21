@@ -15,6 +15,9 @@ export function normalizeCareGuide(value: unknown): CareGuide | undefined {
   guide.commonPests = Array.isArray(source.commonPests)
     ? source.commonPests.filter((p): p is string => typeof p === 'string').map(p => p.trim()).filter(Boolean)
     : [];
+  guide.homeRemedies = Array.isArray(source.homeRemedies)
+    ? source.homeRemedies.filter((r): r is string => typeof r === 'string').map(r => r.trim()).filter(Boolean).slice(0, 3)
+    : [];
   const toxicity = source.toxicity && typeof source.toxicity === 'object' && !Array.isArray(source.toxicity)
     ? source.toxicity as Record<string, unknown>
     : undefined;

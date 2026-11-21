@@ -23,6 +23,7 @@ export interface CareGuide {
   temperature?: string;
   humidity?: string;
   commonPests?: string[];
+  homeRemedies?: string[];
   toxicity?: PlantToxicity;
 }
 
