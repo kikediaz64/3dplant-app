@@ -56,9 +56,9 @@ const DIAGNOSE_PROMPT = `Eres un botánico y fitopatólogo experto. Analiza la i
 - "speciesName": string (nombre común de la planta)
 - "scientificName": string (nombre científico)
 - "family": string (familia botánica)
-- "problemName": string (problema principal detectado; si no se observa ninguno, "Sin problemas visibles")
+- "problemName": string (nombre concreto del problema principal, p. ej. "Cochinilla algodonosa en el envés" o "Quemadura solar en hojas jóvenes"; prohibido lo genérico como "Estrés" o "Problema de cuidado"; si no se observa ninguno, "Sin problemas visibles")
 - "confidence": number (0 a 1)
-- "impact": string (cómo afecta esto a la planta)
+- "impact": string (1-2 frases sobre lo que se ve en ESTA foto: qué hojas o zona, color y patrón, y qué pasará si no se actúa)
 - "isContagious": boolean
 - "severity": string ("low", "moderate" o "high")
 - "healthScore": number (0 a 100)
@@ -72,11 +72,13 @@ const DIAGNOSE_PROMPT = `Eres un botánico y fitopatólogo experto. Analiza la i
 - "zona": string ("Interior" o "Exterior")
 - "luz": string ("Sol pleno", "Semisombra" o "Sombra")
 - "tipo": string ("Aromática", "Floral", "Frutal", "Vegetal" u "Ornamental")
-- "actionPlan": array de objetos { "title": string, "description": string, "icon": string }; "icon" debe ser exactamente uno de: water_drop, wb_sunny, content_cut, compost, bug_report, pest_control, eco, spa, thermostat, humidity_percentage, local_florist, grass, potted_plant, healing, visibility, schedule, task_alt. Con problema, 3 a 5 acciones inmediatas; si está sana, 1 a 3 consejos de mantenimiento
-- "rootCauses": array de objetos { "title": string, "description": string }; con problema, 2 a 4 causas plausibles; si está sana, puede ser []
-- "careGuide": objeto con datos breves (1-2 frases cada uno) y específicos de la especie identificada: "origin" (origen), "soil" (suelo), "fertilizer" (abono), "seasonal" (cuidado estacional), "watering" (frecuencia y cómo regar), "light" (luz), "temperature" (rango en °C), "humidity" (humedad), "commonPests" (array de plagas comunes) y "toxicity": { "pets": "tóxica" | "no tóxica" | "desconocido", "people": "tóxica" | "no tóxica" | "desconocido", "note": string (frase corta) }. Para toxicidad, usa "desconocido" si no tienes certeza fiable; no la deduzcas ni inventes.
+- "actionPlan": array de objetos { "title": string, "description": string, "icon": string }; "icon" debe ser exactamente uno de: water_drop, wb_sunny, content_cut, compost, bug_report, pest_control, eco, spa, thermostat, humidity_percentage, local_florist, grass, potted_plant, healing, visibility, schedule, task_alt. Con problema, 3 a 5 acciones ORDENADAS de más a menos urgente (la primera es lo que hay que hacer hoy). Cada acción debe ser concreta y propia de ESTA planta y ESTE problema: qué hacer exactamente, con qué (producto o remedio casero con dosis, p. ej. "jabón potásico 15 ml por litro"), cuántas veces y durante cuánto tiempo, citando el síntoma de la foto que la justifica. Prohibido el relleno genérico ("revisa el riego", "mejora la luz", "vigila la planta") salvo que la foto lo justifique. Cada "description" de máximo 30 palabras. Si está sana, 1 a 3 consejos de mantenimiento
+- "rootCauses": array de objetos { "title": string, "description": string }; con problema, 2 a 4 causas plausibles, cada "description" de máximo 30 palabras; si está sana, puede ser []
+- "careGuide": objeto con datos breves (1-2 frases cada uno) y específicos de la especie identificada: "origin" (origen), "soil" (suelo), "fertilizer" (abono), "seasonal" (cuidado estacional), "watering" (frecuencia y cómo regar), "light" (luz), "temperature" (rango en °C), "humidity" (humedad), "commonPests" (array de plagas comunes), "homeRemedies" (array de 1 a 3 strings con remedios caseros o ecológicos adecuados a ESTA especie y, si hay problema, a ESTE problema, cada uno con dosis y frecuencia, p. ej. "Jabón potásico: 15-20 ml por litro de agua, pulverizar cada 5 días durante 3 semanas"; no incluyas remedios populares que sean un mito o que dañen a esta planta; si no hay un remedio casero fiable, []) y "toxicity": { "pets": "tóxica" | "no tóxica" | "desconocido", "people": "tóxica" | "no tóxica" | "desconocido", "note": string (frase corta) }. Para toxicidad, usa "desconocido" si no tienes certeza fiable; no la deduzcas ni inventes.
 
 No inventes síntomas ni problemas si la planta parece sana. En ese caso usa "healthStatus": "Saludable", "problemName": "Sin problemas visibles" y recomendaciones de mantenimiento. Si no conoces con seguridad un dato de careGuide, usa una cadena vacía o un array vacío en vez de inventarlo.
+
+Cada diagnóstico debe reflejar la foto concreta: dos plantas o problemas distintos nunca deben recibir el mismo plan.
 
 Responde todo en español.`;
 
@@ -147,7 +149,7 @@ export default async (request, context) => {
           }
         ],
         response_format: { type: 'json_object' },
-        temperature: 0.2,
+        temperature: 0.4,
         max_tokens: 2000
       };
     } else if (action === 'ask') {

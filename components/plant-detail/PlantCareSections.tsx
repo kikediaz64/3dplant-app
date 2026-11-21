@@ -15,6 +15,7 @@ export default function PlantCareSections({ plant, guide, exportReminder }: Prop
     const watering = getWateringStatus(plant);
     const fertilizerDays = fertilizerIntervalDays(guide?.fertilizer);
     const pestKeys = occurrenceKeys(guide?.commonPests ?? [], item => item);
+    const remedyKeys = occurrenceKeys(guide?.homeRemedies ?? [], item => item);
     return (
         <>
             {/* Historia */}
@@ -119,10 +120,9 @@ export default function PlantCareSections({ plant, guide, exportReminder }: Prop
                     <span className="text-xl">🏡</span>
                     <h3 className="text-base font-bold text-gray-900 dark:text-white">Remedios caseros</h3>
                 </div>
-                <ul className="text-sm text-gray-600 dark:text-gray-300 list-disc list-inside space-y-1 mt-2">
-                    <li>Cáscara de huevo y posos de café: consulta si son adecuados para esta especie antes de añadirlos al sustrato.</li>
-                    <li>Agua oxigenada y vinagre: no aplicarlos sin comprobar su uso y dosis para esta planta.</li>
-                </ul>
+                {guide?.homeRemedies?.length ? <ul className="text-sm text-gray-600 dark:text-gray-300 list-disc list-inside space-y-1 mt-2">{guide.homeRemedies.map((remedy, idx) => (
+                    <li key={remedyKeys[idx]}>{remedy}</li>
+                ))}</ul> : <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed mt-2">{missingCareData}</p>}
                 <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">Muchos remedios virales son mitos o pueden dañar las plantas. Consulta antes de aplicar cualquier remedio.</p>
             </div>
         </>

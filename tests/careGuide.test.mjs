@@ -30,7 +30,7 @@ test('formatea el último riego por día de calendario y omite datos vacíos o i
 
 test('la guía simulada se guarda, se recupera y aparece en el detalle y en el reescaneo', () => {
   store.clear();
-  const careGuide = { origin: 'Sudamérica', soil: 'Suelo drenante', fertilizer: 'Abono para tomate', seasonal: 'Proteger de heladas', watering: 'Regar al secarse la superficie, sin mojar hojas.', light: 'Sol directo', temperature: '20-28°C', humidity: 'Ventilación adecuada', commonPests: ['Mosca blanca'] };
+  const careGuide = { origin: 'Sudamérica', soil: 'Suelo drenante', fertilizer: 'Abono para tomate', seasonal: 'Proteger de heladas', watering: 'Regar al secarse la superficie, sin mojar hojas.', light: 'Sol directo', temperature: '20-28°C', humidity: 'Ventilación adecuada', commonPests: ['Mosca blanca'], homeRemedies: ['Jabón potásico: 15 ml por litro, cada 5 días durante 3 semanas'] };
   const plant = plantStorage.savePlant({ ...base, ...diagnosisCare(careGuide) });
   const saved = plantStorage.getSavedPlants()[0];
   assert.deepEqual(saved.careGuide, careGuide);
@@ -87,7 +87,7 @@ test('normaliza toxicidad desconocida o malformada y solo destaca la toxicidad c
 
 test('un reescaneo sin guía o con campos vacíos conserva los cuidados anteriores', () => {
   store.clear();
-  const guide = { origin: 'Sudamérica', watering: 'Regar al secarse la superficie', light: 'Sol directo', temperature: '20-28°C', humidity: 'Ventilación adecuada', commonPests: ['Mosca blanca'] };
+  const guide = { origin: 'Sudamérica', watering: 'Regar al secarse la superficie', light: 'Sol directo', temperature: '20-28°C', humidity: 'Ventilación adecuada', commonPests: ['Mosca blanca'], homeRemedies: ['Aceite de neem: 5 ml por litro, cada 7 días'] };
   const plant = plantStorage.savePlant({ ...base, ...diagnosisCare(guide) });
   const entry = { id: 'rescan', date: new Date().toISOString(), image: '', problems: [], recommendations: [] };
   for (const incoming of [undefined, {}, { watering: ' ', light: null, temperature: 42, commonPests: [] }]) {
@@ -104,12 +104,13 @@ test('un reescaneo sin guía o con campos vacíos conserva los cuidados anterior
   assert.match(renderDetail(plant.id), /Riego actualizado/);
 });
 
-test('remedios muestra avisos generales sin pedir un diagnóstico que no aporta remedios', () => {
+test('remedios de una planta sin remedios guardados pide un diagnóstico nuevo y mantiene el aviso de mitos', () => {
   store.clear();
   const plant = plantStorage.savePlant({ ...base, ...diagnosisCare(undefined) });
   const remedies = renderDetail(plant.id).split('Remedios caseros</h3>')[1];
   assert.ok(remedies);
-  assert.doesNotMatch(remedies, /Sin datos para esta planta|leche|bicarbonato/);
+  assert.match(remedies, /Sin datos para esta planta/);
+  assert.doesNotMatch(remedies, /Cáscara de huevo|Agua oxigenada|leche|bicarbonato/);
   assert.match(remedies, /Muchos remedios virales son mitos/);
 });
 
